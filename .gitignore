@@ -7,17 +7,13 @@
 *.user
 *.autosave
 
-# Runtime data (project-local layout; bundled into the Windows installer at build time)
-/database/vlms.db
+# Runtime data (database/vlms.db, resources/books, resources/members) is mock
+# data and is tracked, so the Windows installer build finds it in the checkout.
 # Hand-made backups of the live database. These hold real member records
 # (names, dates of birth) and must never enter version control.
 /database/*.db.bak-*
 /database/*.db-journal
 /database/*.db-wal
-/resources/books/**
-!/resources/books/.gitkeep
-/resources/members/**
-!/resources/members/.gitkeep
 /dist/VLMS_installer_data.zip
 
 # OCR runtime binaries (keep README / .gitkeep; stage locally or on the Windows build PC)
