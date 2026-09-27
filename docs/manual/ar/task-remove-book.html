@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإزالة — VLMS</title>
+<meta name="description" content="أرشفة عنوان أو نسخة أو عضو أو إعارة، ثم إزالتها نهائياً.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>دليل الاستخدام</small></a>
+  <nav class="langs" aria-label="اللغة"><a href="../ar/task-remove-book.html" lang="ar" aria-current="true"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-remove-book.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-remove-book.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="المحتويات">
+    <h2>المحتويات</h2>
+    <ol><li><a href="index.html">البداية</a></li><li><a href="getting-started.html">البداية مع النافذة</a></li><li><a href="catalogue.html">الفهرس</a></li><li><a href="members.html">الأعضاء</a></li><li><a href="circulation.html">الإعارة</a></li><li><a href="archive.html">الأرشيف</a></li><li><a href="metrics.html">المؤشرات</a></li><li><a href="task-add-book.html">إضافة كتاب</a></li><li><a href="task-register-member.html">تسجيل عضو</a></li><li><a href="task-lend-book.html">إعارة كتاب</a></li><li><a href="task-return-extend.html">الإرجاع والتمديد</a></li><li><a href="task-remove-book.html" aria-current="page">الإزالة</a></li><li><a href="task-reuse-number.html">إعادة استعمال رقم محلي</a></li><li><a href="reference.html">المرجع</a></li></ol>
+  </nav>
+  <main>
+    <h1>الإزالة</h1>
+    <p class="summary">أرشفة عنوان أو نسخة أو عضو أو إعارة، ثم إزالتها نهائياً.</p>
+    <aside class="note"><p><span class="ui">حذف</span> لا يتلف سجلاً. يؤرشفه. القائمة الحية تخسره، و<a href="archive.html">الأرشيف</a> يستطيع استرجاعه. الحذف النهائي خطوة منفصلة، في الأرشيف فقط.</p></aside>
+<h2 id="h-1">كتاب</h2>
+<p>ظلّل العنوان. اترك العلامات فارغة إذا كنت تقصد هذا العنوان وحده. اضغط <span class="ui">حذف</span>.</p>
+<figure class="shot"><a href="../assets/shots/ar/rm-book-confirm.png"><img src="../assets/shots/ar/rm-book-confirm.png" alt="الحذف يسأل قبل أرشفة عنوان واحد." loading="lazy"></a><figcaption>الحذف يسأل قبل أرشفة عنوان واحد.</figcaption></figure>
+<p><span class="ui">لا</span> يترك العنوان في الفهرس. <span class="ui">نعم</span> يؤرشف العنوان ونسخه. أرقامها المحلية تبقى معها، فيمكن إعادة استعمالها. انظر <a href="task-reuse-number.html">إعادة استعمال رقم محلي</a>.</p>
+<p>إذا كانت نسخة ما زالت خارجة، يُرفض الحذف. أرجع تلك الإعارة أولاً.</p>
+<figure class="shot"><a href="../assets/shots/ar/rm-book-refused.png"><img src="../assets/shots/ar/rm-book-refused.png" alt="الحذف مرفوض لأن نسخة مُعارة." loading="lazy"></a><figcaption>الحذف مرفوض لأن نسخة مُعارة.</figcaption></figure>
+<h2 id="h-2">نسخة</h2>
+<p><span class="ui">تعديل</span> العنوان، افتح تبويب النسخ، ظلّل السطر، واضغط <span class="ui">حذف النسخة</span>. النسخة الخارجة لا تُحذف. <span class="ui">موافق</span> يحفظ الكتاب دون تلك النسخة. النسخة تُؤرشف، ولا تُتلف.</p>
+<figure class="shot"><a href="../assets/shots/ar/rm-copy-row.png"><img src="../assets/shots/ar/rm-copy-row.png" alt="تبويب النسخ، مع حذف النسخة." loading="lazy"></a><figcaption>تبويب النسخ، مع حذف النسخة.</figcaption></figure>
+<ol><li><span class="ui">حذف النسخة</span></li></ol>
+<h2 id="h-3">عضو</h2>
+<p><span class="ui">حذف</span> في الأعضاء يؤرشف العضو، إلا إذا كانت إعارة له ما زالت خارجة. عندها الرسالة تعرض <span class="ui">الذهاب إلى الإعارة</span>.</p>
+<figure class="shot"><a href="../assets/shots/ar/mem-delete-blocked.png"><img src="../assets/shots/ar/mem-delete-blocked.png" alt="الحذف مرفوض ما دام كتاب ما زال خارجاً." loading="lazy"></a><figcaption>الحذف مرفوض ما دام كتاب ما زال خارجاً.</figcaption></figure>
+<h2 id="h-4">إعارة</h2>
+<p>لا تُؤرشف من الإعارة إلا إعارة مُرجَعة. ظلّلها واضغط <span class="ui">حذف</span>.</p>
+<figure class="shot"><a href="../assets/shots/ar/rm-loan-confirm.png"><img src="../assets/shots/ar/rm-loan-confirm.png" alt="الحذف يسأل قبل أرشفة إعارة مُرجَعة." loading="lazy"></a><figcaption>الحذف يسأل قبل أرشفة إعارة مُرجَعة.</figcaption></figure>
+<p>الإعارة المفتوحة أو المتأخرة يجب أن تُرجع أولاً. انظر <a href="task-return-extend.html">الإرجاع والتمديد</a>.</p>
+<h2 id="h-5">عدة أسطر معاً</h2>
+<p>حدّد الأسطر، بما في ذلك بعلامة العنوان. <span class="ui">حذف</span> يسمّي عندها العدد، ويعمل على كل سطر محدَّد. السطر الذي لا يمكن أرشفته يُتجاوز. انظر <a href="getting-started.html#ticks">علامات التحديد</a>.</p>
+<figure class="shot"><a href="../assets/shots/ar/gs-ticks.png"><img src="../assets/shots/ar/gs-ticks.png" alt="علامة السطر وعلامة العنوان." loading="lazy"></a><figcaption>علامة السطر وعلامة العنوان.</figcaption></figure>
+<figure class="shot"><a href="../assets/shots/ar/rm-bulk-confirm.png"><img src="../assets/shots/ar/rm-bulk-confirm.png" alt="الحذف وثلاثة عناوين محدَّدة." loading="lazy"></a><figcaption>الحذف وثلاثة عناوين محدَّدة.</figcaption></figure>
+<h2 id="h-6">نهائياً</h2>
+<p>إذا كان السجل المؤرشف يجب ألا يعود، افتح الأرشيف واتبع <a href="archive.html#purge-order">الترتيب</a>. الإعارة يمكن أن تذهب في أي وقت. النسخة تنتظر ألا تسمّيها أي إعارة. الكتاب ينتظر ألا تبقى له نسخ. العضو ينتظر ألا تسمّيه أي إعارة.</p>
+<figure class="shot"><a href="../assets/shots/ar/arc-purge-confirm.png"><img src="../assets/shots/ar/arc-purge-confirm.png" alt="حذف نهائي، لإعارة. لا يمكن التراجع." loading="lazy"></a><figcaption>حذف نهائي، لإعارة. لا يمكن التراجع.</figcaption></figure>
+    <nav class="pager"><a class="prev" href="task-return-extend.html"><span>السابق</span>الإرجاع والتمديد</a><a class="next" href="task-reuse-number.html"><span>التالي</span>إعادة استعمال رقم محلي</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

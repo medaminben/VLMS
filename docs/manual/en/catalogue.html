@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogue — VLMS</title>
+<meta name="description" content="Find a title, read its copies, and open its loans.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/catalogue.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/catalogue.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/catalogue.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html" aria-current="page">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Catalogue</h1>
+    <p class="summary">Find a title, read its copies, and open its loans.</p>
+    <p>The Catalogue is the live list of titles. Archived titles are on the <a href="archive.html">Archive</a> screen, under Books.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-overview.png"><img src="../assets/shots/en/cat-overview.png" alt="The Catalogue, with its filters, search, columns, and buttons numbered." loading="lazy"></a><figcaption>The Catalogue, with its filters, search, columns, and buttons numbered.</figcaption></figure>
+<ol><li>Categories. <span class="ui">All categories</span> leaves every category in the list. Pick one or more to narrow it.</li><li>Languages. <span class="ui">All languages</span>, or Arabic, French, and any other language the catalogue holds.</li><li>Cover. <span class="ui">All</span>, <span class="ui">With cover</span>, or <span class="ui">Without cover</span>.</li><li>Search, by title, author, ISBN, or local number.</li><li><span class="ui">Local no.</span> The number the cell is speaking for. See <a href="reference.html#local-number">Local numbers</a>.</li><li><span class="ui">Copies</span> and <span class="ui">Available</span>. Copies is every live copy. Available is the ones still on the shelf.</li><li>The details of the highlighted title: cover, description, and the bibliographic fields.</li><li><span class="ui">Loans</span></li><li><span class="ui">Add Book</span></li><li><span class="ui">Edit</span></li><li><span class="ui">Delete</span></li></ol>
+<h2 id="h-1">Search</h2>
+<p>Type in the search box. The list narrows as you type. A local number that matches a copy exactly is preferred. A prefix of a number is used only when no copy has that number exactly, so a year such as a title still finds the title.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-search-number.png"><img src="../assets/shots/en/cat-search-number.png" alt="A search by local number. The matched number leads the cell." loading="lazy"></a><figcaption>A search by local number. The matched number leads the cell.</figcaption></figure>
+<h2 id="h-2">The local-number column</h2>
+<p>One copy shows its number. Several copies show the number and how many further copies the title has. Click the cell to open the drop-down. Each number is green on the shelf, or red and italic when that copy is out.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-number-dropdown.png"><img src="../assets/shots/en/cat-number-dropdown.png" alt="The local-number drop-down of a title with several copies." loading="lazy"></a><figcaption>The local-number drop-down of a title with several copies.</figcaption></figure>
+<p>Choosing a number marks it in the closed cell. The copies stay in their original order, and the choice lasts until the list is loaded again.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-copy-colours.png"><img src="../assets/shots/en/cat-copy-colours.png" alt="Green for a copy on the shelf, red and italic for a copy on loan." loading="lazy"></a><figcaption>Green for a copy on the shelf, red and italic for a copy on loan.</figcaption></figure>
+<p>The colour rules are in <a href="reference.html#local-number">Local numbers</a>.</p>
+<h2 id="h-3">Loans</h2>
+<p><span class="ui">Loans</span> follows the highlighted title. It opens even when the title has never been borrowed, and it offers <span class="ui">Checkout</span> from there. The list is every loan of every copy the title has ever had, including copies and loans that have since been archived.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-loans-dialog.png"><img src="../assets/shots/en/cat-loans-dialog.png" alt="The loans of one title." loading="lazy"></a><figcaption>The loans of one title.</figcaption></figure>
+<p><span class="ui">Close</span> leaves the dialog. Lending from here is <a href="task-lend-book.html">Lend a book</a>. Adding a title is <a href="task-add-book.html">Add a book</a>. Removing one is <a href="task-remove-book.html">Remove</a>.</p>
+    <nav class="pager"><a class="prev" href="getting-started.html"><span>Previous</span>Getting started</a><a class="next" href="members.html"><span>Next</span>Members</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

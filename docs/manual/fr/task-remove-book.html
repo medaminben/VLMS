@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retirer — VLMS</title>
+<meta name="description" content="Archiver un titre, un exemplaire, un adhérent ou un prêt, puis le retirer pour de bon.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/task-remove-book.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-remove-book.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-remove-book.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Adhérents</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html" aria-current="page">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Retirer</h1>
+    <p class="summary">Archiver un titre, un exemplaire, un adhérent ou un prêt, puis le retirer pour de bon.</p>
+    <aside class="note"><p><span class="ui">Supprimer</span> ne détruit jamais une fiche. Il l'archive. La liste en service la perd, et les <a href="archive.html">Archives</a> peuvent la restaurer. Le retrait définitif est une étape séparée, seulement dans les Archives.</p></aside>
+<h2 id="h-1">Un ouvrage</h2>
+<p>Surlignez le titre. Laissez les cases vides si vous visez ce titre seul. Cliquez <span class="ui">Supprimer</span>.</p>
+<figure class="shot"><a href="../assets/shots/fr/rm-book-confirm.png"><img src="../assets/shots/fr/rm-book-confirm.png" alt="Supprimer demande avant d&#x27;archiver un titre." loading="lazy"></a><figcaption>Supprimer demande avant d'archiver un titre.</figcaption></figure>
+<p><span class="ui">Non</span> laisse le titre dans le Catalogue. <span class="ui">Oui</span> archive le titre et ses exemplaires. Leurs numéros locaux restent avec eux, donc ils peuvent être réutilisés. Voir <a href="task-reuse-number.html">Réutiliser un numéro local</a>.</p>
+<p>Si un exemplaire est encore sorti, Supprimer est refusé. Retournez ce prêt d'abord.</p>
+<figure class="shot"><a href="../assets/shots/fr/rm-book-refused.png"><img src="../assets/shots/fr/rm-book-refused.png" alt="Supprimer refusé, parce qu&#x27;un exemplaire est en prêt." loading="lazy"></a><figcaption>Supprimer refusé, parce qu'un exemplaire est en prêt.</figcaption></figure>
+<h2 id="h-2">Un exemplaire</h2>
+<p><span class="ui">Modifier</span> le titre, ouvrez l'onglet Exemplaires, surlignez la ligne, et cliquez <span class="ui">Supprimer l'exemplaire</span>. Un exemplaire encore sorti ne peut pas être retiré. <span class="ui">OK</span> enregistre l'ouvrage sans cet exemplaire. L'exemplaire est archivé, pas détruit.</p>
+<figure class="shot"><a href="../assets/shots/fr/rm-copy-row.png"><img src="../assets/shots/fr/rm-copy-row.png" alt="L&#x27;onglet Exemplaires, avec Supprimer l&#x27;exemplaire." loading="lazy"></a><figcaption>L'onglet Exemplaires, avec Supprimer l'exemplaire.</figcaption></figure>
+<ol><li><span class="ui">Supprimer l'exemplaire</span></li></ol>
+<h2 id="h-3">Un adhérent</h2>
+<p><span class="ui">Supprimer</span> dans les Adhérents archive l'adhérent, sauf si un prêt de cette personne est encore sorti. Alors le message propose <span class="ui">Aller aux prêts</span>.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-delete-blocked.png"><img src="../assets/shots/fr/mem-delete-blocked.png" alt="Supprimer refusé tant qu&#x27;un ouvrage est encore sorti." loading="lazy"></a><figcaption>Supprimer refusé tant qu'un ouvrage est encore sorti.</figcaption></figure>
+<h2 id="h-4">Un prêt</h2>
+<p>Seul un prêt retourné peut être archivé depuis la Circulation. Surlignez-le et cliquez <span class="ui">Supprimer</span>.</p>
+<figure class="shot"><a href="../assets/shots/fr/rm-loan-confirm.png"><img src="../assets/shots/fr/rm-loan-confirm.png" alt="Supprimer demande avant d&#x27;archiver un prêt retourné." loading="lazy"></a><figcaption>Supprimer demande avant d'archiver un prêt retourné.</figcaption></figure>
+<p>Un prêt ouvert ou en retard doit d'abord être retourné. Voir <a href="task-return-extend.html">Retourner ou prolonger</a>.</p>
+<h2 id="h-5">Plusieurs à la fois</h2>
+<p>Cochez les lignes, y compris avec la case de l'en-tête. <span class="ui">Supprimer</span> nomme alors combien, et agit sur chaque ligne cochée. Une ligne qui ne peut pas être archivée est passée. Voir <a href="getting-started.html#ticks">Cases</a>.</p>
+<figure class="shot"><a href="../assets/shots/fr/gs-ticks.png"><img src="../assets/shots/fr/gs-ticks.png" alt="La case de ligne et la case d&#x27;en-tête." loading="lazy"></a><figcaption>La case de ligne et la case d'en-tête.</figcaption></figure>
+<figure class="shot"><a href="../assets/shots/fr/rm-bulk-confirm.png"><img src="../assets/shots/fr/rm-bulk-confirm.png" alt="Supprimer avec trois titres cochés." loading="lazy"></a><figcaption>Supprimer avec trois titres cochés.</figcaption></figure>
+<h2 id="h-6">Pour de bon</h2>
+<p>Quand la fiche archivée ne doit pas revenir, ouvrez les Archives et suivez l'<a href="archive.html#purge-order">ordre</a>. Un prêt peut partir à tout moment. Un exemplaire attend qu'aucun prêt ne le nomme. Un livre attend de n'avoir plus d'exemplaires. Un adhérent attend qu'aucun prêt ne le nomme.</p>
+<figure class="shot"><a href="../assets/shots/fr/arc-purge-confirm.png"><img src="../assets/shots/fr/arc-purge-confirm.png" alt="Suppression définitive, pour un prêt. Cela ne peut pas être annulé." loading="lazy"></a><figcaption>Suppression définitive, pour un prêt. Cela ne peut pas être annulé.</figcaption></figure>
+    <nav class="pager"><a class="prev" href="task-return-extend.html"><span>Précédent</span>Retourner ou prolonger</a><a class="next" href="task-reuse-number.html"><span>Suivant</span>Réutiliser un numéro local</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

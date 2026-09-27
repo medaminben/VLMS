@@ -1,0 +1,109 @@
+name: CI
+
+# Deliberately separate from windows-installer.yml. That workflow is release
+# tooling: workflow_dispatch + tag pushes, 90-minute timeout, MSYS2 + Inno
+# Setup + OCR staging. Tests need push/PR triggers and a fast feedback loop.
+on:
+  push:
+    branches: [main, master, Beta]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux-tests:
+    name: tests (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # POST_BUILD gtest_discover_tests runs test_vlms_ui --gtest_list_tests
+    # during cmake --build. That binary starts QApplication; without this the
+    # runner picks xcb, aborts, and the build is red before ctest starts.
+    # ctest also inherits it, matching a local `QT_QPA_PLATFORM=offscreen ctest`.
+    env:
+      QT_QPA_PLATFORM: offscreen
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: default
+            cmake_args: ""
+          # Proves Core has no upward dependency on the UI. Skips test_vlms_ui.
+          - name: core-only
+            cmake_args: "-DBUILD_APPS=OFF"
+          # The codebase is raw `new` throughout, relying on Qt parent
+          # ownership, and the dialogs mix parents. Worth the extra minutes.
+          - name: sanitizers
+            # Inner quotes are load-bearing: the step interpolates this into a
+            # single-line shell command, so without them the space makes
+            # -fno-omit-frame-pointer a cmake argument rather than a compiler
+            # flag, and cmake exits with "Unknown argument".
+            cmake_args: '-DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"'
+
+    steps:
+      # Full history and tags: the version comes from the latest vX.Y.Z tag,
+      # and the release preview diffs against it.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Qt 6 and toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            libsqlite3-dev \
+            libgl1-mesa-dev \
+            ninja-build
+        # libsqlite3-dev so find_package(SQLite3) succeeds for Core.
+        # libgl1-mesa-dev is needed to link Qt6::Gui for the application and
+        # UI tests, even for offscreen runs. Core itself no longer links Qt.
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DVLMS_BUILD_TESTS=ON
+          ${{ matrix.cmake_args }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        working-directory: build
+        # --no-tests=error so a missing test binary fails loudly instead of
+        # reporting a green zero-test run.
+        # Job env already sets QT_QPA_PLATFORM=offscreen for discovery and ctest.
+        # build_gtest_executable() also sets it per-test (and via TEST_LAUNCHER)
+        # so a local `ctest` without that env still starts QApplication.
+        run: ctest --output-on-failure --no-tests=error -LE realdb
+
+      - name: Release tool tests
+        if: matrix.name == 'default'
+        run: python3 -m unittest discover -s scripts/release -v
+
+      # What merging this into main would release. Never fails the run.
+      - name: Next release
+        if: matrix.name == 'default'
+        run: |
+          {
+            echo '### Next release'
+            echo '```'
+            python3 scripts/release/release.py plan 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-log-${{ matrix.name }}
+          path: build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore

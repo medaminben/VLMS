@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remove — VLMS</title>
+<meta name="description" content="Archive a title, a copy, a member, or a loan, then remove it for good.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/task-remove-book.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-remove-book.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-remove-book.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html" aria-current="page">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Remove</h1>
+    <p class="summary">Archive a title, a copy, a member, or a loan, then remove it for good.</p>
+    <aside class="note"><p><span class="ui">Delete</span> never destroys a record. It archives it. The live list loses it, and the <a href="archive.html">Archive</a> can restore it. Permanent removal is a separate step, only in the Archive.</p></aside>
+<h2 id="h-1">A book</h2>
+<p>Highlight the title. Leave the ticks clear if you mean this title alone. Click <span class="ui">Delete</span>.</p>
+<figure class="shot"><a href="../assets/shots/en/rm-book-confirm.png"><img src="../assets/shots/en/rm-book-confirm.png" alt="Delete asks before it archives one title." loading="lazy"></a><figcaption>Delete asks before it archives one title.</figcaption></figure>
+<p><span class="ui">No</span> leaves the title on the Catalogue. <span class="ui">Yes</span> archives the title and its copies. Their local numbers stay with them, so they can be reused. See <a href="task-reuse-number.html">Reuse a local number</a>.</p>
+<p>If a copy is still out, Delete is refused. Return that loan first.</p>
+<figure class="shot"><a href="../assets/shots/en/rm-book-refused.png"><img src="../assets/shots/en/rm-book-refused.png" alt="Delete refused, because a copy is on loan." loading="lazy"></a><figcaption>Delete refused, because a copy is on loan.</figcaption></figure>
+<h2 id="h-2">A copy</h2>
+<p><span class="ui">Edit</span> the title, open the Copies tab, highlight the line, and click <span class="ui">Remove copy</span>. A copy that is still out cannot be removed. <span class="ui">OK</span> saves the book without that copy. The copy is archived, not destroyed.</p>
+<figure class="shot"><a href="../assets/shots/en/rm-copy-row.png"><img src="../assets/shots/en/rm-copy-row.png" alt="The Copies tab, with Remove copy." loading="lazy"></a><figcaption>The Copies tab, with Remove copy.</figcaption></figure>
+<ol><li><span class="ui">Remove copy</span></li></ol>
+<h2 id="h-3">A member</h2>
+<p><span class="ui">Delete</span> on Members archives the member, unless a loan of theirs is still out. Then the message offers <span class="ui">Go to Loans</span>.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-delete-blocked.png"><img src="../assets/shots/en/mem-delete-blocked.png" alt="Delete refused while a book is still out." loading="lazy"></a><figcaption>Delete refused while a book is still out.</figcaption></figure>
+<h2 id="h-4">A loan</h2>
+<p>Only a returned loan can be archived from Circulation. Highlight it and click <span class="ui">Delete</span>.</p>
+<figure class="shot"><a href="../assets/shots/en/rm-loan-confirm.png"><img src="../assets/shots/en/rm-loan-confirm.png" alt="Delete asks before it archives one returned loan." loading="lazy"></a><figcaption>Delete asks before it archives one returned loan.</figcaption></figure>
+<p>An open or overdue loan has to be returned first. See <a href="task-return-extend.html">Return or extend</a>.</p>
+<h2 id="h-5">Several at once</h2>
+<p>Tick the rows, including with the header tick. <span class="ui">Delete</span> then names how many, and acts on each ticked row. A row that cannot be archived is skipped. See <a href="getting-started.html#ticks">Ticks</a>.</p>
+<figure class="shot"><a href="../assets/shots/en/gs-ticks.png"><img src="../assets/shots/en/gs-ticks.png" alt="The row tick and the header tick." loading="lazy"></a><figcaption>The row tick and the header tick.</figcaption></figure>
+<figure class="shot"><a href="../assets/shots/en/rm-bulk-confirm.png"><img src="../assets/shots/en/rm-bulk-confirm.png" alt="Delete with three titles ticked." loading="lazy"></a><figcaption>Delete with three titles ticked.</figcaption></figure>
+<h2 id="h-6">Permanently</h2>
+<p>When the archived record should not come back, open the Archive and follow the <a href="archive.html#purge-order">order</a>. A loan can go at any time. A copy waits until no loan names it. A book waits until it has no copies. A member waits until no loan names them.</p>
+<figure class="shot"><a href="../assets/shots/en/arc-purge-confirm.png"><img src="../assets/shots/en/arc-purge-confirm.png" alt="Permanently remove, for a loan. This cannot be undone." loading="lazy"></a><figcaption>Permanently remove, for a loan. This cannot be undone.</figcaption></figure>
+    <nav class="pager"><a class="prev" href="task-return-extend.html"><span>Previous</span>Return or extend</a><a class="next" href="task-reuse-number.html"><span>Next</span>Reuse a local number</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

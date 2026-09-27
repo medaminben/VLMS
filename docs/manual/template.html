@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{lang}}" dir="{{dir}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}} — VLMS</title>
+<meta name="description" content="{{summary}}">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>{{manual}}</small></a>
+  <nav class="langs" aria-label="{{language}}">{{switcher}}</nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="{{contents}}">
+    <h2>{{contents}}</h2>
+    <ol>{{nav}}</ol>
+  </nav>
+  <main>
+    <h1>{{title}}</h1>
+    <p class="summary">{{summary}}</p>
+    {{body}}
+    <nav class="pager">{{prev}}{{next}}</nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

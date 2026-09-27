@@ -1,0 +1,45 @@
+<RCC>
+    <qresource prefix="/images">
+        <file alias="book-placeholder.png">images/book-placeholder.png</file>
+    </qresource>
+    <!-- The drop-down/stepper arrows and the checked-checkbox mark, one tint
+         per theme. A stylesheet can only supply these as images; see
+         scripts/build_control_arrows.py and scripts/build_check_mark.py. -->
+    <qresource prefix="/ui">
+        <file alias="arrow-down-light.png">images/ui/arrow-down-light.png</file>
+        <file alias="arrow-down-light@2x.png">images/ui/arrow-down-light@2x.png</file>
+        <file alias="arrow-up-light.png">images/ui/arrow-up-light.png</file>
+        <file alias="arrow-up-light@2x.png">images/ui/arrow-up-light@2x.png</file>
+        <file alias="arrow-down-dark.png">images/ui/arrow-down-dark.png</file>
+        <file alias="arrow-down-dark@2x.png">images/ui/arrow-down-dark@2x.png</file>
+        <file alias="arrow-up-dark.png">images/ui/arrow-up-dark.png</file>
+        <file alias="arrow-up-dark@2x.png">images/ui/arrow-up-dark@2x.png</file>
+        <file alias="check-light.png">images/ui/check-light.png</file>
+        <file alias="check-light@2x.png">images/ui/check-light@2x.png</file>
+        <file alias="check-dark.png">images/ui/check-dark.png</file>
+        <file alias="check-dark@2x.png">images/ui/check-dark@2x.png</file>
+    </qresource>
+    <!-- PNG rather than the SVG masters: the app links only Core/Gui/Widgets,
+         so reading SVG would depend on the qsvg image plugin being deployed. -->
+    <qresource prefix="/brand">
+        <file alias="icon-16.png">images/brand/icon-16.png</file>
+        <file alias="icon-24.png">images/brand/icon-24.png</file>
+        <file alias="icon-32.png">images/brand/icon-32.png</file>
+        <file alias="icon-48.png">images/brand/icon-48.png</file>
+        <file alias="icon-64.png">images/brand/icon-64.png</file>
+        <file alias="icon-128.png">images/brand/icon-128.png</file>
+        <file alias="icon-256.png">images/brand/icon-256.png</file>
+        <file alias="banner-en.png">images/brand/banner-en.png</file>
+        <file alias="banner-en@2x.png">images/brand/banner-en@2x.png</file>
+        <file alias="banner-fr.png">images/brand/banner-fr.png</file>
+        <file alias="banner-fr@2x.png">images/brand/banner-fr@2x.png</file>
+        <file alias="banner-ar.png">images/brand/banner-ar.png</file>
+        <file alias="banner-ar@2x.png">images/brand/banner-ar@2x.png</file>
+        <file alias="banner-en-dark.png">images/brand/banner-en-dark.png</file>
+        <file alias="banner-en-dark@2x.png">images/brand/banner-en-dark@2x.png</file>
+        <file alias="banner-fr-dark.png">images/brand/banner-fr-dark.png</file>
+        <file alias="banner-fr-dark@2x.png">images/brand/banner-fr-dark@2x.png</file>
+        <file alias="banner-ar-dark.png">images/brand/banner-ar-dark.png</file>
+        <file alias="banner-ar-dark@2x.png">images/brand/banner-ar-dark@2x.png</file>
+    </qresource>
+</RCC>

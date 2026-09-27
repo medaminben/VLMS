@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Members — VLMS</title>
+<meta name="description" content="Find a member, read their status, and open their loans.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/members.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/members.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/members.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html" aria-current="page">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Members</h1>
+    <p class="summary">Find a member, read their status, and open their loans.</p>
+    <p>Members lists the people registered with the library. Archived members are on the <a href="archive.html">Archive</a> screen.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-overview.png"><img src="../assets/shots/en/mem-overview.png" alt="Members, with its filters, search, and buttons numbered." loading="lazy"></a><figcaption>Members, with its filters, search, and buttons numbered.</figcaption></figure>
+<ol><li>Status, from <span class="ui">All statuses</span>: <span class="ui">Active</span>, <span class="ui">Not active</span>, or both. See <a href="reference.html#member-status">Member status</a>.</li><li>Sex, from <span class="ui">All sexes</span>.</li><li>The year of inscription, from <span class="ui">All years</span>.</li><li>Age group, from <span class="ui">All age groups</span>: <span class="ui">Youth</span> or <span class="ui">Adults</span>.</li><li>City, from <span class="ui">All cities</span>.</li><li>Search, by name, membership number, phone, or occupation.</li><li><span class="ui">Loans</span> — every loan this member has ever had, archived loans included.</li><li>The details of the highlighted member.</li><li><span class="ui">Loans</span></li><li><span class="ui">Add Member</span></li><li><span class="ui">Edit</span></li><li><span class="ui">Delete</span></li></ol>
+<p>The filter lists have no headings. The first line of each, <span class="ui">All statuses</span>, <span class="ui">All sexes</span>, <span class="ui">All years</span>, <span class="ui">All age groups</span>, or <span class="ui">All cities</span>, says what it filters. Pick one or more entries under that line to narrow the list. The filters combine.</p>
+<p>Circulation and the Archive use the same lists to filter loans by their member. There the year is the year of the loan.</p>
+<h2 id="h-1">Details</h2>
+<p>The panel shows the membership number, the status, the last active day, and the contact fields, with the photograph and the identity image when they were stored.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-details.png"><img src="../assets/shots/en/mem-details.png" alt="Status and the last active day in the details." loading="lazy"></a><figcaption>Status and the last active day in the details.</figcaption></figure>
+<h2 id="h-2">Loans</h2>
+<p><span class="ui">Loans</span> opens this member's history, including loans that have been archived. It opens even when the member has never borrowed, and <span class="ui">Checkout</span> is there for an active member.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-loans-dialog.png"><img src="../assets/shots/en/mem-loans-dialog.png" alt="A member&#x27;s loans." loading="lazy"></a><figcaption>A member's loans.</figcaption></figure>
+<h2 id="h-3">Delete</h2>
+<p><span class="ui">Delete</span> archives the member. It is refused while any loan of theirs is still out. The message offers <span class="ui">Go to Loans</span>, which jumps to Circulation with that membership number filled in, so the copy can be returned first.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-delete-blocked.png"><img src="../assets/shots/en/mem-delete-blocked.png" alt="Delete refused, because a book is still out." loading="lazy"></a><figcaption>Delete refused, because a book is still out.</figcaption></figure>
+<p>Answer with <span class="ui">OK</span> to stay here. Registering and renewing are <a href="task-register-member.html">Register a member</a>. The rest of removal is <a href="task-remove-book.html">Remove</a>.</p>
+    <nav class="pager"><a class="prev" href="catalogue.html"><span>Previous</span>Catalogue</a><a class="next" href="circulation.html"><span>Next</span>Circulation</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

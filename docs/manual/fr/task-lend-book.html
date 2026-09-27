@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêter un ouvrage — VLMS</title>
+<meta name="description" content="Faire sortir un exemplaire depuis la Circulation, depuis un titre ou depuis un adhérent.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/task-lend-book.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-lend-book.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-lend-book.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Adhérents</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html" aria-current="page">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Prêter un ouvrage</h1>
+    <p class="summary">Faire sortir un exemplaire depuis la Circulation, depuis un titre ou depuis un adhérent.</p>
+    <p>Seul un adhérent <span class="ui">Actif</span> est proposé, et seul un exemplaire qui est sur le rayon. Le jour dû commence à 14 jours après le jour où l'exemplaire sort. Vous pouvez le changer avant <span class="ui">OK</span>. Voir <a href="reference.html#member-status">Statut d'un adhérent</a> et <a href="reference.html#loan-states">États d'un prêt</a>.</p>
+<h2 id="h-1">Depuis la Circulation</h2>
+<ol class="steps"><li><p><strong>Cliquez <span class="ui">Prêter</span>.</strong></p>
+<p>La fenêtre demande un adhérent et un exemplaire. Cherchez dans l'une ou l'autre liste si elle est longue.</p>
+<figure class="shot"><a href="../assets/shots/fr/lend-dialog.png"><img src="../assets/shots/fr/lend-dialog.png" alt="Prêter, avant qu&#x27;un adhérent et un exemplaire soient choisis." loading="lazy"></a><figcaption>Prêter, avant qu'un adhérent et un exemplaire soient choisis.</figcaption></figure></li><li><p><strong>Choisissez l'adhérent et l'exemplaire, puis <span class="ui">OK</span>.</strong></p>
+<figure class="shot"><a href="../assets/shots/fr/lend-filled.png"><img src="../assets/shots/fr/lend-filled.png" alt="Un adhérent et un exemplaire choisis." loading="lazy"></a><figcaption>Un adhérent et un exemplaire choisis.</figcaption></figure>
+<p><span class="ui">Annuler</span> laisse la Circulation inchangée.</p></li></ol>
+<h2 id="h-2">Depuis les prêts d'un ouvrage</h2>
+<p>Dans le Catalogue, surlignez le titre et cliquez <span class="ui">Prêts</span>. <span class="ui">Prêter</span> est là même quand le titre n'a jamais été emprunté. La liste d'exemplaires est seulement celle de ce titre, et il n'y a pas de recherche d'exemplaire.</p>
+<ol class="steps"><li><p><strong>Cliquez <span class="ui">Prêter</span> dans la fenêtre des prêts.</strong></p>
+<figure class="shot"><a href="../assets/shots/fr/lend-from-book.png"><img src="../assets/shots/fr/lend-from-book.png" alt="Prêter depuis un titre. La liste d&#x27;exemplaires est ce titre seul." loading="lazy"></a><figcaption>Prêter depuis un titre. La liste d'exemplaires est ce titre seul.</figcaption></figure></li></ol>
+<figure class="shot"><a href="../assets/shots/fr/lend-empty-history.png"><img src="../assets/shots/fr/lend-empty-history.png" alt="Un titre qui n&#x27;a jamais été emprunté. Prêter est quand même disponible." loading="lazy"></a><figcaption>Un titre qui n'a jamais été emprunté. Prêter est quand même disponible.</figcaption></figure>
+<p>Choisissez l'adhérent, confirmez l'exemplaire, et cliquez <span class="ui">OK</span>. <span class="ui">Fermer</span> quitte l'historique.</p>
+<h2 id="h-3">Depuis les prêts d'un adhérent</h2>
+<p>Dans les Adhérents, surlignez l'adhérent et cliquez <span class="ui">Prêts</span>, puis <span class="ui">Prêter</span>. L'adhérent est montré comme un nom, pas comme une recherche. Vous choisissez l'exemplaire.</p>
+<figure class="shot"><a href="../assets/shots/fr/lend-from-member.png"><img src="../assets/shots/fr/lend-from-member.png" alt="Prêter depuis un adhérent. L&#x27;adhérent est déjà choisi." loading="lazy"></a><figcaption>Prêter depuis un adhérent. L'adhérent est déjà choisi.</figcaption></figure>
+<h3 id="h-4">Et si…</h3>
+<ul><li>Aucun exemplaire de ce titre n'est sur le rayon. La liste d'exemplaires le dit, et <span class="ui">OK</span> reste indisponible.</li><li>L'adhérent est <span class="ui">Inactif</span>. Il n'est pas dans la liste des adhérents. Renouvelez-le d'abord. Voir <a href="task-register-member.html">Inscrire un adhérent</a>.</li><li>Le jour dû est avant le jour où l'exemplaire sort. La fenêtre le refuse.</li></ul>
+    <nav class="pager"><a class="prev" href="task-register-member.html"><span>Précédent</span>Inscrire un adhérent</a><a class="next" href="task-return-extend.html"><span>Suivant</span>Retourner ou prolonger</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

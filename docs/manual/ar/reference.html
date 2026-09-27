@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المرجع — VLMS</title>
+<meta name="description" content="الحقول، والحالة، وحالات الإعارة، والرقم المحلي.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>دليل الاستخدام</small></a>
+  <nav class="langs" aria-label="اللغة"><a href="../ar/reference.html" lang="ar" aria-current="true"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/reference.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/reference.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="المحتويات">
+    <h2>المحتويات</h2>
+    <ol><li><a href="index.html">البداية</a></li><li><a href="getting-started.html">البداية مع النافذة</a></li><li><a href="catalogue.html">الفهرس</a></li><li><a href="members.html">الأعضاء</a></li><li><a href="circulation.html">الإعارة</a></li><li><a href="archive.html">الأرشيف</a></li><li><a href="metrics.html">المؤشرات</a></li><li><a href="task-add-book.html">إضافة كتاب</a></li><li><a href="task-register-member.html">تسجيل عضو</a></li><li><a href="task-lend-book.html">إعارة كتاب</a></li><li><a href="task-return-extend.html">الإرجاع والتمديد</a></li><li><a href="task-remove-book.html">الإزالة</a></li><li><a href="task-reuse-number.html">إعادة استعمال رقم محلي</a></li><li><a href="reference.html" aria-current="page">المرجع</a></li></ol>
+  </nav>
+  <main>
+    <h1>المرجع</h1>
+    <p class="summary">الحقول، والحالة، وحالات الإعارة، والرقم المحلي.</p>
+    <h2 id="fields-book">حقول الكتاب</h2>
+<p>تبويب الكتاب:</p>
+<ul><li><span class="ui">العنوان</span> — مطلوب.</li><li><span class="ui">المؤلف</span></li><li><span class="ui">الناشر</span></li><li><span class="ui">التصنيف</span> — واحد، أو <span class="ui">(بدون)</span>. <span class="ui">التصنيفات…</span> تفتح قائمة التصنيفات.</li><li><span class="ui">ISBN</span></li><li><span class="ui">تاريخ النشر</span></li><li><span class="ui">مكان النشر</span></li><li><span class="ui">الصفحات</span></li><li><span class="ui">اللغة</span> — مطلوبة. عربي، فرنسي، إنجليزي، وبقية اللغات المعروضة، أو لغة أخرى تُكتب.</li><li><span class="ui">الأبعاد</span></li><li><span class="ui">الوصف</span> — <span class="ui">من صورة</span> يستطيع ملء هذا، والعنوان والمؤلف، من صورة واضحة للكتاب. قد يكون غير متاح.</li><li><span class="ui">الغلاف</span> — <span class="ui">اختيار صورة الغلاف…</span></li></ul>
+<p>تبويب النسخ، سطر لكل نسخة:</p>
+<ul><li><span class="ui">الرقم المحلي</span> — رقم المكتبة لهذه النسخة. انظر <a href="#local-number">الأرقام المحلية</a>.</li><li><span class="ui">الرقم العام</span> — يُملأ من الرقم المحلي حين تُحفظ النسخة.</li><li><span class="ui">الرصيد</span> — عربي أو أجنبي، تبعاً للغة الكتاب.</li><li><span class="ui">الرقم المركزي</span> — الرقم الوطني، إذا كان للنسخة واحد. المكتبة لا تنشئه.</li><li><span class="ui">التصنيف</span></li><li><span class="ui">الموضوع</span></li><li><span class="ui">الفهرس</span></li><li><span class="ui">المكان</span></li><li><span class="ui">الجرد</span></li><li><span class="ui">التعويض</span></li><li><span class="ui">ملاحظات</span></li><li><span class="ui">الحالة</span></li></ul>
+<p><span class="ui">إضافة نسخة</span> تضيف سطراً. <span class="ui">حذف النسخة</span> يؤرشف السطر المظلّل. النسخة التي ما زالت خارجة لا تُحذف.</p>
+<h2 id="fields-member">حقول العضو</h2>
+<ul><li><span class="ui">رقم العضوية</span> — يعطيه التطبيق، ولا يُعدَّل.</li><li><span class="ui">الحالة</span> — <span class="ui">نشط</span> أو <span class="ui">غير نشط</span>. انظر <a href="#member-status">حالة العضو</a>.</li><li><span class="ui">نشط حتى</span> — آخر يوم يكون فيه العضو نشطاً. التطبيق يضعه. أنت تقرأه.</li><li><span class="ui">الاسم</span> — مطلوب.</li><li><span class="ui">اللقب</span> — مطلوب.</li><li><span class="ui">تاريخ الميلاد</span> — مطلوب، يُختار يوماً ثم شهراً ثم سنة. الفئة العمرية تتبعه: دون الثلاثين <span class="ui">شباب</span>، وعيد الميلاد الثلاثين <span class="ui">كهول</span>. التاريخ المستقبل يُرفض.</li><li><span class="ui">الجنس</span></li><li><span class="ui">المهنة</span></li><li><span class="ui">البريد الإلكتروني</span></li><li><span class="ui">الهاتف</span></li><li><span class="ui">العنوان</span></li><li><span class="ui">المدينة</span></li><li><span class="ui">الصورة</span> — <span class="ui">اختيار صورة…</span></li><li><span class="ui">صورة الهوية</span> — <span class="ui">اختيار صورة الهوية…</span></li><li><span class="ui">ملاحظات</span></li></ul>
+<h2 id="member-status">حالة العضو</h2>
+<p>العضو <span class="ui">نشط</span> في يوم إذا كان <span class="ui">نشط حتى</span> ذلك اليوم أو يوماً بعده. وإلا فالعضو <span class="ui">غير نشط</span>.</p>
+<figure class="shot"><a href="../assets/shots/ar/mem-details.png"><img src="../assets/shots/ar/mem-details.png" alt="التفاصيل، حيث تُقرأ الحالة وآخر يوم نشاط." loading="lazy"></a><figcaption>التفاصيل، حيث تُقرأ الحالة وآخر يوم نشاط.</figcaption></figure>
+<p>تسجيل عضو، أو إعادة الحالة إلى <span class="ui">نشط</span>، يضع آخر يوم نشاط بعد سنة ناقص يوم. اختيار <span class="ui">غير نشط</span> ينهيه أمس. لا يستعير إلا عضو <span class="ui">نشط</span>. إعارة شاشة الإعارة لا تعرض أحداً غيره.</p>
+<p>لا شيء يغيّر الحالة من تلقاء نفسه حين يمضي آخر يوم نشاط. في المرة التالية التي يُفتح فيها العضو، الحالة تقرأ <span class="ui">غير نشط</span> من قبل.</p>
+<h2 id="loan-states">حالات الإعارة</h2>
+<p>الإعارة في واحدة من هذه الحالات الثلاث.</p>
+<ul><li><span class="ui">مفتوحة</span> — لم تُرجع، والاستحقاق اليوم أو بعده.</li><li><span class="ui">متأخرة</span> — لم تُرجع، ويوم الاستحقاق مضى.</li><li><span class="ui">مُرجَعة</span> — النسخة عادت.</li></ul>
+<p><span class="ui">مفتوحة</span> لا تشمل <span class="ui">متأخرة</span>. مرشّح الإعارة وبلاطة المؤشرات بالاسم نفسه يتبعان هذا التقسيم.</p>
+<figure class="shot"><a href="../assets/shots/ar/circ-overdue.png"><img src="../assets/shots/ar/circ-overdue.png" alt="الإعارة مقصورة على الإعارات المتأخرة." loading="lazy"></a><figcaption>الإعارة مقصورة على الإعارات المتأخرة.</figcaption></figure>
+<p>الإعارة 14 يوماً، من اليوم الذي تخرج فيه النسخة. يمكن تغيير يوم الاستحقاق قبل حفظ الإعارة، ومرة أخرى بـ<span class="ui">تمديد</span> ما دامت النسخة خارجة.</p>
+<h2 id="live-archived">حي، ومؤرشف، ومحذوف نهائياً</h2>
+<p>السجل الحي في الفهرس أو الأعضاء أو الإعارة. <span class="ui">حذف</span> يؤرشفه: يغادر تلك القائمة ويذهب إلى الأرشيف. يمكن أن يعود بـ<span class="ui">استرجاع</span>.</p>
+<p><span class="ui">حذف نهائي</span> لا يوجد إلا في الأرشيف، وفقط بعد أن يسمح <a href="archive.html#purge-order">الترتيب</a>. بعد ذلك السجل زال ولا يمكن استرجاعه.</p>
+<p>الإعارة المؤرشفة ما زالت تُحسب. ما زالت تمنع حذف عضو أو نسخة نهائياً، وما زالت تظهر في سجل <span class="ui">الإعارات</span> لكتاب أو لعضو.</p>
+<h2 id="local-number">الأرقام المحلية</h2>
+<p>الرقم المحلي هو رقم دخول المكتبة لنسخة. هو فريد بين النسخ الحية في الرصيد نفسه. الرقم المركزي هو الرقم الوطني للنسخة. المكتبة لا تنشئه، وهو ليس الرقم المحلي.</p>
+<p>إذا كان للعنوان عدة نسخ، الخلية تبدأ برقم وتعدّ الباقي بين قوسين. الرقم الأول وحده هو الملوّن.</p>
+<figure class="shot"><a href="../assets/shots/ar/cat-copy-colours.png"><img src="../assets/shots/ar/cat-copy-colours.png" alt="رقم أخضر على الرف، ورقم أحمر مائل خارج." loading="lazy"></a><figcaption>رقم أخضر على الرف، ورقم أحمر مائل خارج.</figcaption></figure>
+<p>الأخضر على الرف. الأحمر والخط المائل خارجان. الخط المائل هو العلامة التي تبقى في الطباعة الرمادية، ولمن لا يميّز الأحمر من الأخضر.</p>
+<p>الرقم التالي يُقترح لنسخة جديدة. الأرقام الحرة، التي تركتها فجوات أقدم، في القائمة نفسها ولا تُؤخذ إلا إذا اخترتها. الرقم الذي ما زال على نسخة مؤرشفة يُستعاد من الأرشيف. انظر <a href="task-reuse-number.html">إعادة استعمال رقم محلي</a>.</p>
+    <nav class="pager"><a class="prev" href="task-reuse-number.html"><span>السابق</span>إعادة استعمال رقم محلي</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

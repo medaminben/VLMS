@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adhérents — VLMS</title>
+<meta name="description" content="Qui peut emprunter, et jusqu&#x27;à quand.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/members.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/members.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/members.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html" aria-current="page">Adhérents</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Adhérents</h1>
+    <p class="summary">Qui peut emprunter, et jusqu&#x27;à quand.</p>
+    <p>Les Adhérents sont les personnes encore inscrites. Le statut et le dernier jour actif disent si la personne peut emprunter aujourd'hui.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-overview.png"><img src="../assets/shots/fr/mem-overview.png" alt="Les Adhérents, avec les filtres et les boutons numérotés." loading="lazy"></a><figcaption>Les Adhérents, avec les filtres et les boutons numérotés.</figcaption></figure>
+<ol><li>Le statut, à partir de <span class="ui">Tous les statuts</span> : <span class="ui">Actif</span>, <span class="ui">Inactif</span>, ou les deux. Voir <a href="reference.html#member-status">Statut d'un adhérent</a>.</li><li>Le sexe, à partir de <span class="ui">Tous les sexes</span>.</li><li>L'année d'inscription, à partir de <span class="ui">Toutes les années</span>.</li><li>La tranche d'âge, à partir de <span class="ui">Toutes les tranches d'âge</span> : <span class="ui">Jeunes</span> ou <span class="ui">Adultes</span>.</li><li>La ville, à partir de <span class="ui">Toutes les villes</span>.</li><li>La recherche.</li><li><span class="ui">Prêts</span> — chaque prêt que cet adhérent a eu, y compris les prêts archivés.</li><li>Le détail.</li><li><span class="ui">Prêts</span></li><li><span class="ui">Ajouter un adhérent</span></li><li><span class="ui">Modifier</span></li><li><span class="ui">Supprimer</span></li></ol>
+<p>Les listes de filtres n'ont pas de titre. La première ligne de chacune, <span class="ui">Tous les statuts</span>, <span class="ui">Tous les sexes</span>, <span class="ui">Toutes les années</span>, <span class="ui">Toutes les tranches d'âge</span> ou <span class="ui">Toutes les villes</span>, dit ce qu'elle filtre. Choisissez une ou plusieurs lignes sous celle-là pour réduire la liste. Les filtres se combinent.</p>
+<p>La Circulation et les Archives reprennent ces listes pour filtrer les prêts par adhérent. L'année y est celle du prêt.</p>
+<p>La recherche suit le nom, le numéro d'adhésion, le téléphone, la ville et la profession.</p>
+<h2 id="h-1">Détail</h2>
+<p>Le panneau montre le statut, le dernier jour actif, et la photo quand il y en a une. L'image de la pièce d'identité est là aussi, quand elle a été enregistrée.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-details.png"><img src="../assets/shots/fr/mem-details.png" alt="Le détail d&#x27;un adhérent, avec le statut et le dernier jour actif." loading="lazy"></a><figcaption>Le détail d'un adhérent, avec le statut et le dernier jour actif.</figcaption></figure>
+<p>Voir <a href="reference.html#member-status">Statut d'un adhérent</a>.</p>
+<h2 id="h-2">Prêts</h2>
+<p><span class="ui">Prêts</span> ouvre l'historique de cet adhérent, y compris les prêts qui ont été archivés. Il s'ouvre même quand l'adhérent n'a jamais emprunté, et <span class="ui">Prêter</span> est là pour un adhérent actif.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-loans-dialog.png"><img src="../assets/shots/fr/mem-loans-dialog.png" alt="Les prêts d&#x27;un adhérent." loading="lazy"></a><figcaption>Les prêts d'un adhérent.</figcaption></figure>
+<h2 id="h-3">Supprimer</h2>
+<p><span class="ui">Supprimer</span> archive l'adhérent. C'est refusé tant qu'un prêt de cette personne est encore sorti. Le message propose <span class="ui">Aller aux prêts</span>, qui ouvre la Circulation avec ce numéro d'adhésion déjà rempli, pour que l'exemplaire puisse d'abord revenir.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-delete-blocked.png"><img src="../assets/shots/fr/mem-delete-blocked.png" alt="Supprimer refusé tant qu&#x27;un ouvrage est encore sorti." loading="lazy"></a><figcaption>Supprimer refusé tant qu'un ouvrage est encore sorti.</figcaption></figure>
+<p>Répondez avec <span class="ui">OK</span> pour rester ici. L'inscription et le renouvellement sont <a href="task-register-member.html">Inscrire un adhérent</a>. Le reste du retrait est <a href="task-remove-book.html">Retirer</a>.</p>
+    <nav class="pager"><a class="prev" href="catalogue.html"><span>Précédent</span>Catalogue</a><a class="next" href="circulation.html"><span>Suivant</span>Circulation</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

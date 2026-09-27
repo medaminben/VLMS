@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive — VLMS</title>
+<meta name="description" content="What Delete put aside, and what can be restored or removed for good.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/archive.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/archive.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/archive.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html" aria-current="page">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Archive</h1>
+    <p class="summary">What Delete put aside, and what can be restored or removed for good.</p>
+    <p>Delete archives. The title, the copy, the member, or the loan leaves the live list and appears here. It can be restored. It is not destroyed until <span class="ui">Permanently remove</span>, and only when the <a href="#purge-order">order</a> below allows it.</p>
+<p>The type list on the left chooses what you are looking at: <span class="ui">Members</span>, <span class="ui">Books</span>, <span class="ui">Copies</span>, or <span class="ui">Loans</span>. Search works the same way as on the live screens.</p>
+<p>The filters under the type list change with the type, and changing the type puts them back on <span class="ui">All</span>.</p>
+<ul><li><span class="ui">Members</span> and <span class="ui">Loans</span> have the member filters from <a href="members.html">Members</a>. For a loan, they filter by the member who borrowed it, and the year is the year the loan was made.</li><li><span class="ui">Books</span> and <span class="ui">Copies</span> have the language, category, and cover filters from the <a href="catalogue.html">Catalogue</a>. A copy is filtered by the title it belongs to.</li></ul>
+<h2 id="h-1">Books</h2>
+<figure class="shot"><a href="../assets/shots/en/arc-books.png"><img src="../assets/shots/en/arc-books.png" alt="Archived books. The Copies column is how many archived copies the title still has." loading="lazy"></a><figcaption>Archived books. The Copies column is how many archived copies the title still has.</figcaption></figure>
+<ol><li>The type list.</li><li>The Catalogue's filters: language, category, and cover.</li><li>Search.</li><li><span class="ui">Archived copies</span> — copies still attached to the title. A title can be permanently removed only when this is zero.</li><li>The cover, or the placeholder when there is none.</li><li><span class="ui">Restore</span></li><li><span class="ui">Permanently remove</span></li></ol>
+<h2 id="h-2">Copies</h2>
+<figure class="shot"><a href="../assets/shots/en/arc-copies.png"><img src="../assets/shots/en/arc-copies.png" alt="Archived copies. Reuse local number is available when the copy still holds a number." loading="lazy"></a><figcaption>Archived copies. Reuse local number is available when the copy still holds a number.</figcaption></figure>
+<ol><li>The Catalogue's filters, applied to the title each copy belongs to.</li><li>The cover of that title.</li><li><span class="ui">Loans</span> — every loan of this copy, including archived loans. Permanent removal needs a zero here.</li><li><span class="ui">Reuse local number</span> — gives that number to a new or existing title. See <a href="task-reuse-number.html">Reuse a local number</a>.</li></ol>
+<h2 id="h-3">Loans</h2>
+<figure class="shot"><a href="../assets/shots/en/arc-loans.png"><img src="../assets/shots/en/arc-loans.png" alt="Archived loans." loading="lazy"></a><figcaption>Archived loans.</figcaption></figure>
+<ol><li>The member filters, for the member who borrowed.</li><li>The cover of the borrowed title.</li><li>The member's photograph, or <span class="ui">No photo</span>.</li></ol>
+<p>Under the pictures are the member, the membership number, the copy, the day it came back, the day it was archived, and the loan's notes.</p>
+<p>A loan can be restored, or permanently removed at any time. Removing it does not put the copy back on the shelf: the copy was already returned, or it was archived with its title.</p>
+<h2 id="h-4">Members</h2>
+<figure class="shot"><a href="../assets/shots/en/arc-members.png"><img src="../assets/shots/en/arc-members.png" alt="Archived members. The Loans column counts every loan, archived ones included." loading="lazy"></a><figcaption>Archived members. The Loans column counts every loan, archived ones included.</figcaption></figure>
+<ol><li>The member filters.</li><li>The member's photograph, or <span class="ui">No photo</span>.</li><li><span class="ui">Loans</span></li><li><span class="ui">Loans</span> — the member's loan history.</li></ol>
+<p>A member can be permanently removed only when this column is zero.</p>
+<h2 id="h-5">Loan history</h2>
+<p><span class="ui">Loans</span> sits after the search on the <span class="ui">Members</span>, <span class="ui">Books</span>, and <span class="ui">Copies</span> lists. It opens every loan of the highlighted member, title, or copy, archived loans included: the member, the membership number, the copy, the dates, the status, and when the loan was archived. The history is only for reading; nothing can be lent or returned from it. The button is grey when the row has never been lent.</p>
+<h2 id="h-6">Restore</h2>
+<p>Highlight a row, or tick several, and choose <span class="ui">Restore</span>. The confirmation names what will return to the live lists. <span class="ui">No</span> leaves the Archive unchanged.</p>
+<figure class="shot"><a href="../assets/shots/en/arc-restore-confirm.png"><img src="../assets/shots/en/arc-restore-confirm.png" alt="The Restore confirmation." loading="lazy"></a><figcaption>The Restore confirmation.</figcaption></figure>
+<p>Ticks work here as on every list. See <a href="getting-started.html#ticks">Ticks</a>.</p>
+<h2 id="purge-order">Permanently remove</h2>
+<p><span class="ui">Permanently remove</span> asks once, then deletes the record. It cannot be undone.</p>
+<figure class="shot"><a href="../assets/shots/en/arc-purge-confirm.png"><img src="../assets/shots/en/arc-purge-confirm.png" alt="Permanently remove, for one loan." loading="lazy"></a><figcaption>Permanently remove, for one loan.</figcaption></figure>
+<aside class="warning"><p>Permanent removal cannot be restored. Archive first, and remove for good only when you are sure.</p></aside>
+<p>The application allows it in this order:</p>
+<ol><li>A loan, at any time.</li><li>A copy, only when <span class="ui">Loans</span> is zero. An archived loan still counts.</li><li>A book, only when <span class="ui">Archived copies</span> is zero. Remove or restore its copies first.</li><li>A member, only when <span class="ui">Loans</span> is zero.</li></ol>
+<p><span class="ui">No</span> on the confirmation leaves the record in the Archive.</p>
+    <nav class="pager"><a class="prev" href="circulation.html"><span>Previous</span>Circulation</a><a class="next" href="metrics.html"><span>Next</span>Metrics</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

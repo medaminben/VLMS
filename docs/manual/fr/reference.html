@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Référence — VLMS</title>
+<meta name="description" content="Les champs, le statut, les états d&#x27;un prêt, et le numéro local.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/reference.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/reference.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/reference.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Adhérents</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html" aria-current="page">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Référence</h1>
+    <p class="summary">Les champs, le statut, les états d&#x27;un prêt, et le numéro local.</p>
+    <h2 id="fields-book">Champs d'un ouvrage</h2>
+<p>L'onglet Ouvrage :</p>
+<ul><li><span class="ui">Titre</span> — obligatoire.</li><li><span class="ui">Auteur</span></li><li><span class="ui">Éditeur</span></li><li><span class="ui">Catégorie</span> — une au choix, ou <span class="ui">(aucune)</span>. <span class="ui">Catégories…</span> ouvre la liste des catégories.</li><li><span class="ui">ISBN</span></li><li><span class="ui">Date de publication</span></li><li><span class="ui">Lieu de publication</span></li><li><span class="ui">Pages</span></li><li><span class="ui">Langue</span> — obligatoire. Arabe, Français, Anglais, et les autres langues listées, ou une autre langue saisie.</li><li><span class="ui">Dimensions</span></li><li><span class="ui">Description</span> — <span class="ui">Depuis une image</span> peut remplir ceci, ainsi que le titre et l'auteur, depuis une photographie nette de l'ouvrage. Cela peut être indisponible.</li><li><span class="ui">Couverture</span> — <span class="ui">Choisir une couverture…</span></li></ul>
+<p>L'onglet Exemplaires, une ligne par exemplaire :</p>
+<ul><li><span class="ui">N° local</span> — le numéro propre à la bibliothèque pour cet exemplaire. Voir <a href="#local-number">Numéros locaux</a>.</li><li><span class="ui">N° global</span> — rempli à partir du numéro local quand l'exemplaire est enregistré.</li><li><span class="ui">Fonds</span> — Arabe ou Étranger, selon la langue de l'ouvrage.</li><li><span class="ui">N° central</span> — le numéro national, quand l'exemplaire en a un. La bibliothèque ne le crée pas.</li><li><span class="ui">Cote</span></li><li><span class="ui">Matière</span></li><li><span class="ui">Index</span></li><li><span class="ui">Emplacement</span></li><li><span class="ui">Inventaire</span></li><li><span class="ui">Compensation</span></li><li><span class="ui">Remarques</span></li><li><span class="ui">État</span></li></ul>
+<p><span class="ui">Ajouter un exemplaire</span> ajoute une ligne. <span class="ui">Supprimer l'exemplaire</span> archive la ligne surlignée. Un exemplaire encore sorti ne peut pas être retiré.</p>
+<h2 id="fields-member">Champs d'un adhérent</h2>
+<ul><li><span class="ui">Numéro d'adhésion</span> — donné par l'application, et non modifié.</li><li><span class="ui">Statut</span> — <span class="ui">Actif</span> ou <span class="ui">Inactif</span>. Voir <a href="#member-status">Statut d'un adhérent</a>.</li><li><span class="ui">Actif jusqu'au</span> — le dernier jour où l'adhérent est actif. L'application le pose. Vous le lisez.</li><li><span class="ui">Prénom</span> — obligatoire.</li><li><span class="ui">Nom</span> — obligatoire.</li><li><span class="ui">Date de naissance</span> — obligatoire, choisie en jour, mois et année. La tranche d'âge en découle : moins de 30 ans est <span class="ui">Jeunes</span>, et le 30e anniversaire est <span class="ui">Adultes</span>. Une date future est refusée.</li><li><span class="ui">Sexe</span></li><li><span class="ui">Profession</span></li><li><span class="ui">E-mail</span></li><li><span class="ui">Téléphone</span></li><li><span class="ui">Adresse</span></li><li><span class="ui">Ville</span></li><li><span class="ui">Photo</span> — <span class="ui">Choisir une photo…</span></li><li><span class="ui">Pièce d'identité</span> — <span class="ui">Choisir une pièce d'identité…</span></li><li><span class="ui">Notes</span></li></ul>
+<h2 id="member-status">Statut d'un adhérent</h2>
+<p>Un adhérent est <span class="ui">Actif</span> un jour donné quand <span class="ui">Actif jusqu'au</span> est ce jour ou un jour plus tard. Sinon l'adhérent est <span class="ui">Inactif</span>.</p>
+<figure class="shot"><a href="../assets/shots/fr/mem-details.png"><img src="../assets/shots/fr/mem-details.png" alt="Le détail, où le statut et le dernier jour actif se lisent." loading="lazy"></a><figcaption>Le détail, où le statut et le dernier jour actif se lisent.</figcaption></figure>
+<p>Inscrire un adhérent, ou remettre le statut sur <span class="ui">Actif</span>, pose le dernier jour actif à un an moins un jour. Choisir <span class="ui">Inactif</span> le termine hier. Seul un adhérent <span class="ui">Actif</span> peut emprunter. Le prêt de la Circulation ne propose personne d'autre.</p>
+<p>Rien ne change le statut tout seul quand le dernier jour actif passe. La prochaine fois que l'adhérent est ouvert, le statut indique déjà <span class="ui">Inactif</span>.</p>
+<h2 id="loan-states">États d'un prêt</h2>
+<p>Un prêt est dans un seul de ces trois états.</p>
+<ul><li><span class="ui">Ouverts</span> — pas retourné, et dû aujourd'hui ou plus tard.</li><li><span class="ui">En retard</span> — pas retourné, et le jour dû est passé.</li><li><span class="ui">Retournés</span> — l'exemplaire est revenu.</li></ul>
+<p><span class="ui">Ouverts</span> n'inclut pas <span class="ui">En retard</span>. Le filtre de la Circulation et la tuile des Indicateurs du même nom suivent ce partage.</p>
+<figure class="shot"><a href="../assets/shots/fr/circ-overdue.png"><img src="../assets/shots/fr/circ-overdue.png" alt="La Circulation réduite aux prêts en retard." loading="lazy"></a><figcaption>La Circulation réduite aux prêts en retard.</figcaption></figure>
+<p>Un prêt dure 14 jours, à compter du jour où l'exemplaire sort. Le jour dû peut être changé avant d'enregistrer le prêt, et encore avec <span class="ui">Prolonger</span> tant que l'exemplaire est sorti.</p>
+<h2 id="live-archived">En service, archivé, retiré</h2>
+<p>Une fiche en service est dans le Catalogue, les Adhérents ou la Circulation. <span class="ui">Supprimer</span> l'archive : elle quitte cette liste et va aux Archives. Elle peut revenir avec <span class="ui">Restaurer</span>.</p>
+<p><span class="ui">Suppression définitive</span> n'existe que dans les Archives, et seulement une fois que l'<a href="archive.html#purge-order">ordre</a> le permet. Après cela la fiche a disparu et ne peut pas être restaurée.</p>
+<p>Un prêt archivé compte encore. Il empêche encore un adhérent ou un exemplaire d'être retiré pour de bon, et il apparaît encore dans l'historique <span class="ui">Prêts</span> d'un ouvrage ou d'un adhérent.</p>
+<h2 id="local-number">Numéros locaux</h2>
+<p>Le numéro local est le numéro d'entrée de la bibliothèque pour un exemplaire. Il est unique parmi les exemplaires encore en service d'un même fonds. Le numéro central est le numéro national de l'exemplaire. La bibliothèque ne le crée pas, et il n'est pas le numéro local.</p>
+<p>Quand un titre a plusieurs exemplaires, la cellule mène avec un numéro et compte les autres entre parenthèses. Seul le numéro de tête est coloré.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-copy-colours.png"><img src="../assets/shots/fr/cat-copy-colours.png" alt="Un numéro vert sur le rayon, et un numéro rouge en italique qui est sorti." loading="lazy"></a><figcaption>Un numéro vert sur le rayon, et un numéro rouge en italique qui est sorti.</figcaption></figure>
+<p>Le vert est sur le rayon. Le rouge et l'italique sont sortis. L'italique est le repère qui reste en impression grise, et pour un lecteur qui ne distingue pas le rouge du vert.</p>
+<p>Le prochain numéro est proposé pour un exemplaire neuf. Les numéros libres, laissés par des trous plus anciens, sont dans la même liste et ne sont pris que si vous les choisissez. Un numéro qui reste sur un exemplaire archivé se reprend depuis les Archives. Voir <a href="task-reuse-number.html">Réutiliser un numéro local</a>.</p>
+    <nav class="pager"><a class="prev" href="task-reuse-number.html"><span>Précédent</span>Réutiliser un numéro local</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

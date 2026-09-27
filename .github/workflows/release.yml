@@ -1,0 +1,86 @@
+name: Release
+
+# A merge into main releases itself: scripts/release/release.py decides the
+# level from the diff since the latest vX.Y.Z tag, tags the merge commit with
+# the entry as its message, and this workflow publishes the GitHub release and
+# the installer built from that tag. Nothing is committed, so Beta never falls
+# behind. See docs/superpowers/specs/2026-09-24-automatic-versioning-design.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time, and never cancelled halfway: a cancelled run could
+# leave a tag without its release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Prints nothing when only docs, tests or CI changed. On a re-run of a
+      # commit that is already tagged it prints that tag's version instead of
+      # cutting a new one, so a retry never skips a number.
+      - name: Cut the tag
+        id: tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          version="$(python3 scripts/release/release.py tag)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if [ -n "$version" ]; then
+            git push origin "v${version}"
+            echo "Releasing ${version}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nothing to release: only docs, tests or CI changed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Create the GitHub release
+        if: steps.tag.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          python3 scripts/release/release.py notes "$VERSION" > notes.md
+          python3 scripts/release/release.py changelog --out CHANGELOG.md
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release edit "v${VERSION}" --notes-file notes.md
+          else
+            gh release create "v${VERSION}" --verify-tag --latest \
+              --title "VLMS ${VERSION}" --notes-file notes.md
+          fi
+          gh release upload "v${VERSION}" CHANGELOG.md --clobber
+
+  installer:
+    needs: tag
+    if: needs.tag.outputs.version != ''
+    uses: ./.github/workflows/windows-installer.yml
+    with:
+      tag: v${{ needs.tag.outputs.version }}
+    secrets: inherit
+
+  publish:
+    needs: [tag, installer]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: VLMS_Setup
+          path: dist
+
+      - name: Attach the installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "v${{ needs.tag.outputs.version }}" dist/VLMS_Setup_*.exe --clobber
