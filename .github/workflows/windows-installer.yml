@@ -1,0 +1,203 @@
+name: Windows installer
+
+# Releases call this from release.yml with the tag they just cut. A tag push
+# no longer starts it: release.yml pushes tags with GITHUB_TOKEN, which starts
+# no workflows, and a second build of the same tag would only race the first.
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: Upload .exe to the latest GitHub release
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      tag:
+        description: The vX.Y.Z tag to build
+        type: string
+        required: true
+
+# One build at a time; a new run replaces any in-progress run.
+concurrency:
+  group: windows-installer
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: "6.8.1"
+  QT_ARCH: win64_mingw
+  QT_HOST: windows
+  QT_TARGET: desktop
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      # Full history: the version comes from the latest vX.Y.Z tag and the
+      # "What's new" box from every tag's message.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup MSYS2 (MinGW OCR + sqlite3 + objdump)
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-binutils
+            mingw-w64-x86_64-sqlite3
+            mingw-w64-x86_64-tesseract-ocr
+            mingw-w64-x86_64-leptonica
+            mingw-w64-x86_64-tesseract-data-eng
+            mingw-w64-x86_64-tesseract-data-fra
+            mingw-w64-x86_64-tesseract-data-ara
+
+      - name: Cache OCR bundle
+        uses: actions/cache@v4
+        id: ocr-cache
+        with:
+          path: third_party/tesseract/windows
+          key: vlms-ocr-mingw-v3-${{ hashFiles('scripts/setup_windows_ocr_ci.ps1', 'scripts/fetch_windows_ocr.ps1', 'scripts/pe_dll_deps.ps1') }}
+          restore-keys: |
+            vlms-ocr-mingw-v3-
+
+      # What the cache holds is the release asset, so the key has to follow the
+      # release asset. Keying on the schema alone was not enough: correcting a
+      # few catalogue rows leaves schema.sql untouched, the key stays put, and
+      # fetch_installer_data.ps1 -- which skips the download whenever a database
+      # is already on disk -- hands the build a catalogue that was superseded
+      # hours earlier. The run goes green either way, which is what makes it
+      # worth guarding. The schema hash stays in the key as well, so a migration
+      # still invalidates the cache even if nobody re-uploads the zip.
+      - name: Resolve installer data asset
+        id: installer-data-asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The data zip lives on v0.1.0 for good; releases cut by release.yml
+          # carry only the installer and CHANGELOG.md.
+          stamp="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/v0.1.0" \
+            --jq '.assets[] | select(.name == "VLMS_installer_data.zip") | "\(.id)-\(.updated_at)"' \
+            2>/dev/null || true)"
+          # No release, no asset, or an override URL that the cache cannot
+          # describe: fall back to a key that never hits, so the fetch step
+          # runs and decides for itself.
+          if [ -z "$stamp" ] || [ -n "${VLMS_INSTALLER_DATA_URL:-}" ]; then
+            stamp="uncacheable-${GITHUB_RUN_ID}"
+          fi
+          echo "stamp=$(printf '%s' "$stamp" | tr -c '[:alnum:]-' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache installer runtime data
+        uses: actions/cache@v4
+        id: installer-data-cache
+        with:
+          path: |
+            database/vlms.db
+            resources/books
+            resources/members
+          key: vlms-installer-data-schema${{ hashFiles('database/schema.sql') }}-asset${{ steps.installer-data-asset.outputs.stamp }}
+
+      - name: Remove stale MSVC Qt cache tree
+        shell: pwsh
+        run: |
+          $qtRoot = Join-Path $env:RUNNER_WORKSPACE 'Qt'
+          if (-not (Test-Path $qtRoot)) {
+            Write-Host "No Qt directory to clean."
+            exit 0
+          }
+          Get-ChildItem $qtRoot -Directory -Recurse -Depth 2 -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match 'msvc' } |
+            ForEach-Object {
+              Write-Host "Removing stale MSVC Qt kit: $($_.FullName)"
+              Remove-Item $_.FullName -Recurse -Force
+            }
+
+      - name: Setup Qt (MinGW)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: ${{ env.QT_HOST }}
+          target: ${{ env.QT_TARGET }}
+          arch: ${{ env.QT_ARCH }}
+          tools: tools_mingw1310
+          add-tools-to-path: true
+          cache: true
+          cache-key-prefix: vlms-qt-mingw-681
+
+      - name: Verify Qt kit is MinGW
+        shell: pwsh
+        run: |
+          Write-Host "QT_ROOT_DIR=$env:QT_ROOT_DIR"
+          Write-Host "IQTA_TOOLS=$env:IQTA_TOOLS"
+          if ($env:QT_ROOT_DIR -notmatch 'mingw') {
+            throw "Expected Qt mingw_64 kit, got: $env:QT_ROOT_DIR"
+          }
+          $windeploy = Join-Path $env:QT_ROOT_DIR 'bin\windeployqt.exe'
+          if (-not (Test-Path $windeploy)) {
+            throw "windeployqt.exe not found at $windeploy"
+          }
+          $msvcQt = Join-Path $env:RUNNER_WORKSPACE "Qt\$env:QT_VERSION\msvc2022_64"
+          if (Test-Path $msvcQt) {
+            throw "Stale MSVC Qt kit still present: $msvcQt"
+          }
+          Write-Host "Qt MinGW kit verified."
+
+      - name: Setup Ninja
+        run: choco install ninja -y
+
+      - name: Stage OCR bundle
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: ./scripts/setup_windows_ocr_ci.ps1 -Toolchain MinGW
+
+      - name: Fetch installer runtime data
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/fetch_installer_data.ps1 -Require
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Clean stale build tree
+        shell: pwsh
+        run: Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          ./scripts/build_windows_installer.ps1 `
+            -Toolchain MinGW `
+            -QtDir "$env:QT_ROOT_DIR" `
+            -InnoSetupDir "${env:ProgramFiles(x86)}\Inno Setup 6" `
+            -RequireInstallerData
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VLMS_Setup
+          path: dist/VLMS_Setup_*.exe
+          if-no-files-found: error
+
+      - name: Upload to release
+        if: inputs.upload_to_release
+        shell: pwsh
+        run: |
+          $tag = gh release view --json tagName -q .tagName
+          if (-not $tag) { throw "No GitHub release found to upload to." }
+          gh release upload $tag dist/VLMS_Setup_*.exe --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

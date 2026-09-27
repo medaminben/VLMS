@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=VLMS
+GenericName=Virtual Library Management System
+Comment=Catalogue, members and circulation for a library
+Exec=vlms
+Icon=vlms
+Terminal=false
+Categories=Office;Database;
+StartupWMClass=vlms

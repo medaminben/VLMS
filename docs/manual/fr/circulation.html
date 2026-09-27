@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circulation — VLMS</title>
+<meta name="description" content="Ce qui est sorti, ce qui est en retard, et ce qui est revenu.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/circulation.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/circulation.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/circulation.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Adhérents</a></li><li><a href="circulation.html" aria-current="page">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Circulation</h1>
+    <p class="summary">Ce qui est sorti, ce qui est en retard, et ce qui est revenu.</p>
+    <p>La Circulation est la liste des prêts encore en service. Un prêt ouvert ou en retard veut dire que l'exemplaire n'est pas sur le rayon. Un prêt retourné veut dire qu'il l'est.</p>
+<figure class="shot"><a href="../assets/shots/fr/circ-overview.png"><img src="../assets/shots/fr/circ-overview.png" alt="La Circulation, avec les filtres, la liste, les images et les boutons numérotés." loading="lazy"></a><figcaption>La Circulation, avec les filtres, la liste, les images et les boutons numérotés.</figcaption></figure>
+<ol><li>Le filtre d'état.</li><li>Les filtres d'adhérent.</li><li>La recherche.</li><li>La liste.</li><li>La couverture de l'ouvrage prêté, ou l'image d'attente quand il n'en a pas.</li><li>La photo de l'adhérent, ou <span class="ui">Pas de photo</span>.</li><li><span class="ui">Retourner</span></li><li><span class="ui">Prêter</span></li><li><span class="ui">Prolonger</span></li><li><span class="ui">Supprimer</span></li></ol>
+<p>Le détail du prêt surligné est sous les deux images : l'adhérent, l'exemplaire et les dates.</p>
+<h2 id="h-1">Le filtre</h2>
+<p>Le filtre est un seul choix. Il s'ouvre sur <span class="ui">Tous</span>.</p>
+<ul><li><span class="ui">Ouverts</span> — sortis, et dus aujourd'hui ou plus tard.</li><li><span class="ui">En retard</span> — sortis, et dont le jour dû est passé.</li><li><span class="ui">Retournés</span> — de retour sur le rayon.</li></ul>
+<figure class="shot"><a href="../assets/shots/fr/circ-overdue.png"><img src="../assets/shots/fr/circ-overdue.png" alt="La liste réduite aux prêts en retard." loading="lazy"></a><figcaption>La liste réduite aux prêts en retard.</figcaption></figure>
+<p><span class="ui">Ouverts</span> n'inclut pas <span class="ui">En retard</span>. Voir <a href="reference.html#loan-states">États d'un prêt</a>.</p>
+<h2 id="h-2">Les filtres d'adhérent</h2>
+<p>Sous le filtre d'état se trouvent les listes des <a href="members.html">Adhérents</a> : statut, sexe, tranche d'âge et ville gardent les prêts dont l'adhérent correspond. La liste des années, qui commence par <span class="ui">Toutes les années de prêt</span>, est l'année du prêt, pas l'année d'inscription de l'adhérent. Elles se combinent avec le filtre d'état et entre elles : <span class="ui">En retard</span> et <span class="ui">Jeunes</span> donnent les prêts en retard des jeunes adhérents.</p>
+<h2 id="h-3">Recherche</h2>
+<p>La recherche suit le titre, le numéro d'adhésion et le nom complet. Un nom et un prénom ensemble trouvent l'adhérent.</p>
+<figure class="shot"><a href="../assets/shots/fr/circ-search-name.png"><img src="../assets/shots/fr/circ-search-name.png" alt="Une recherche par le nom de l&#x27;adhérent." loading="lazy"></a><figcaption>Une recherche par le nom de l'adhérent.</figcaption></figure>
+<h2 id="h-4">Les boutons</h2>
+<p><span class="ui">Prêter</span> sort un exemplaire. <span class="ui">Prolonger</span> et <span class="ui">Retourner</span> suivent le prêt surligné et ne sont disponibles que tant que ce prêt est encore sorti. <span class="ui">Supprimer</span> archive un prêt retourné. Les étapes sont <a href="task-lend-book.html">Prêter un ouvrage</a>, <a href="task-return-extend.html">Retourner ou prolonger</a> et <a href="task-remove-book.html">Retirer</a>.</p>
+    <nav class="pager"><a class="prev" href="members.html"><span>Précédent</span>Adhérents</a><a class="next" href="archive.html"><span>Suivant</span>Archives</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circulation — VLMS</title>
+<meta name="description" content="See what is out, what is late, and what has come back.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/circulation.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/circulation.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/circulation.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html" aria-current="page">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Circulation</h1>
+    <p class="summary">See what is out, what is late, and what has come back.</p>
+    <p>Circulation is the live list of loans. Archived loans are on the <a href="archive.html">Archive</a> screen.</p>
+<figure class="shot"><a href="../assets/shots/en/circ-overview.png"><img src="../assets/shots/en/circ-overview.png" alt="Circulation, with the filters, search, pictures, and buttons numbered." loading="lazy"></a><figcaption>Circulation, with the filters, search, pictures, and buttons numbered.</figcaption></figure>
+<ol><li>The status filter.</li><li>The member filters.</li><li>Search.</li><li>The list of loans.</li><li>The cover of the borrowed title, or the placeholder when it has none.</li><li>The member's photograph, or <span class="ui">No photo</span>.</li><li><span class="ui">Return</span></li><li><span class="ui">Checkout</span></li><li><span class="ui">Extend</span></li><li><span class="ui">Delete</span></li></ol>
+<p>The details of the highlighted loan sit under the two pictures: the member, the copy, and the dates.</p>
+<h2 id="h-1">The status filter</h2>
+<p>The filter is one choice. It opens on <span class="ui">All</span>.</p>
+<ul><li><span class="ui">Open</span> — out, and due today or later.</li><li><span class="ui">Overdue</span> — out, and past the due day.</li><li><span class="ui">Returned</span> — back on the shelf.</li></ul>
+<p>The three states are exclusive. They are set out in <a href="reference.html#loan-states">Loan states</a>.</p>
+<figure class="shot"><a href="../assets/shots/en/circ-overdue.png"><img src="../assets/shots/en/circ-overdue.png" alt="Overdue loans only." loading="lazy"></a><figcaption>Overdue loans only.</figcaption></figure>
+<h2 id="h-2">The member filters</h2>
+<p>Under the status filter are the lists from <a href="members.html">Members</a>: status, sex, age group, and city keep the loans whose member matches. The year list, which starts on <span class="ui">All loan years</span>, is the year the loan was made, not the year the member registered. They combine with the status filter and with each other, so <span class="ui">Overdue</span> and <span class="ui">Youth</span> lists the late loans of young members.</p>
+<h2 id="h-3">Search</h2>
+<p>Search matches the book's title, the membership number, or the member's full name.</p>
+<figure class="shot"><a href="../assets/shots/en/circ-search-name.png"><img src="../assets/shots/en/circ-search-name.png" alt="Circulation after a search by the member&#x27;s name." loading="lazy"></a><figcaption>Circulation after a search by the member's name.</figcaption></figure>
+<h2 id="h-4">The buttons</h2>
+<p><span class="ui">Checkout</span> lends a copy. <span class="ui">Extend</span> and <span class="ui">Return</span> follow the highlighted loan and are available only while that loan is still out. <span class="ui">Delete</span> archives a returned loan. The steps are <a href="task-lend-book.html">Lend a book</a>, <a href="task-return-extend.html">Return or extend</a>, and <a href="task-remove-book.html">Remove</a>.</p>
+    <nav class="pager"><a class="prev" href="members.html"><span>Previous</span>Members</a><a class="next" href="archive.html"><span>Next</span>Archive</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

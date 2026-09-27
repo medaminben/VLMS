@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الأرشيف — VLMS</title>
+<meta name="description" content="ما وضعه الحذف جانباً، وما يمكن استرجاعه أو إزالته نهائياً.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>دليل الاستخدام</small></a>
+  <nav class="langs" aria-label="اللغة"><a href="../ar/archive.html" lang="ar" aria-current="true"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/archive.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/archive.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="المحتويات">
+    <h2>المحتويات</h2>
+    <ol><li><a href="index.html">البداية</a></li><li><a href="getting-started.html">البداية مع النافذة</a></li><li><a href="catalogue.html">الفهرس</a></li><li><a href="members.html">الأعضاء</a></li><li><a href="circulation.html">الإعارة</a></li><li><a href="archive.html" aria-current="page">الأرشيف</a></li><li><a href="metrics.html">المؤشرات</a></li><li><a href="task-add-book.html">إضافة كتاب</a></li><li><a href="task-register-member.html">تسجيل عضو</a></li><li><a href="task-lend-book.html">إعارة كتاب</a></li><li><a href="task-return-extend.html">الإرجاع والتمديد</a></li><li><a href="task-remove-book.html">الإزالة</a></li><li><a href="task-reuse-number.html">إعادة استعمال رقم محلي</a></li><li><a href="reference.html">المرجع</a></li></ol>
+  </nav>
+  <main>
+    <h1>الأرشيف</h1>
+    <p class="summary">ما وضعه الحذف جانباً، وما يمكن استرجاعه أو إزالته نهائياً.</p>
+    <p>الحذف يؤرشف. العنوان أو النسخة أو العضو أو الإعارة يغادر القائمة الحية ويظهر هنا. يمكن استرجاعه. لا يُتلف إلا بـ<span class="ui">حذف نهائي</span>، وفقط حين يسمح <a href="#purge-order">الترتيب</a> أدناه.</p>
+<p>قائمة الأنواع على الجانب تختار ما تنظر إليه: <span class="ui">الأعضاء</span> أو <span class="ui">الكتب</span> أو <span class="ui">النسخ</span> أو <span class="ui">الإعارات</span>. البحث يعمل كما في الشاشات الحية.</p>
+<p>المرشّحات تحت قائمة الأنواع تتغيّر مع النوع، وتغيير النوع يعيدها إلى «الكل».</p>
+<ul><li><span class="ui">الأعضاء</span> و<span class="ui">الإعارات</span> لهما مرشّحات <a href="members.html">الأعضاء</a>. في الإعارة ترشّح حسب العضو الذي استعار، والسنة سنة الإعارة.</li><li><span class="ui">الكتب</span> و<span class="ui">النسخ</span> لهما مرشّحات اللغة والتصنيف والغلاف من <a href="catalogue.html">الفهرس</a>. النسخة تُرشَّح حسب العنوان الذي تنتمي إليه.</li></ul>
+<h2 id="h-1">الكتب</h2>
+<figure class="shot"><a href="../assets/shots/ar/arc-books.png"><img src="../assets/shots/ar/arc-books.png" alt="كتب مؤرشفة. عمود النسخ المؤرشفة يقول كم نسخة ما زالت مع العنوان." loading="lazy"></a><figcaption>كتب مؤرشفة. عمود النسخ المؤرشفة يقول كم نسخة ما زالت مع العنوان.</figcaption></figure>
+<ol><li>قائمة الأنواع.</li><li>مرشّحات الفهرس: اللغة والتصنيف والغلاف.</li><li>البحث.</li><li><span class="ui">النسخ المؤرشفة</span> — النسخ التي ما زالت مع العنوان. لا يُحذف العنوان نهائياً إلا إذا كان هذا صفراً.</li><li>الغلاف، أو الصورة البديلة إن لم يوجد.</li><li><span class="ui">استرجاع</span></li><li><span class="ui">حذف نهائي</span></li></ol>
+<h2 id="h-2">النسخ</h2>
+<figure class="shot"><a href="../assets/shots/ar/arc-copies.png"><img src="../assets/shots/ar/arc-copies.png" alt="نسخ مؤرشفة. إعادة استعمال الرقم المحلي متاحة إذا كانت النسخة ما زالت تحمل رقماً." loading="lazy"></a><figcaption>نسخ مؤرشفة. إعادة استعمال الرقم المحلي متاحة إذا كانت النسخة ما زالت تحمل رقماً.</figcaption></figure>
+<ol><li>مرشّحات الفهرس، مطبّقة على عنوان كل نسخة.</li><li>غلاف ذلك العنوان.</li><li><span class="ui">الإعارات</span> — كل إعارة لهذه النسخة، بما فيها الإعارات المؤرشفة. الحذف النهائي يحتاج صفراً هنا.</li><li><span class="ui">إعادة استعمال الرقم المحلي</span> — يعطي ذلك الرقم لعنوان جديد أو موجود. انظر <a href="task-reuse-number.html">إعادة استعمال رقم محلي</a>.</li></ol>
+<h2 id="h-3">الإعارات</h2>
+<figure class="shot"><a href="../assets/shots/ar/arc-loans.png"><img src="../assets/shots/ar/arc-loans.png" alt="إعارات مؤرشفة." loading="lazy"></a><figcaption>إعارات مؤرشفة.</figcaption></figure>
+<ol><li>مرشّحات العضو، للعضو الذي استعار.</li><li>غلاف العنوان المُعار.</li><li>صورة العضو، أو <span class="ui">لا توجد صورة</span>.</li></ol>
+<p>تحت الصورتين: العضو ورقم العضوية والنسخة ويوم الإرجاع ويوم الأرشفة وملاحظات الإعارة.</p>
+<p>يمكن استرجاع إعارة، أو حذفها نهائياً في أي وقت. حذفها لا يعيد النسخة إلى الرف: النسخة كانت قد رجعت، أو أُرشفت مع عنوانها.</p>
+<h2 id="h-4">الأعضاء</h2>
+<figure class="shot"><a href="../assets/shots/ar/arc-members.png"><img src="../assets/shots/ar/arc-members.png" alt="أعضاء مؤرشفون. عمود الإعارات يعدّ كل إعارة، بما فيها المؤرشفة." loading="lazy"></a><figcaption>أعضاء مؤرشفون. عمود الإعارات يعدّ كل إعارة، بما فيها المؤرشفة.</figcaption></figure>
+<ol><li>مرشّحات العضو.</li><li>صورة العضو، أو <span class="ui">لا توجد صورة</span>.</li><li><span class="ui">الإعارات</span></li><li><span class="ui">الإعارات</span> — سجل إعارات العضو.</li></ol>
+<p>لا يُحذف العضو نهائياً إلا إذا كان هذا العمود صفراً.</p>
+<h2 id="h-5">سجل الإعارات</h2>
+<p>زر <span class="ui">الإعارات</span> بعد البحث في قوائم <span class="ui">الأعضاء</span> و<span class="ui">الكتب</span> و<span class="ui">النسخ</span>. يفتح كل إعارات العضو أو العنوان أو النسخة المظلّلة، بما فيها المؤرشفة: العضو ورقم العضوية والنسخة والتواريخ والحالة ووقت الأرشفة. السجل للقراءة فقط، فلا إعارة ولا إرجاع منه. الزر رمادي إذا لم يُعَر السطر قط.</p>
+<h2 id="h-6">الاسترجاع</h2>
+<p>ظلّل سطراً، أو حدّد عدة أسطر، واختر <span class="ui">استرجاع</span>. التأكيد يسمّي ما سيعود إلى القوائم الحية. <span class="ui">لا</span> يترك الأرشيف كما هو.</p>
+<figure class="shot"><a href="../assets/shots/ar/arc-restore-confirm.png"><img src="../assets/shots/ar/arc-restore-confirm.png" alt="تأكيد الاسترجاع." loading="lazy"></a><figcaption>تأكيد الاسترجاع.</figcaption></figure>
+<p>علامات التحديد تعمل هنا كما في كل قائمة. انظر <a href="getting-started.html#ticks">علامات التحديد</a>.</p>
+<h2 id="purge-order">الحذف النهائي</h2>
+<p><span class="ui">حذف نهائي</span> يسأل مرة، ثم يمسح السجل. لا يمكن التراجع.</p>
+<figure class="shot"><a href="../assets/shots/ar/arc-purge-confirm.png"><img src="../assets/shots/ar/arc-purge-confirm.png" alt="حذف نهائي، لإعارة واحدة." loading="lazy"></a><figcaption>حذف نهائي، لإعارة واحدة.</figcaption></figure>
+<aside class="warning"><p>الحذف النهائي لا يُسترجع. أرشف أولاً، ولا تحذف نهائياً إلا حين تكون متأكداً.</p></aside>
+<p>التطبيق يسمح به بهذا الترتيب:</p>
+<ol><li>إعارة، في أي وقت.</li><li>نسخة، فقط حين تكون <span class="ui">الإعارات</span> صفراً. الإعارة المؤرشفة ما زالت تُحسب.</li><li>كتاب، فقط حين تكون <span class="ui">النسخ المؤرشفة</span> صفراً. أزل نسخه أو استرجعها أولاً.</li><li>عضو، فقط حين تكون <span class="ui">الإعارات</span> صفراً.</li></ol>
+<p><span class="ui">لا</span> في التأكيد يترك السجل في الأرشيف.</p>
+    <nav class="pager"><a class="prev" href="circulation.html"><span>السابق</span>الإعارة</a><a class="next" href="metrics.html"><span>التالي</span>المؤشرات</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

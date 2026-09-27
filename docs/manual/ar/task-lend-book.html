@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إعارة كتاب — VLMS</title>
+<meta name="description" content="إخراج نسخة من الإعارة، أو من عنوان، أو من عضو.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>دليل الاستخدام</small></a>
+  <nav class="langs" aria-label="اللغة"><a href="../ar/task-lend-book.html" lang="ar" aria-current="true"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-lend-book.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-lend-book.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="المحتويات">
+    <h2>المحتويات</h2>
+    <ol><li><a href="index.html">البداية</a></li><li><a href="getting-started.html">البداية مع النافذة</a></li><li><a href="catalogue.html">الفهرس</a></li><li><a href="members.html">الأعضاء</a></li><li><a href="circulation.html">الإعارة</a></li><li><a href="archive.html">الأرشيف</a></li><li><a href="metrics.html">المؤشرات</a></li><li><a href="task-add-book.html">إضافة كتاب</a></li><li><a href="task-register-member.html">تسجيل عضو</a></li><li><a href="task-lend-book.html" aria-current="page">إعارة كتاب</a></li><li><a href="task-return-extend.html">الإرجاع والتمديد</a></li><li><a href="task-remove-book.html">الإزالة</a></li><li><a href="task-reuse-number.html">إعادة استعمال رقم محلي</a></li><li><a href="reference.html">المرجع</a></li></ol>
+  </nav>
+  <main>
+    <h1>إعارة كتاب</h1>
+    <p class="summary">إخراج نسخة من الإعارة، أو من عنوان، أو من عضو.</p>
+    <p>لا يُعرض إلا عضو <span class="ui">نشط</span>، وإلا نسخة على الرف. يوم الاستحقاق يبدأ بعد 14 يوماً من يوم خروج النسخة. يمكن تغييره قبل <span class="ui">موافق</span>. انظر <a href="reference.html#member-status">حالة العضو</a> و<a href="reference.html#loan-states">حالات الإعارة</a>.</p>
+<h2 id="h-1">من الإعارة</h2>
+<ol class="steps"><li><p><strong>اضغط <span class="ui">إعارة</span>.</strong></p>
+<p>النافذة تطلب عضواً ونسخة. ابحث في أي القائمتين إذا طالت.</p>
+<figure class="shot"><a href="../assets/shots/ar/lend-dialog.png"><img src="../assets/shots/ar/lend-dialog.png" alt="الإعارة، قبل اختيار عضو ونسخة." loading="lazy"></a><figcaption>الإعارة، قبل اختيار عضو ونسخة.</figcaption></figure></li><li><p><strong>اختر العضو والنسخة، ثم <span class="ui">موافق</span>.</strong></p>
+<figure class="shot"><a href="../assets/shots/ar/lend-filled.png"><img src="../assets/shots/ar/lend-filled.png" alt="عضو ونسخة مختارين." loading="lazy"></a><figcaption>عضو ونسخة مختارين.</figcaption></figure>
+<p><span class="ui">إلغاء</span> يترك الإعارة كما هي.</p></li></ol>
+<h2 id="h-2">من إعارات كتاب</h2>
+<p>في الفهرس، ظلّل العنوان واضغط <span class="ui">الإعارات</span>. <span class="ui">إعارة</span> موجودة حتى إذا لم يُستعر العنوان قط. قائمة النسخ هي نسخ ذلك العنوان وحده، ولا بحث عن نسخة.</p>
+<ol class="steps"><li><p><strong>اضغط <span class="ui">إعارة</span> في نافذة الإعارات.</strong></p>
+<figure class="shot"><a href="../assets/shots/ar/lend-from-book.png"><img src="../assets/shots/ar/lend-from-book.png" alt="إعارة من عنوان. قائمة النسخ هي ذلك العنوان وحده." loading="lazy"></a><figcaption>إعارة من عنوان. قائمة النسخ هي ذلك العنوان وحده.</figcaption></figure></li></ol>
+<figure class="shot"><a href="../assets/shots/ar/lend-empty-history.png"><img src="../assets/shots/ar/lend-empty-history.png" alt="عنوان لم يُستعر قط. الإعارة ما زالت متاحة." loading="lazy"></a><figcaption>عنوان لم يُستعر قط. الإعارة ما زالت متاحة.</figcaption></figure>
+<p>اختر العضو، أكّد النسخة، واضغط <span class="ui">موافق</span>. <span class="ui">إغلاق</span> يغادر السجل.</p>
+<h2 id="h-3">من إعارات عضو</h2>
+<p>في الأعضاء، ظلّل العضو واضغط <span class="ui">الإعارات</span> ثم <span class="ui">إعارة</span>. العضو يظهر اسماً، لا بحثاً. أنت تختار النسخة.</p>
+<figure class="shot"><a href="../assets/shots/ar/lend-from-member.png"><img src="../assets/shots/ar/lend-from-member.png" alt="إعارة من عضو. العضو مختار من قبل." loading="lazy"></a><figcaption>إعارة من عضو. العضو مختار من قبل.</figcaption></figure>
+<h3 id="h-4">إذا تعذّر</h3>
+<ul><li>لا نسخة من ذلك العنوان على الرف. قائمة النسخ تقول ذلك، و<span class="ui">موافق</span> يبقى غير متاح.</li><li>العضو <span class="ui">غير نشط</span>. ليس في قائمة الأعضاء. جدّده أولاً. انظر <a href="task-register-member.html">تسجيل عضو</a>.</li><li>يوم الاستحقاق قبل يوم خروج النسخة. النافذة ترفضه.</li></ul>
+    <nav class="pager"><a class="prev" href="task-register-member.html"><span>السابق</span>تسجيل عضو</a><a class="next" href="task-return-extend.html"><span>التالي</span>الإرجاع والتمديد</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

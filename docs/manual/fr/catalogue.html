@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogue — VLMS</title>
+<meta name="description" content="Les titres, leurs exemplaires et leurs numéros locaux.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>Manuel d'utilisation</small></a>
+  <nav class="langs" aria-label="Langue"><a href="../ar/catalogue.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/catalogue.html" lang="en"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/catalogue.html" lang="fr" aria-current="true"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <ol><li><a href="index.html">Accueil</a></li><li><a href="getting-started.html">Prise en main</a></li><li><a href="catalogue.html" aria-current="page">Catalogue</a></li><li><a href="members.html">Adhérents</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archives</a></li><li><a href="metrics.html">Indicateurs</a></li><li><a href="task-add-book.html">Ajouter un ouvrage</a></li><li><a href="task-register-member.html">Inscrire un adhérent</a></li><li><a href="task-lend-book.html">Prêter un ouvrage</a></li><li><a href="task-return-extend.html">Retourner ou prolonger</a></li><li><a href="task-remove-book.html">Retirer</a></li><li><a href="task-reuse-number.html">Réutiliser un numéro local</a></li><li><a href="reference.html">Référence</a></li></ol>
+  </nav>
+  <main>
+    <h1>Catalogue</h1>
+    <p class="summary">Les titres, leurs exemplaires et leurs numéros locaux.</p>
+    <p>Le Catalogue est la liste des titres encore en service. Chaque ligne est un titre. Les exemplaires sont dans la colonne du numéro local et dans le détail.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-overview.png"><img src="../assets/shots/fr/cat-overview.png" alt="Le Catalogue, avec ses parties numérotées." loading="lazy"></a><figcaption>Le Catalogue, avec ses parties numérotées.</figcaption></figure>
+<ol><li>Catégories. <span class="ui">Toutes les catégories</span> laisse chaque catégorie dans la liste. Choisissez-en une ou plusieurs pour la réduire.</li><li>Langues. <span class="ui">Toutes les langues</span>, ou Arabe, Français, et toute autre langue que le catalogue contient.</li><li>Couverture. <span class="ui">Tous</span>, <span class="ui">Avec couverture</span> ou <span class="ui">Sans couverture</span>.</li><li>La recherche.</li><li><span class="ui">N° local</span>. Le numéro dont la cellule parle. Voir <a href="reference.html#local-number">Numéros locaux</a>.</li><li><span class="ui">Exemplaires</span> et <span class="ui">Disponibles</span>. Exemplaires compte chaque exemplaire encore en service. Disponibles compte ceux qui sont encore sur le rayon.</li><li>Le détail du titre surligné.</li><li><span class="ui">Prêts</span></li><li><span class="ui">Ajouter un ouvrage</span></li><li><span class="ui">Modifier</span></li><li><span class="ui">Supprimer</span></li></ol>
+<h2 id="h-1">Recherche</h2>
+<p>La recherche suit le titre, l'auteur, l'ISBN et le numéro local. Un numéro tapé en chiffres est cherché en plus du texte. S'il existe exactement, seules les lignes qui le portent restent. Sinon, les numéros qui commencent par ces chiffres s'ouvrent. Les deux ne se mélangent pas.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-search-number.png"><img src="../assets/shots/fr/cat-search-number.png" alt="Une recherche par numéro local. Le numéro trouvé est en tête de la cellule." loading="lazy"></a><figcaption>Une recherche par numéro local. Le numéro trouvé est en tête de la cellule.</figcaption></figure>
+<h2 id="h-2">Le numéro local</h2>
+<p>La cellule montre un numéro, ou un numéro suivi d'un compte entre parenthèses quand le titre en a plusieurs. Un clic ouvre la liste. Choisir un numéro le marque dans la cellule. Cela ne change pas l'ordre de la liste, et le choix disparaît quand la liste est rechargée.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-number-dropdown.png"><img src="../assets/shots/fr/cat-number-dropdown.png" alt="La liste des numéros d&#x27;un titre." loading="lazy"></a><figcaption>La liste des numéros d'un titre.</figcaption></figure>
+<p>Un numéro vert est sur le rayon. Un numéro rouge et en italique est sorti. L'italique reste lisible en gris ou pour un lecteur qui ne distingue pas le rouge du vert. Voir <a href="reference.html#local-number">Numéros locaux</a>.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-copy-colours.png"><img src="../assets/shots/fr/cat-copy-colours.png" alt="Un numéro sur le rayon et un numéro sorti." loading="lazy"></a><figcaption>Un numéro sur le rayon et un numéro sorti.</figcaption></figure>
+<h2 id="h-3">Prêts</h2>
+<p><span class="ui">Prêts</span> suit le titre surligné. Il s'ouvre même quand le titre n'a jamais été emprunté, et il propose <span class="ui">Prêter</span> depuis là. La liste est chaque prêt de chaque exemplaire que le titre a eu, y compris les exemplaires et les prêts qui ont depuis été archivés.</p>
+<figure class="shot"><a href="../assets/shots/fr/cat-loans-dialog.png"><img src="../assets/shots/fr/cat-loans-dialog.png" alt="Les prêts d&#x27;un titre." loading="lazy"></a><figcaption>Les prêts d'un titre.</figcaption></figure>
+<p><span class="ui">Fermer</span> quitte la fenêtre. Prêter depuis ici est <a href="task-lend-book.html">Prêter un ouvrage</a>. Ajouter un titre est <a href="task-add-book.html">Ajouter un ouvrage</a>. Le retirer est <a href="task-remove-book.html">Retirer</a>.</p>
+    <nav class="pager"><a class="prev" href="getting-started.html"><span>Précédent</span>Prise en main</a><a class="next" href="members.html"><span>Suivant</span>Adhérents</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

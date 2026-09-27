@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lend a book — VLMS</title>
+<meta name="description" content="Check a copy out from Circulation, from a title, or from a member.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/task-lend-book.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/task-lend-book.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/task-lend-book.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html" aria-current="page">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Lend a book</h1>
+    <p class="summary">Check a copy out from Circulation, from a title, or from a member.</p>
+    <p>Only an <span class="ui">Active</span> member is offered, and only a copy that is on the shelf. The due day starts at 14 days after the day the copy goes out. You can change it before <span class="ui">OK</span>. See <a href="reference.html#member-status">Member status</a> and <a href="reference.html#loan-states">Loan states</a>.</p>
+<h2 id="h-1">From Circulation</h2>
+<ol class="steps"><li><p><strong>Click <span class="ui">Checkout</span>.</strong></p>
+<p>The dialog asks for a member and a copy. Search either list if it is long.</p>
+<figure class="shot"><a href="../assets/shots/en/lend-dialog.png"><img src="../assets/shots/en/lend-dialog.png" alt="Checkout, before a member and a copy are chosen." loading="lazy"></a><figcaption>Checkout, before a member and a copy are chosen.</figcaption></figure></li><li><p><strong>Choose the member and the copy, then <span class="ui">OK</span>.</strong></p>
+<figure class="shot"><a href="../assets/shots/en/lend-filled.png"><img src="../assets/shots/en/lend-filled.png" alt="A member and a copy chosen." loading="lazy"></a><figcaption>A member and a copy chosen.</figcaption></figure>
+<p><span class="ui">Cancel</span> leaves Circulation unchanged.</p></li></ol>
+<h2 id="h-2">From a book's loans</h2>
+<p>On the Catalogue, highlight the title and click <span class="ui">Loans</span>. <span class="ui">Checkout</span> is there even when the title has never been borrowed. The copy list is only that title's copies, and there is no copy search.</p>
+<ol class="steps"><li><p><strong>Click <span class="ui">Checkout</span> in the loans dialog.</strong></p>
+<figure class="shot"><a href="../assets/shots/en/lend-from-book.png"><img src="../assets/shots/en/lend-from-book.png" alt="Checkout from a title. The copy list is that title alone." loading="lazy"></a><figcaption>Checkout from a title. The copy list is that title alone.</figcaption></figure></li></ol>
+<figure class="shot"><a href="../assets/shots/en/lend-empty-history.png"><img src="../assets/shots/en/lend-empty-history.png" alt="A title that has never been borrowed. Checkout is still available." loading="lazy"></a><figcaption>A title that has never been borrowed. Checkout is still available.</figcaption></figure>
+<p>Choose the member, confirm the copy, and click <span class="ui">OK</span>. <span class="ui">Close</span> leaves the history.</p>
+<h2 id="h-3">From a member's loans</h2>
+<p>On Members, highlight the member and click <span class="ui">Loans</span>, then <span class="ui">Checkout</span>. The member is shown as a name, not a search. You choose the copy.</p>
+<figure class="shot"><a href="../assets/shots/en/lend-from-member.png"><img src="../assets/shots/en/lend-from-member.png" alt="Checkout from a member. The member is already chosen." loading="lazy"></a><figcaption>Checkout from a member. The member is already chosen.</figcaption></figure>
+<h3 id="h-4">What if…</h3>
+<ul><li>No copy of that title is on the shelf. The copy list says so, and <span class="ui">OK</span> stays unavailable.</li><li>The member is <span class="ui">Not active</span>. They are not in the member list. Renew them first. See <a href="task-register-member.html">Register a member</a>.</li><li>The due day is before the day the copy goes out. The dialog refuses it.</li></ul>
+    <nav class="pager"><a class="prev" href="task-register-member.html"><span>Previous</span>Register a member</a><a class="next" href="task-return-extend.html"><span>Next</span>Return or extend</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference — VLMS</title>
+<meta name="description" content="Fields, member status, loan states, the Archive, and local numbers.">
+<link rel="icon" href="../assets/brand/icon-64.png">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><img src="../assets/brand/icon-64.png" alt=""><span>VLMS</span><small>User manual</small></a>
+  <nav class="langs" aria-label="Language"><a href="../ar/reference.html" lang="ar"><img src="../assets/flags/ar.png" alt="">العربية</a><a href="../en/reference.html" lang="en" aria-current="true"><img src="../assets/flags/en.png" alt="">English</a><a href="../fr/reference.html" lang="fr"><img src="../assets/flags/fr.png" alt="">Français</a></nav>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol><li><a href="index.html">Home</a></li><li><a href="getting-started.html">Getting started</a></li><li><a href="catalogue.html">Catalogue</a></li><li><a href="members.html">Members</a></li><li><a href="circulation.html">Circulation</a></li><li><a href="archive.html">Archive</a></li><li><a href="metrics.html">Metrics</a></li><li><a href="task-add-book.html">Add a book</a></li><li><a href="task-register-member.html">Register a member</a></li><li><a href="task-lend-book.html">Lend a book</a></li><li><a href="task-return-extend.html">Return or extend</a></li><li><a href="task-remove-book.html">Remove</a></li><li><a href="task-reuse-number.html">Reuse a local number</a></li><li><a href="reference.html" aria-current="page">Reference</a></li></ol>
+  </nav>
+  <main>
+    <h1>Reference</h1>
+    <p class="summary">Fields, member status, loan states, the Archive, and local numbers.</p>
+    <h2 id="fields-book">Book fields</h2>
+<p>The Book tab of <a href="task-add-book.html">Add Book</a>:</p>
+<ul><li><span class="ui">Title</span> — required.</li><li><span class="ui">Author</span></li><li><span class="ui">Publisher</span></li><li><span class="ui">Category</span> — pick one, or <span class="ui">(none)</span>. <span class="ui">Categories…</span> opens the list of categories.</li><li><span class="ui">ISBN</span></li><li><span class="ui">Publication date</span></li><li><span class="ui">Place of publication</span></li><li><span class="ui">Pages</span></li><li><span class="ui">Language</span> — required. Arabic, French, English, and the other listed languages, or another language typed in.</li><li><span class="ui">Dimensions</span></li><li><span class="ui">Description</span> — <span class="ui">From image</span> can fill this, and the title and author, from a clear photograph of the book. It may be unavailable.</li><li><span class="ui">Cover</span> — <span class="ui">Choose cover image…</span></li></ul>
+<p>The Copies tab, one line per copy:</p>
+<ul><li><span class="ui">Local no.</span> — the library's own number for this copy. See <a href="#local-number">Local numbers</a>.</li><li><span class="ui">Global no.</span> — filled from the local number when the copy is saved.</li><li><span class="ui">Stock</span> — Arabic or Foreign, following the book's language.</li><li><span class="ui">Central no.</span> — the national number, when the copy has one. The library does not mint it.</li><li><span class="ui">Classification</span></li><li><span class="ui">Subject</span></li><li><span class="ui">Index</span></li><li><span class="ui">Location</span></li><li><span class="ui">Inventory</span></li><li><span class="ui">Compensation</span></li><li><span class="ui">Notes</span></li><li><span class="ui">Status</span></li></ul>
+<p><span class="ui">Add copy</span> appends a line. <span class="ui">Remove copy</span> archives the highlighted line. A copy that is still out cannot be removed.</p>
+<h2 id="fields-member">Member fields</h2>
+<ul><li><span class="ui">Membership number</span> — given by the application, and not edited.</li><li><span class="ui">Status</span> — <span class="ui">Active</span> or <span class="ui">Not active</span>. See <a href="#member-status">Member status</a>.</li><li><span class="ui">Active until</span> — the last day the member is active. The application sets it. You read it.</li><li><span class="ui">First name</span> — required.</li><li><span class="ui">Last name</span> — required.</li><li><span class="ui">Date of birth</span> — required, picked as day, month, and year. The age group follows from it: under 30 is <span class="ui">Youth</span>, and the 30th birthday is <span class="ui">Adults</span>. A future date is refused.</li><li><span class="ui">Sex</span></li><li><span class="ui">Occupation</span></li><li><span class="ui">Email</span></li><li><span class="ui">Phone</span></li><li><span class="ui">Address</span></li><li><span class="ui">City</span></li><li><span class="ui">Photo</span> — <span class="ui">Choose photo…</span></li><li><span class="ui">ID image</span> — <span class="ui">Choose ID image…</span></li><li><span class="ui">Notes</span></li></ul>
+<h2 id="member-status">Member status</h2>
+<p>A member is <span class="ui">Active</span> on a day when <span class="ui">Active until</span> is that day or a later day. Otherwise the member is <span class="ui">Not active</span>.</p>
+<figure class="shot"><a href="../assets/shots/en/mem-details.png"><img src="../assets/shots/en/mem-details.png" alt="A member&#x27;s details, with status and the last active day." loading="lazy"></a><figcaption>A member's details, with status and the last active day.</figcaption></figure>
+<p>Registering a member, or setting the status back to <span class="ui">Active</span>, sets the last active day to one year ahead, less a day. Choosing <span class="ui">Not active</span> ends it yesterday. Only an <span class="ui">Active</span> member can borrow. The Circulation checkout offers no one else.</p>
+<p>Nothing changes the status by itself when the last active day passes. The next time the member is opened, the status already reads <span class="ui">Not active</span>.</p>
+<h2 id="loan-states">Loan states</h2>
+<p>A loan is in exactly one state.</p>
+<ul><li><span class="ui">Open</span> — not returned, and due today or later.</li><li><span class="ui">Overdue</span> — not returned, and the due day has passed.</li><li><span class="ui">Returned</span> — the copy is back.</li></ul>
+<p><span class="ui">Open</span> does not include <span class="ui">Overdue</span>. The Circulation filter and the Metrics tile of the same name follow this split.</p>
+<figure class="shot"><a href="../assets/shots/en/circ-overdue.png"><img src="../assets/shots/en/circ-overdue.png" alt="Circulation with Overdue chosen." loading="lazy"></a><figcaption>Circulation with Overdue chosen.</figcaption></figure>
+<p>The usual loan is 14 days. Checkout suggests a due day 14 days after the day it goes out. You can change that day before saving. Extend suggests a new due day after the current one.</p>
+<h2 id="live-archived">Live, archived, and gone</h2>
+<p>Delete does not destroy a title, a copy, a member, or a loan. It archives it. The list you were on no longer shows it. The <a href="archive.html">Archive</a> does.</p>
+<p><span class="ui">Restore</span> brings an archived title, copy, member, or loan back to the live lists.</p>
+<p><span class="ui">Permanently remove</span> is only in the Archive, and only once the <a href="archive.html#purge-order">order</a> allows it. After that the record is gone and cannot be restored.</p>
+<p>An archived loan still counts. It still stops a member or a copy from being permanently removed, and it still appears in a book's or a member's <span class="ui">Loans</span> history.</p>
+<h2 id="local-number">Local numbers</h2>
+<p>The local number is this library's own number for a copy. It is unique among Arabic stock, and unique among Foreign stock: the same number may belong to one Arabic copy and one Foreign copy. The central number is a national serial. It is stored when a copy has one, and this application does not assign a new one.</p>
+<p>A title with one copy shows that number. A title with several shows that number, then the count of the further copies in parentheses. The drop-down lists every copy. Choosing one marks it in the cell until the list is loaded again. It does not reorder the copies.</p>
+<figure class="shot"><a href="../assets/shots/en/cat-copy-colours.png"><img src="../assets/shots/en/cat-copy-colours.png" alt="A green number on the shelf, and a red italic number that is out." loading="lazy"></a><figcaption>A green number on the shelf, and a red italic number that is out.</figcaption></figure>
+<p>Green is on the shelf. Red and italic is out on loan. The italic is the cue that remains in a greyscale print, and for a reader who does not separate red from green. Only the number the cell is speaking for is coloured. The count beside it stays neutral.</p>
+<p>Search by a local number finds the title. An exact number wins. A prefix is used only when no copy has that number exactly. See <a href="catalogue.html">Catalogue</a>.</p>
+    <nav class="pager"><a class="prev" href="task-reuse-number.html"><span>Previous</span>Reuse a local number</a></nav>
+  </main>
+</div>
+<div class="lightbox" hidden><img alt=""></div>
+<script src="../assets/manual.js"></script>
+</body>
+</html>

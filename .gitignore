@@ -1,0 +1,39 @@
+/build/
+/build-*/
+/.cache/
+/.cmake/
+/.vcpkg/
+/dist/
+*.user
+*.autosave
+
+# Runtime data (project-local layout; bundled into the Windows installer at build time)
+/database/vlms.db
+# Hand-made backups of the live database. These hold real member records
+# (names, dates of birth) and must never enter version control.
+/database/*.db.bak-*
+/database/*.db-journal
+/database/*.db-wal
+/resources/books/**
+!/resources/books/.gitkeep
+/resources/members/**
+!/resources/members/.gitkeep
+/dist/VLMS_installer_data.zip
+
+# OCR runtime binaries (keep README / .gitkeep; stage locally or on the Windows build PC)
+/third_party/tesseract/windows/**
+!/third_party/tesseract/windows/.gitkeep
+/third_party/tesseract/linux/**
+!/third_party/tesseract/linux/.gitkeep
+
+# Local backups of uncommitted work (see _backups/*/MANIFEST.md)
+/_backups/
+
+# Isolated git worktrees for feature work
+/.worktrees/
+
+# Brainstorming companion scratch (mockups, session state)
+/.superpowers/
+
+# Python bytecode from the manual and import scripts
+__pycache__/

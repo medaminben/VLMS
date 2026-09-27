@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/fonts">
+        <file>fonts/Cairo-Variable.ttf</file>
+    </qresource>
+</RCC>
