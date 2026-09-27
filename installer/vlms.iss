@@ -32,18 +32,12 @@
 #define MyAppPublisher "VLMS"
 #define MyAppExeName "vlms.exe"
 
-; Builds released before the rename to VLMS installed as "KLMS Lite": same
-; AppId, so the uninstall entry below still finds them, but their executable,
-; database, default folder and product key carry the old names. The
-; application renames database\klms_lite.db to vlms.db on its first start.
-#define LegacyAppName "KLMS Lite"
-#define LegacyExeName "klms_lite.exe"
-#define LegacyDbName "klms_lite.db"
-
-; Unchanged since 0.1.0 on purpose: it is what lets this installer recognise
-; every copy it has ever installed. Changing it would make old versions
-; invisible to the detection below and leave two entries in Apps & features.
-#define MyAppId "{8F2E1A4B-9C3D-4E5F-A6B7-C8D9E0F1A2B3}"
+; VLMS's own, never KLMS Lite's: the two are separate products that install
+; side by side, each in its own folder with its own entry in Apps & features.
+; Sharing the AppId made setup treat KLMS Lite as an older VLMS, reuse its
+; folder and offer to delete it. Never change it again: it is what lets this
+; installer recognise every copy of VLMS it has installed.
+#define MyAppId "{8F295604-21DB-42E6-AF37-063848A8B741}"
 
 [Setup]
 AppId={{#MyAppId}}
@@ -81,13 +75,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-
-[InstallDelete]
-; Left behind by a kept "KLMS Lite" installation; the old uninstaller removes
-; them itself when the previous copy is deleted instead.
-Type: files; Name: "{app}\{#LegacyExeName}"
-Type: files; Name: "{autodesktop}\{#LegacyAppName}.lnk"
-Type: filesandordirs; Name: "{autoprograms}\{#LegacyAppName}"
 
 [Files]
 ; Program files: executable, Qt/OCR runtimes, tessdata, schema.sql. Always
@@ -157,7 +144,6 @@ const
   UninstallSubKey =
     'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1';
   ProductSubKey = 'Software\VLMS\{#MyAppName}';
-  LegacyProductSubKey = 'Software\KLMS\{#LegacyAppName}';
 
   { Result of comparing the installed version against {#MyAppVersion}. }
   RelOlder = -1;
@@ -267,19 +253,14 @@ begin
   if CompareText(Normalised, ExpandConstant('{sys}')) = 0 then Exit;
 
   Result := FileExists(Normalised + '\{#MyAppExeName}') or
-            FileExists(Normalised + '\{#LegacyExeName}') or
             FileExists(Normalised + '\unins000.exe') or
-            FileExists(Normalised + '\database\vlms.db') or
-            FileExists(Normalised + '\database\{#LegacyDbName}');
+            FileExists(Normalised + '\database\vlms.db');
 end;
 
-{ The installed copy's database: vlms.db, or klms_lite.db for a copy installed
-  before the rename (or kept since, and not started yet). '' when neither. }
+{ The installed copy's database, or '' when it has none. }
 function PrevDatabasePath: String;
 begin
-  if FileExists(PrevDir + '\database\{#LegacyDbName}') then
-    Result := PrevDir + '\database\{#LegacyDbName}'
-  else if FileExists(PrevDir + '\database\vlms.db') then
+  if FileExists(PrevDir + '\database\vlms.db') then
     Result := PrevDir + '\database\vlms.db'
   else
     Result := '';
@@ -322,8 +303,6 @@ begin
       holds a database this build cannot use, so it counts as found -- there
       is simply nothing to run, only files to delete. }
     Candidate := ExpandConstant('{userpf}\{#MyAppName}');
-    if not LooksLikeAppDir(Candidate) then
-      Candidate := ExpandConstant('{userpf}\{#LegacyAppName}');
     if LooksLikeAppDir(Candidate) then
     begin
       PrevFound := True;
@@ -336,14 +315,9 @@ begin
 
   PrevDirLooksRight := LooksLikeAppDir(PrevDir);
 
-  { Falls back to the pre-rename key: without it a kept KLMS Lite install
-    would read as "predates the schema record", count as major, and have
-    deleting its database recommended. }
   if not RegQueryStringValue(HKCU, ProductSubKey, 'SchemaVersion', PrevSchema) then
     if not RegQueryStringValue(HKLM, ProductSubKey, 'SchemaVersion', PrevSchema) then
-      if not RegQueryStringValue(HKCU, LegacyProductSubKey, 'SchemaVersion', PrevSchema) then
-        if not RegQueryStringValue(HKLM, LegacyProductSubKey, 'SchemaVersion', PrevSchema) then
-          PrevSchema := '';
+      PrevSchema := '';
 
   if PrevVersion = '' then
     PrevRelation := RelOlder
