@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "TestEnv.h"
 
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <gtest/gtest.h>
 
@@ -174,7 +174,7 @@ TEST_F(test_core_DatabaseSchema, DestructorRemovesTheSqlConnection)
         EXPECT_TRUE(scoped.isValid());
         EXPECT_TRUE(scoped.isValid());
     }
-    // Database owns the SqliteSession; destroying the fixture closes it.
+    // Connection owns the SqliteSession; destroying the fixture closes it.
 }
 
 // ---------------------------------------------------------------------------
@@ -193,15 +193,15 @@ TEST_F(test_core_DatabaseSchema, SchemaSqlDeclaresTheVersionTheCodeExpects)
         << "database/schema.sql declares no PRAGMA user_version";
 
     // Two places have to agree and neither can see the other: schema.sql stamps
-    // a new database, Database::kSchemaVersion decides what open() will accept.
+    // a new database, Connection::kSchemaVersion decides what open() will accept.
     // Raise one alone and every fresh database is a version the code refuses.
-    EXPECT_EQ(std::stoi(match[1].str()), Database::kSchemaVersion);
+    EXPECT_EQ(std::stoi(match[1].str()), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_DatabaseSchema, FreshDatabaseIsStampedWithTheCurrentVersion)
 {
-    EXPECT_EQ(m_db->userVersion(), Database::kSchemaVersion);
-    EXPECT_EQ(m_db->database().schemaVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(m_db->userVersion(), Database::Connection::kSchemaVersion);
+    EXPECT_EQ(m_db->database().schemaVersion(), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_DatabaseSchema, EveryDateDefaultInSchemaSqlIsLocalTime)
@@ -223,7 +223,7 @@ TEST_F(test_core_DatabaseSchema, EveryDateDefaultInSchemaSqlIsLocalTime)
 
 TEST_F(test_core_DatabaseSchema, OpenRefusesADatabaseFromANewerBuild)
 {
-    ASSERT_TRUE(m_db->exec("PRAGMA user_version = " + std::to_string(Database::kSchemaVersion + 7)));
+    ASSERT_TRUE(m_db->exec("PRAGMA user_version = " + std::to_string(Database::Connection::kSchemaVersion + 7)));
 
     // A database written by a later version may have constraints and columns
     // this build knows nothing about, and there is no read-only mode to fall
@@ -236,5 +236,5 @@ TEST_F(test_core_DatabaseSchema, ReopeningDoesNotDisturbTheVersion)
 {
     EXPECT_TRUE(m_db->database().open());
     EXPECT_TRUE(m_db->database().open());
-    EXPECT_EQ(m_db->userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(m_db->userVersion(), Database::Connection::kSchemaVersion);
 }

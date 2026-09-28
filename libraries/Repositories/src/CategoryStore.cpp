@@ -12,7 +12,7 @@ namespace VLMS::Repositories {
 
 namespace {
 
-CategoryRecord readCategoryRow(VLMS::SqliteStatement& q)
+CategoryRecord readCategoryRow(Database::SqliteStatement& q)
 {
     CategoryRecord category;
     category.id = q.int64(0);
@@ -24,7 +24,7 @@ CategoryRecord readCategoryRow(VLMS::SqliteStatement& q)
 
 }  // namespace
 
-CategoryStore::CategoryStore(VLMS::SqliteSession& session)
+CategoryStore::CategoryStore(Database::SqliteSession& session)
     : m_session(session)
 {
 }

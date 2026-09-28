@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
@@ -20,7 +20,7 @@ class NamedEntityStore;
 
 class CatalogRepository {
 public:
-    CatalogRepository(VLMS::SqliteSession& session, std::string resourcesDirectory);
+    CatalogRepository(Database::SqliteSession& session, std::string resourcesDirectory);
     ~CatalogRepository();
 
     CatalogRepository(const CatalogRepository&) = delete;
@@ -97,7 +97,7 @@ private:
                                           std::int64_t authorId,
                                           std::int64_t publisherId) const;
 
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
     std::string m_resourcesDirectory;
     std::unique_ptr<NamedEntityStore> m_names;
     std::unique_ptr<BookCopyStore> m_copies;

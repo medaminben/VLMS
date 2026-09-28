@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
 class CirculationRepository {
 public:
-    explicit CirculationRepository(VLMS::SqliteSession& session);
+    explicit CirculationRepository(Database::SqliteSession& session);
 
     [[nodiscard]] VLMS::Result<std::vector<LoanRecord>> listLoans(const LoanQuery& query) const;
     [[nodiscard]] VLMS::Result<int> rankOfLoan(std::int64_t id, const LoanQuery& query) const;
@@ -52,7 +52,7 @@ private:
     [[nodiscard]] VLMS::Status memberCanBorrow(std::int64_t memberId) const;
     [[nodiscard]] VLMS::Status copyIsAvailable(std::int64_t bookCopyId) const;
 
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
 };
 
 }  // namespace VLMS::Repositories

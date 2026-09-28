@@ -8,7 +8,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::SqlText::escapeLike;
 using VLMS::trim;
 
 namespace VLMS::Repositories::LoanSql {
@@ -20,7 +19,7 @@ std::string isOverdue(const std::string_view prefix)
         + "due_at) < " + todayPlaceholder() + "))";
 }
 
-void bindTodayIfPresent(SqliteStatement& query, const std::string_view sql)
+void bindTodayIfPresent(Database::SqliteStatement& query, const std::string_view sql)
 {
     if (sql.find(todayPlaceholder()) != std::string_view::npos) {
         query.bind(todayPlaceholder(), Clock::todayIso());
@@ -106,7 +105,7 @@ std::string filterClause(const LoanQuery& query)
     return sql;
 }
 
-void bindFilters(SqliteStatement& query, const LoanQuery& queryData)
+void bindFilters(Database::SqliteStatement& query, const LoanQuery& queryData)
 {
     if (queryData.memberId > 0) {
         query.bind(":member_id", queryData.memberId);
@@ -123,7 +122,7 @@ void bindFilters(SqliteStatement& query, const LoanQuery& queryData)
     }
     const std::string search = trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + escapeLike(search) + "%");
+        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }
 }
 

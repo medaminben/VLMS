@@ -1,4 +1,4 @@
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <VLMS/Core/DateText.h>
 #include <VLMS/Core/Paths.h>
@@ -15,9 +15,9 @@
 #include <sstream>
 #include <utility>
 
-using VLMS::SqliteSession;
-using VLMS::SqliteStatement;
 using VLMS::Status;
+
+namespace VLMS::Database {
 
 namespace {
 
@@ -94,33 +94,33 @@ std::string copyAsideBeforeMigrating(SqliteSession& session,
 
 }  // namespace
 
-Database::Database(std::string dataDirectory)
+Connection::Connection(std::string dataDirectory)
     : m_dataDirectory(std::move(dataDirectory))
 {
 }
 
-Database::~Database() = default;
+Connection::~Connection() = default;
 
-std::string Database::databasePath() const
+std::string Connection::databasePath() const
 {
     return (std::filesystem::path(m_dataDirectory) / "vlms.db").string();
 }
 
-VLMS::SqliteSession& Database::session() const
+SqliteSession& Connection::session() const
 {
     if (m_session == nullptr) {
-        std::fprintf(stderr, "Database::session() called before a successful open()\n");
+        std::fprintf(stderr, "Connection::session() called before a successful open()\n");
         std::abort();
     }
     return *m_session;
 }
 
-void Database::warn(const std::string& message) const
+void Connection::warn(const std::string& message) const
 {
     std::fprintf(stderr, "%s\n", message.c_str());
 }
 
-bool Database::execAll(const std::vector<std::string>& statements, const std::string& context)
+bool Connection::execAll(const std::vector<std::string>& statements, const std::string& context)
 {
     for (std::size_t i = 0; i < statements.size(); ++i) {
         if (!m_session->exec(statements[i])) {
@@ -132,9 +132,9 @@ bool Database::execAll(const std::vector<std::string>& statements, const std::st
     return true;
 }
 
-bool Database::execSqlScript(const std::string& script, const std::string& context)
+bool Connection::execSqlScript(const std::string& script, const std::string& context)
 {
-    for (const std::string& statement : VLMS::SqlText::splitStatements(script)) {
+    for (const std::string& statement : SqlText::splitStatements(script)) {
         if (!m_session->exec(statement)) {
             warn(context + " failed: " + m_session->lastError() + "\nSQL: "
                  + statement.substr(0, 200));
@@ -144,7 +144,7 @@ bool Database::execSqlScript(const std::string& script, const std::string& conte
     return true;
 }
 
-bool Database::tableHasColumn(const std::string& table, const std::string& column) const
+bool Connection::tableHasColumn(const std::string& table, const std::string& column) const
 {
     auto info = m_session->prepare("PRAGMA table_info(" + table + ")");
     if (!info) {
@@ -158,13 +158,13 @@ bool Database::tableHasColumn(const std::string& table, const std::string& colum
     return false;
 }
 
-bool Database::hasAnyTable() const
+bool Connection::hasAnyTable() const
 {
     auto query = m_session->prepare("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1");
     return query && query->next();
 }
 
-bool Database::open()
+bool Connection::open()
 {
     std::error_code error;
     std::filesystem::create_directories(m_dataDirectory, error);
@@ -218,7 +218,7 @@ bool Database::open()
     return ensureDefaultEmployee();
 }
 
-int Database::schemaVersion() const
+int Connection::schemaVersion() const
 {
     auto query = m_session->prepare("PRAGMA user_version");
     if (!query || !query->next()) {
@@ -227,7 +227,7 @@ int Database::schemaVersion() const
     return query->integer(0);
 }
 
-bool Database::setSchemaVersion(int version)
+bool Connection::setSchemaVersion(int version)
 {
     if (!m_session->exec("PRAGMA user_version = " + std::to_string(version))) {
         warn("Could not set the schema version: " + m_session->lastError());
@@ -236,7 +236,7 @@ bool Database::setSchemaVersion(int version)
     return true;
 }
 
-bool Database::migrateLegacyShapesIfNeeded()
+bool Connection::migrateLegacyShapesIfNeeded()
 {
     if (!migrateCatalogIfNeeded() || !migrateBookLanguageIfNeeded()
         || !migrateBookDescriptionIfNeeded() || !migrateMemberSexIfNeeded()
@@ -264,7 +264,7 @@ bool Database::migrateLegacyShapesIfNeeded()
     return setSchemaVersion(kSchemaVersion);
 }
 
-int Database::countRowsBlockingDateConstraints() const
+int Connection::countRowsBlockingDateConstraints() const
 {
     struct Violation {
         const char* what;
@@ -321,7 +321,7 @@ int Database::countRowsBlockingDateConstraints() const
     return total;
 }
 
-bool Database::migratePublicationDatesIfNeeded()
+bool Connection::migratePublicationDatesIfNeeded()
 {
     auto info = m_session->prepare("PRAGMA table_info(books)");
     if (!info) {
@@ -386,7 +386,7 @@ bool Database::migratePublicationDatesIfNeeded()
     return true;
 }
 
-bool Database::migrateDateConstraintsIfNeeded(bool* applied)
+bool Connection::migrateDateConstraintsIfNeeded(bool* applied)
 {
     *applied = false;
     std::string createSql;
@@ -422,7 +422,7 @@ bool Database::migrateDateConstraintsIfNeeded(bool* applied)
     return ok;
 }
 
-bool Database::rebuildTablesWithDateConstraints()
+bool Connection::rebuildTablesWithDateConstraints()
 {
     const std::vector<std::string> loansRebuild = {
         R"SQL(
@@ -521,7 +521,7 @@ bool Database::rebuildTablesWithDateConstraints()
     return true;
 }
 
-bool Database::migrateCatalogIfNeeded()
+bool Connection::migrateCatalogIfNeeded()
 {
     auto check = m_session->prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='authors'");
@@ -612,7 +612,7 @@ bool Database::migrateCatalogIfNeeded()
     return execSqlScript(catalogSql, "Catalog migration");
 }
 
-bool Database::migrateBookLanguageIfNeeded()
+bool Connection::migrateBookLanguageIfNeeded()
 {
     std::string createSql;
     {
@@ -679,7 +679,7 @@ bool Database::migrateBookLanguageIfNeeded()
         return false;
     }
     const Status work = m_session->transaction([&] {
-        for (const std::string& statement : VLMS::SqlText::splitStatements(migrationSql)) {
+        for (const std::string& statement : SqlText::splitStatements(migrationSql)) {
             if (const Status done = m_session->exec(statement); !done) {
                 return done;
             }
@@ -708,7 +708,7 @@ bool Database::migrateBookLanguageIfNeeded()
     return true;
 }
 
-bool Database::migrateBookDescriptionIfNeeded()
+bool Connection::migrateBookDescriptionIfNeeded()
 {
     auto check = m_session->prepare("PRAGMA table_info(books)");
     if (!check) {
@@ -727,7 +727,7 @@ bool Database::migrateBookDescriptionIfNeeded()
     return true;
 }
 
-bool Database::migrateMemberSexIfNeeded()
+bool Connection::migrateMemberSexIfNeeded()
 {
     if (tableHasColumn("members", "sex")) {
         return true;
@@ -740,7 +740,7 @@ bool Database::migrateMemberSexIfNeeded()
     return true;
 }
 
-bool Database::migrateMemberEmailIfNeeded()
+bool Connection::migrateMemberEmailIfNeeded()
 {
     if (tableHasColumn("members", "email")) {
         return true;
@@ -752,7 +752,7 @@ bool Database::migrateMemberEmailIfNeeded()
     return true;
 }
 
-bool Database::migrateMemberArchivedIfNeeded()
+bool Connection::migrateMemberArchivedIfNeeded()
 {
     if (tableHasColumn("members", "archived_at")) {
         return true;
@@ -768,7 +768,7 @@ bool Database::migrateMemberArchivedIfNeeded()
     return true;
 }
 
-bool Database::migrateMemberSpreadsheetColumnsIfNeeded()
+bool Connection::migrateMemberSpreadsheetColumnsIfNeeded()
 {
     struct Column {
         const char* name;
@@ -795,7 +795,7 @@ bool Database::migrateMemberSpreadsheetColumnsIfNeeded()
     return true;
 }
 
-bool Database::migrateArchiveColumnsIfNeeded()
+bool Connection::migrateArchiveColumnsIfNeeded()
 {
     struct Added {
         const char* table;
@@ -902,7 +902,7 @@ bool Database::migrateArchiveColumnsIfNeeded()
     return true;
 }
 
-bool Database::migrateMemberActiveUntilIfNeeded()
+bool Connection::migrateMemberActiveUntilIfNeeded()
 {
     const bool addColumn = !tableHasColumn("members", "active_until");
     const bool dropStatus = tableHasColumn("members", "status");
@@ -947,7 +947,7 @@ bool Database::migrateMemberActiveUntilIfNeeded()
     return true;
 }
 
-bool Database::upgradeSchemaIfNeeded()
+bool Connection::upgradeSchemaIfNeeded()
 {
     const int version = schemaVersion();
     if (version == 0) {
@@ -981,7 +981,7 @@ bool Database::upgradeSchemaIfNeeded()
     return true;
 }
 
-bool Database::normalizePublicationDatesFromOriginals()
+bool Connection::normalizePublicationDatesFromOriginals()
 {
     if (!tableHasColumn("books", "publication_date_original")) {
         return true;
@@ -1042,7 +1042,7 @@ bool Database::normalizePublicationDatesFromOriginals()
     return true;
 }
 
-bool Database::applySchema()
+bool Connection::applySchema()
 {
     auto existsQuery = m_session->prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='members'");
@@ -1059,7 +1059,7 @@ bool Database::applySchema()
     return execSqlScript(sql, "Schema apply");
 }
 
-bool Database::ensureDefaultEmployee()
+bool Connection::ensureDefaultEmployee()
 {
     auto countQuery = m_session->prepare("SELECT COUNT(*) FROM employees");
     if (!countQuery || !countQuery->next() || countQuery->integer(0) > 0) {
@@ -1083,3 +1083,5 @@ bool Database::ensureDefaultEmployee()
     }
     return true;
 }
+
+}  // namespace VLMS::Database

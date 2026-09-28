@@ -8,15 +8,15 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
 class MemberRepository {
 public:
-    MemberRepository(VLMS::SqliteSession& session, std::string resourcesDirectory);
+    MemberRepository(Database::SqliteSession& session, std::string resourcesDirectory);
 
     [[nodiscard]] VLMS::Result<std::vector<MemberRecord>> listMembers(
         const MemberQuery& query) const;
@@ -98,7 +98,7 @@ private:
     [[nodiscard]] VLMS::Result<std::int64_t> insertMemberRow(const MemberInput& input);
     [[nodiscard]] VLMS::Status applyMemberFields(std::int64_t id, const MemberInput& input);
 
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
     std::string m_resourcesDirectory;
 };
 

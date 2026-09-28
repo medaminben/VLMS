@@ -11,7 +11,6 @@
 using namespace VLMS;
 
 using VLMS::ErrorKind;
-using VLMS::SqliteSession;
 
 namespace {
 
@@ -53,7 +52,7 @@ TEST(test_core_SqliteSession, OpensAFileAndReadsWhatItWrote)
     ASSERT_TRUE(dir.isValid());
     const std::string path = dir.dbPath();
 
-    auto opened = SqliteSession::open(path);
+    auto opened = Database::SqliteSession::open(path);
     ASSERT_TRUE(opened);
     auto& db = *opened.value();
     ASSERT_TRUE(db.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)"));
@@ -80,7 +79,7 @@ TEST(test_core_SqliteSession, PrepareFailureIsSqlNotARow)
     ASSERT_TRUE(dir.isValid());
     const std::string path = dir.dbPath();
 
-    auto opened = SqliteSession::open(path);
+    auto opened = Database::SqliteSession::open(path);
     ASSERT_TRUE(opened);
     const auto stmt = opened.value()->prepare("SELECT * FROM no_such_table");
     EXPECT_FALSE(stmt);
@@ -94,7 +93,7 @@ TEST(test_core_SqliteSession, TransactionRollsBackAFailedWrite)
     ASSERT_TRUE(dir.isValid());
     const std::string path = dir.dbPath();
 
-    auto opened = SqliteSession::open(path);
+    auto opened = Database::SqliteSession::open(path);
     ASSERT_TRUE(opened);
     auto& db = *opened.value();
     ASSERT_TRUE(db.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT UNIQUE)"));
@@ -124,7 +123,7 @@ TEST(test_core_SqliteSession, NamedBindsAndNullsRoundTrip)
     ASSERT_TRUE(dir.isValid());
     const std::string path = dir.dbPath();
 
-    auto opened = SqliteSession::open(path);
+    auto opened = Database::SqliteSession::open(path);
     ASSERT_TRUE(opened);
     auto& db = *opened.value();
     ASSERT_TRUE(db.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, note TEXT)"));

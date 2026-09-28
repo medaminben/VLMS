@@ -4,7 +4,7 @@ set(RAW_TARGET_NAME vlms_database)
 include(${CMAKE_SOURCE_DIR}/cmake/Sqlite.cmake)
 
 set(DATABASE_HEADERS
-    include/VLMS/Database/Database.h
+    include/VLMS/Database/Connection.h
     include/VLMS/Database/SqliteSession.h
     include/VLMS/Database/SqlText.h
 )
@@ -12,7 +12,7 @@ set(DATABASE_HEADERS
 add_library(${RAW_TARGET_NAME}
     ${DATABASE_HEADERS}
     src/sqlite3_api.h
-    src/Database.cpp
+    src/Connection.cpp
     src/SqliteSession.cpp
     src/SqlText.cpp
 )

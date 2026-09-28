@@ -25,7 +25,7 @@ std::filesystem::path makeTempRoot()
     return error ? std::filesystem::path{} : root;
 }
 
-bool bindValue(VLMS::SqliteStatement& stmt, const std::string& key, const SqlValue& value)
+bool bindValue(VLMS::Database::SqliteStatement& stmt, const std::string& key, const SqlValue& value)
 {
     const std::string name = (!key.empty() && key.front() == ':') ? key : (":" + key);
     if (value.isNull()) {
@@ -37,9 +37,9 @@ bool bindValue(VLMS::SqliteStatement& stmt, const std::string& key, const SqlVal
     return static_cast<bool>(stmt.bind(name, value.toString()));
 }
 
-bool runScript(VLMS::SqliteSession& session, const std::string& script, std::string* error)
+bool runScript(VLMS::Database::SqliteSession& session, const std::string& script, std::string* error)
 {
-    for (const std::string& statement : VLMS::SqlText::splitStatements(script)) {
+    for (const std::string& statement : VLMS::Database::SqlText::splitStatements(script)) {
         if (!session.exec(statement)) {
             if (error != nullptr) {
                 *error = session.lastError() + "\nSQL: " + statement.substr(0, 200);
@@ -98,7 +98,7 @@ TestDatabase::TestDatabase(Mode mode, std::string sourcePath)
         break;
     }
 
-    m_database = std::make_unique<Database>(dataDirectory());
+    m_database = std::make_unique<VLMS::Database::Connection>(dataDirectory());
     m_opened = m_database->open();
     if (!m_opened) {
         m_lastError = "Database::open() failed for " + databasePath();
@@ -114,7 +114,7 @@ TestDatabase::~TestDatabase()
     }
 }
 
-VLMS::SqliteSession& TestDatabase::session() const
+VLMS::Database::SqliteSession& TestDatabase::session() const
 {
     return m_database->session();
 }
@@ -148,7 +148,7 @@ bool TestDatabase::materialiseFromSqlFile(const std::string& scriptPath)
         return false;
     }
 
-    auto opened = VLMS::SqliteSession::open(databasePath());
+    auto opened = VLMS::Database::SqliteSession::open(databasePath());
     if (!opened) {
         m_lastError = "Could not open the seed database: " + opened.error().detail;
         return false;

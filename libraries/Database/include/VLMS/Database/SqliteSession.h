@@ -12,7 +12,7 @@
 struct sqlite3;
 struct sqlite3_stmt;
 
-namespace VLMS {
+namespace VLMS::Database {
 
 class SqliteSession;
 
@@ -85,4 +85,4 @@ private:
     std::string m_error;
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Database

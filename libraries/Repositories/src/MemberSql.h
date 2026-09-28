@@ -5,9 +5,9 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteStatement;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories::MemberSql {
 
@@ -22,10 +22,10 @@ namespace VLMS::Repositories::MemberSql {
 /// Sex, year, age group, city and status, on members aliased `m`. The loan
 /// queries join members as `m` too, so they filter the borrower with it.
 [[nodiscard]] std::string facetClause(const MemberFacets& facets);
-void bindFacets(SqliteStatement& query, const MemberFacets& facets);
+void bindFacets(Database::SqliteStatement& query, const MemberFacets& facets);
 
 [[nodiscard]] std::string filterClause(const MemberQuery& query);
-void bindFilters(SqliteStatement& query, const MemberQuery& queryData);
+void bindFilters(Database::SqliteStatement& query, const MemberQuery& queryData);
 [[nodiscard]] std::string orderExpressions(const MemberQuery& query);
 [[nodiscard]] std::string orderClause(const MemberQuery& query);
 

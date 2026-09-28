@@ -10,7 +10,6 @@
 #include <string_view>
 #include <vector>
 
-using VLMS::SqlText::escapeLike;
 using VLMS::trim;
 
 namespace VLMS::Repositories::MemberSql {
@@ -38,7 +37,7 @@ void appendInClause(std::string& sql,
     sql += ") ";
 }
 
-void bindInValues(SqliteStatement& query,
+void bindInValues(Database::SqliteStatement& query,
                   std::string_view prefix,
                   const std::vector<std::string>& values)
 {
@@ -87,7 +86,7 @@ std::string facetClause(const MemberFacets& facets)
     return sql;
 }
 
-void bindFacets(SqliteStatement& query, const MemberFacets& facets)
+void bindFacets(Database::SqliteStatement& query, const MemberFacets& facets)
 {
     bindInValues(query, "status_", facets.statuses);
     bindInValues(query, "sex_", facets.sexes);
@@ -117,11 +116,11 @@ std::string filterClause(const MemberQuery& query)
     return sql;
 }
 
-void bindFilters(SqliteStatement& query, const MemberQuery& queryData)
+void bindFilters(Database::SqliteStatement& query, const MemberQuery& queryData)
 {
     const std::string search = trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + escapeLike(search) + "%");
+        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }
     bindFacets(query, facetsOf(queryData));
 }

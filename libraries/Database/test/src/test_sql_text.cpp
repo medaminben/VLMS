@@ -33,7 +33,7 @@ TEST(test_core_SqlText, EscapeLikeNeutralisesWildcards)
     };
     for (const auto& [input, expected] : cases) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(SqlText::escapeLike(input), expected);
+        EXPECT_EQ(Database::SqlText::escapeLike(input), expected);
     }
 }
 
@@ -45,12 +45,12 @@ TEST(test_core_SqlText, EscapeLikeDoublesTheBackslashBeforeTheWildcards)
     // a literal backslash followed by the % wildcard -- so a search for "100%"
     // would match every row starting with a backslash and none of the rows
     // actually containing "100%".
-    EXPECT_EQ(SqlText::escapeLike("100%"), "100\\%");
-    EXPECT_EQ(SqlText::escapeLike("100\\%"), "100\\\\\\%");
+    EXPECT_EQ(Database::SqlText::escapeLike("100%"), "100\\%");
+    EXPECT_EQ(Database::SqlText::escapeLike("100\\%"), "100\\\\\\%");
 
     // A pre-escaped pattern must not survive untouched, or a caller escaping
     // twice would silently produce a pattern that means something else.
-    EXPECT_NE(SqlText::escapeLike("\\%"), "\\%");
+    EXPECT_NE(Database::SqlText::escapeLike("\\%"), "\\%");
 }
 
 TEST(test_core_SqlText, EscapeLikeIsIdempotentOnTextWithoutWildcards)
@@ -58,7 +58,7 @@ TEST(test_core_SqlText, EscapeLikeIsIdempotentOnTextWithoutWildcards)
     for (const char* input : {"Les Misérables", "الأدب العربي", "9782070360024", "", "   ",
                               "\" OR \"\"=\""}) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(SqlText::escapeLike(input), input);
+        EXPECT_EQ(Database::SqlText::escapeLike(input), input);
     }
 }
 
@@ -73,7 +73,7 @@ TEST(test_core_SqlText, NullableTextTrims)
     };
     for (const auto& [input, expected] : cases) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(SqlText::nullableText(input).value_or(std::string()), expected);
+        EXPECT_EQ(Database::SqlText::nullableText(input).value_or(std::string()), expected);
     }
 }
 
@@ -81,7 +81,7 @@ TEST(test_core_SqlText, NullableTextReturnsNullForBlankInput)
 {
     for (const char* input : {"", "   ", "\t", "\n"}) {
         SCOPED_TRACE(input);
-        EXPECT_FALSE(SqlText::nullableText(input).has_value());
+        EXPECT_FALSE(Database::SqlText::nullableText(input).has_value());
     }
 }
 
@@ -94,7 +94,7 @@ TEST(test_core_SqlText, NullableTextNeverReturnsAnEmptyString)
         // empty QString binds as '', not as NULL, and a column carrying both for
         // the same meaning needs every query to test for both -- which is the test
         // that gets forgotten.
-        const auto bound = SqlText::nullableText(input);
+        const auto bound = Database::SqlText::nullableText(input);
         EXPECT_FALSE(bound.has_value()) << "blank input must bind as SQL NULL, never as ''";
     }
 }
@@ -103,7 +103,7 @@ TEST(test_core_SqlText, NullableTextNeverReturnsAnEmptyString)
 // splitStatements
 //
 // tst_sql_script proves this end to end, by appending each awkward case to the
-// real schema and asking whether Database::open() survives it. These are the
+// real schema and asking whether Connection::open() survives it. These are the
 // same corners asked directly, because splitStatements is public API now: the
 // test harness applies fixtures through it too, so a regression here would
 // break the thing that would otherwise report the regression.
@@ -128,7 +128,7 @@ TEST(test_core_SqlText, SplitStatementsCountsTopLevelSemicolons)
     };
     for (const auto& [script, expected] : cases) {
         SCOPED_TRACE(script);
-        EXPECT_EQ(int(SqlText::splitStatements(script).size()), expected);
+        EXPECT_EQ(int(Database::SqlText::splitStatements(script).size()), expected);
     }
 }
 
@@ -137,7 +137,7 @@ TEST(test_core_SqlText, SplitStatementsDropsComments)
     // Comment-only fragments must not survive: SQLite answers "No query" for
     // one, which reads as a broken schema rather than as a comment.
     const std::vector<std::string> statements =
-        SqlText::splitStatements("-- a note\nSELECT 1; /* another */ SELECT 2;");
+        Database::SqlText::splitStatements("-- a note\nSELECT 1; /* another */ SELECT 2;");
     EXPECT_EQ(statements.size(), 2u);
     for (const std::string& statement : statements) {
         EXPECT_EQ(statement.find("note"), std::string::npos) << statement;
@@ -148,7 +148,7 @@ TEST(test_core_SqlText, SplitStatementsDropsComments)
 TEST(test_core_SqlText, SplitStatementsKeepsStringLiteralsWhole)
 {
     const std::vector<std::string> statements =
-        SqlText::splitStatements("INSERT INTO t VALUES ('first; second', 'L''Etranger');");
+        Database::SqlText::splitStatements("INSERT INTO t VALUES ('first; second', 'L''Etranger');");
     ASSERT_EQ(statements.size(), 1u);
     EXPECT_NE(statements.front().find("'first; second'"), std::string::npos) << statements.front();
     EXPECT_NE(statements.front().find("'L''Etranger'"), std::string::npos) << statements.front();

@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 
 #include <VLMS/Core/DateText.h>
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <VLMS/Database/SqliteSession.h>
 
@@ -32,7 +32,7 @@ class ReadOnlySource {
 public:
     explicit ReadOnlySource(const std::string& path)
     {
-        auto opened = VLMS::SqliteSession::open(path);
+        auto opened = Database::SqliteSession::open(path);
         if (!opened) {
             return;
         }
@@ -40,10 +40,10 @@ public:
     }
 
     [[nodiscard]] bool isOpen() const { return m_session != nullptr; }
-    [[nodiscard]] VLMS::SqliteSession& session() const { return *m_session; }
+    [[nodiscard]] Database::SqliteSession& session() const { return *m_session; }
 
 private:
-    std::unique_ptr<VLMS::SqliteSession> m_session;
+    std::unique_ptr<Database::SqliteSession> m_session;
 };
 
 std::uint32_t rotr(std::uint32_t value, std::uint32_t bits)
@@ -328,7 +328,7 @@ TEST_F(test_core_RealDb, SchemaVersionAdvancesToCurrent)
     // The production copy reports 0 going in. Arriving at 1 means the whole
     // legacy chain ran and the constraint pre-flight found nothing to object
     // to -- if it had, this would still be 0 and that would be the finding.
-    EXPECT_EQ(s_db->userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(s_db->userVersion(), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_RealDb, LoanConstraintsAreInPlace)

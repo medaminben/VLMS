@@ -2,7 +2,7 @@
 
 #include "SqlValue.h"
 
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <filesystem>
 #include <memory>
@@ -10,16 +10,16 @@
 #include <string_view>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace Test {
 
 /**
  * An isolated SQLite database in a temporary directory.
  *
- * Construction drives the real production path — Database::open() applies
+ * Construction drives the real production path — Connection::open() applies
  * database/schema.sql and then runs the whole migrateXIfNeeded chain — so the
  * migration code is exercised by every test that touches a database, not only
  * by the migration suite.
@@ -42,8 +42,8 @@ public:
     TestDatabase& operator=(const TestDatabase&) = delete;
 
     [[nodiscard]] bool isValid() const { return m_opened; }
-    [[nodiscard]] Database& database() const { return *m_database; }
-    [[nodiscard]] VLMS::SqliteSession& session() const;
+    [[nodiscard]] VLMS::Database::Connection& database() const { return *m_database; }
+    [[nodiscard]] VLMS::Database::SqliteSession& session() const;
     [[nodiscard]] std::string rootDirectory() const { return m_root.string(); }
     [[nodiscard]] std::string dataDirectory() const;
     [[nodiscard]] std::string resourcesDirectory() const;
@@ -68,7 +68,7 @@ private:
     bool materialiseFromCopy(const std::string& sourceDbPath);
 
     std::filesystem::path m_root;
-    std::unique_ptr<Database> m_database;
+    std::unique_ptr<VLMS::Database::Connection> m_database;
     bool m_opened = false;
     mutable std::string m_lastError;
 };
