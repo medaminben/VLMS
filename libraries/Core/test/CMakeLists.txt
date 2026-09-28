@@ -30,16 +30,6 @@ set(CORE_TST_SOURCES
 
 # --- Database tests: moved to libraries/Database/test by the Database test task ---
 
-set(DATABASE_TST_SOURCES
-    src/test_sql_text.cpp
-    src/test_sqlite_session.cpp
-    src/test_sql_script.cpp
-    src/test_database_schema.cpp
-    src/test_database_migrations.cpp
-    src/test_database_file.cpp
-    src/test_database_realdb.cpp
-)
-
 # --- Repositories tests: moved to libraries/Repositories/test by the Repositories test task ---
 
 set(REPOSITORIES_TST_SOURCES
@@ -85,17 +75,3 @@ build_gtest_executable(
 )
 
 # --- Real database: moved to libraries/Database/test by the Database test task ---
-
-set(VLMS_TEST_REAL_DB "${CMAKE_SOURCE_DIR}/database/vlms.db.bak-20260814-232925"
-    CACHE FILEPATH "A real VLMS database to verify migrations against")
-
-if(VLMS_TEST_REAL_DB AND EXISTS "${VLMS_TEST_REAL_DB}")
-    set(_vlms_test_timeout 300)
-    set(_vlms_test_labels "realdb;dates")
-    set(_vlms_test_environment "VLMS_TEST_REAL_DB=${VLMS_TEST_REAL_DB}")
-    _vlms_add_gtest_entry(test_vlms_core_realdb test_vlms_core "Africa/Tunis"
-        --gtest_filter=test_core_RealDb.*)
-else()
-    message(STATUS
-        "test_vlms_core RealDb: not registered, no database at '${VLMS_TEST_REAL_DB}'")
-endif()

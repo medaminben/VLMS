@@ -1,11 +1,11 @@
-# libraries/Core/test/data
+# libraries/Database/test/data
 
 Database shapes that VLMS has actually shipped, one file per shape, plus
 the dirty-data fixtures the Phase D migration tests need.
 
 These are not snapshots taken from git: `database/schema.sql` has only ever had
 one commit, so the historical shapes are reconstructed from what the
-`migrateXIfNeeded` detectors in `libraries/Core/src/Database.cpp` look for. Each
+`migrateXIfNeeded` detectors in `libraries/Database/src/Database.cpp` look for. Each
 file is named for the single migration it is meant to trigger and is written so
 that the other three detectors find nothing to do — that is what makes a failure
 in `tst_database_migrations` point at one migration rather than at the chain.
