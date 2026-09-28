@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 
 #include <QVector>
 #include <QWidget>

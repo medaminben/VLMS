@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/LoanTypes.h>
+#include <VLMS/Repositories/LoanTypes.h>
 
 #include <QDialog>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 
 #include <QDialog>
 

@@ -1,7 +1,7 @@
-#include "SqliteSession.h"
+#include <VLMS/Database/SqliteSession.h>
 #include "TestDatabase.h"
 
-#include <VLMS/Core/Database.h>
+#include <VLMS/Database/Database.h>
 
 #include <gtest/gtest.h>
 

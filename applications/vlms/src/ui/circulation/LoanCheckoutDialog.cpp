@@ -1,7 +1,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 
 #include <VLMS/Core/Clock.h>
-#include <VLMS/Core/LoanPolicy.h>
+#include <VLMS/Repositories/LoanPolicy.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"

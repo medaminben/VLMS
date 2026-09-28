@@ -5,8 +5,8 @@
 #include "ui/catalog/CatalogPage.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 #include "QtBridge.h"

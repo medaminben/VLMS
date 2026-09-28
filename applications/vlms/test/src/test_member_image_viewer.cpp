@@ -5,8 +5,8 @@
 #include "ui/members/MemberEditorDialog.h"
 
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QApplication>
 #include <QFile>

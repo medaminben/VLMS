@@ -1,5 +1,5 @@
 #include "ui/catalog/CategoryManagerDialog.h"
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include "TestDatabase.h"
 #include "TestSeed.h"
 #include <QHeaderView>

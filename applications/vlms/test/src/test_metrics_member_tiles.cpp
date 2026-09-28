@@ -4,7 +4,7 @@
 #include "ui/metrics/MetricsPage.h"
 
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 
 #include <QLabel>
 

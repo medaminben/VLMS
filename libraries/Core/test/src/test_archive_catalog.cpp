@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 

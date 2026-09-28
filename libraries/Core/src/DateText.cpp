@@ -2,7 +2,7 @@
 
 #include <VLMS/Core/Date.h>
 
-#include "Text.h"
+#include <VLMS/Core/Text.h>
 
 #include <cctype>
 #include <cstdio>

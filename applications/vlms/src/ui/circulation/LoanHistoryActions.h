@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 
 #include <QWidget>
 

@@ -3,13 +3,13 @@
 
 #include "ui/circulation/CirculationPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/LoanTypes.h>
+#include <VLMS/Repositories/LoanTypes.h>
 
 #include <QApplication>
 #include <QLayout>

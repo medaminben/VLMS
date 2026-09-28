@@ -3,8 +3,8 @@
 
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 
 #include <gtest/gtest.h>
 

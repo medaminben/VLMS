@@ -1,4 +1,4 @@
-#include <VLMS/Core/LoanPolicy.h>
+#include <VLMS/Repositories/LoanPolicy.h>
 
 #include <gtest/gtest.h>
 

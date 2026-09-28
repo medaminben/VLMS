@@ -1,44 +1,50 @@
-add_library(vlms_testsupport STATIC
-    support/SqlValue.h
-    support/TestDatabase.cpp
-    support/TestDatabase.h
-    support/TestSeed.cpp
-    support/TestSeed.h
+add_library(vlms_testsupport_core STATIC
     support/TestEnv.cpp
     support/TestEnv.h
 )
 
-target_include_directories(vlms_testsupport
+target_include_directories(vlms_testsupport_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/support
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/libraries/Core/src
 )
 
-target_link_libraries(vlms_testsupport
+target_link_libraries(vlms_testsupport_core
     PUBLIC
         ${CMAKE_ROOT_NAME}::Core
         GTest::gtest
 )
 
-vlms_configure_target(vlms_testsupport)
-set_target_properties(vlms_testsupport PROPERTIES
+vlms_configure_target(vlms_testsupport_core)
+set_target_properties(vlms_testsupport_core PROPERTIES
     AUTOMOC OFF
     AUTOUIC OFF
     AUTORCC OFF
 )
 
-set(TST_SOURCES
+set(CORE_TST_SOURCES
     src/test_result.cpp
     src/test_clock.cpp
-    src/test_loan_policy.cpp
     src/test_date_text.cpp
+    src/test_licence_strings.cpp
+)
+
+# --- Database tests: moved to libraries/Database/test by the Database test task ---
+
+set(DATABASE_TST_SOURCES
     src/test_sql_text.cpp
+    src/test_sqlite_session.cpp
+    src/test_sql_script.cpp
     src/test_database_schema.cpp
     src/test_database_migrations.cpp
     src/test_database_file.cpp
+    src/test_database_realdb.cpp
+)
+
+# --- Repositories tests: moved to libraries/Repositories/test by the Repositories test task ---
+
+set(REPOSITORIES_TST_SOURCES
+    src/test_loan_policy.cpp
     src/test_strings_parity.cpp
-    src/test_licence_strings.cpp
     src/test_catalog_repository.cpp
     src/test_member_repository.cpp
     src/test_member_status_rule.cpp
@@ -53,9 +59,6 @@ set(TST_SOURCES
     src/test_circulation_injection.cpp
     src/test_metrics_windows.cpp
     src/test_circulation_timezone.cpp
-    src/test_sql_script.cpp
-    src/test_sqlite_session.cpp
-    src/test_database_realdb.cpp
     src/test_archive_catalog.cpp
     src/test_archive_circulation.cpp
     src/test_archive_purge.cpp
@@ -65,9 +68,11 @@ set(TST_SOURCES
     src/test_can_remove.cpp
 )
 
+# --- Until both blocks above have moved, this binary runs all three sets. ---
+
 build_gtest_executable(
     NAME test_vlms_core
-    SRC ${TST_SOURCES}
+    SRC ${CORE_TST_SOURCES} ${DATABASE_TST_SOURCES} ${REPOSITORIES_TST_SOURCES}
     DEPENDS vlms_testsupport
     DISCOVER OFF
     GTEST_FILTER -test_core_Timezone.*:test_core_RealDb.*
@@ -78,7 +83,8 @@ build_gtest_executable(
     TIMEZONES Pacific/Kiritimati Pacific/Midway
     TIMEZONE_FILTER test_core_Timezone.*
 )
-target_include_directories(test_vlms_core PRIVATE ${CMAKE_SOURCE_DIR}/libraries/Core/src)
+
+# --- Real database: moved to libraries/Database/test by the Database test task ---
 
 set(VLMS_TEST_REAL_DB "${CMAKE_SOURCE_DIR}/database/vlms.db.bak-20260814-232925"
     CACHE FILEPATH "A real VLMS database to verify migrations against")

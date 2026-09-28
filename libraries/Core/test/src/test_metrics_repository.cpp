@@ -3,8 +3,8 @@
 #include "TestSeed.h"
 
 #include <VLMS/Core/Date.h>
-#include <VLMS/Core/MetricsRepository.h>
-#include <VLMS/Core/MetricsTypes.h>
+#include <VLMS/Repositories/MetricsRepository.h>
+#include <VLMS/Repositories/MetricsTypes.h>
 
 #include <gtest/gtest.h>
 
