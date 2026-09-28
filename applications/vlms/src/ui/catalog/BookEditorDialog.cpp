@@ -725,6 +725,7 @@ void BookEditorDialog::readDescriptionFromImage()
     m_ocr->start(selectedOcrLanguages());
 }
 
+
 void BookEditorDialog::appendRecognizedText(const QString& text)
 {
     const QString existing = m_descriptionEdit->toPlainText().trimmed();

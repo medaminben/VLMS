@@ -220,6 +220,7 @@ void CatalogPage::retranslateUi()
     refreshSelectedBookPreview();
 }
 
+
 void CatalogPage::resetPagerAndRefresh() {
     m_pager->resetToFirstPage();
     refreshBooks();
@@ -312,6 +313,7 @@ void CatalogPage::refreshBooks() {
 void CatalogPage::onSearchChanged() {
     resetPagerAndRefresh();
 }
+
 
 qint64 CatalogPage::selectedBookId() const {
     const auto items = m_booksTable->selectedItems();

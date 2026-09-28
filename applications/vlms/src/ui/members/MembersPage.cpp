@@ -212,6 +212,7 @@ void MembersPage::retranslateUi() {
     refreshSelectedMemberPreview();
 }
 
+
 void MembersPage::refreshAllFilters()
 {
     m_filters->refresh();
