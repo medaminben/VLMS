@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+using namespace VLMS;
+
 using VLMS::applicationStylesheet;
 using VLMS::Locale;
 using VLMS::Strings;

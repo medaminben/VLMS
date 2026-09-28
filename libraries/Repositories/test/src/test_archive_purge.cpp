@@ -12,7 +12,8 @@
 #include <memory>
 #include <string>
 
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 /// One fixture for the whole funnel: a purge is always a question about the
 /// rows beneath a record, so every test needs all three repositories.

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::ErrorKind;
 using VLMS::Result;
 using VLMS::Status;

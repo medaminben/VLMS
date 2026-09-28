@@ -30,7 +30,8 @@
 #include <memory>
 
 using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

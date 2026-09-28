@@ -14,6 +14,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::Locale;
 
 class test_ui_ImageViewerDialog : public ::testing::Test {

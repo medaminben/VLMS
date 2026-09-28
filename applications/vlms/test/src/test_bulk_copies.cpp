@@ -23,7 +23,8 @@
 
 using VLMS::Locale;
 using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

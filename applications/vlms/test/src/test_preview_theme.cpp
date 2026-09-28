@@ -23,7 +23,8 @@
 using VLMS::Locale;
 using VLMS::Theme;
 using VLMS::ThemeMode;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

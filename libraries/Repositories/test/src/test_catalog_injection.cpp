@@ -12,7 +12,8 @@
 #include <string>
 #include <vector>
 
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

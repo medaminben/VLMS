@@ -14,7 +14,7 @@ namespace VLMS {
 class SqliteSession;
 }
 
-namespace VLMS::Test {
+namespace Test {
 
 /**
  * An isolated SQLite database in a temporary directory.
@@ -83,4 +83,4 @@ private:
     return false;
 }
 
-}  // namespace VLMS::Test
+}  // namespace Test

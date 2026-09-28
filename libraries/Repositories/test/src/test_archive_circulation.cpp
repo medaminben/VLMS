@@ -14,7 +14,8 @@
 using VLMS::Date;
 using VLMS::DateTime;
 using VLMS::ScopedClock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_core_ArchiveCirculation : public ::testing::Test {
 protected:

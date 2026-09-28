@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace VLMS::Test {
+namespace Test {
 
 /**
  * A bind/scalar cell for test SQL. Null is the default. Text coming back from
@@ -79,4 +79,4 @@ inline int SqlValue::toInt() const
     }
 }
 
-}  // namespace VLMS::Test
+}  // namespace Test

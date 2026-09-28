@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+using namespace VLMS;
+
 using VLMS::DateText::normalizePublicationDate;
 
 /**

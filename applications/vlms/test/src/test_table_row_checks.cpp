@@ -16,6 +16,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 namespace {
 
 void addRow(QTableWidget* table, int row, qint64 id, const QString& title)

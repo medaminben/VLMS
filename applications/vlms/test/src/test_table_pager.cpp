@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::TablePager;
 
 TEST(test_ui_TablePager, SetCurrentPageDoesNotEmit)

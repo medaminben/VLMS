@@ -10,7 +10,8 @@
 #include <memory>
 #include <string>
 
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 using VLMS::Status;
 
 namespace {

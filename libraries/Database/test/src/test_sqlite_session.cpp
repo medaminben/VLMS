@@ -8,6 +8,8 @@
 #include <string>
 #include <system_error>
 
+using namespace VLMS;
+
 using VLMS::ErrorKind;
 using VLMS::SqliteSession;
 

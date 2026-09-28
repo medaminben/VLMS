@@ -12,7 +12,8 @@
 #include <cstdint>
 #include <memory>
 
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

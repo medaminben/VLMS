@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::LanguageSelector;
 using VLMS::Locale;
 

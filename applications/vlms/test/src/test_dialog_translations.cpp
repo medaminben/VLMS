@@ -36,7 +36,8 @@ using VLMS::Date;
 using VLMS::Locale;
 using VLMS::ScopedClock;
 using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -100,9 +101,9 @@ TEST_F(test_ui_DialogTranslations, ButtonBoxUsesTheApplicationTableInEveryLocale
         MemberEditorDialog dialog(*m_repository);
         auto* box = dialog.findChild<QDialogButtonBox*>();
         ASSERT_NE(box, nullptr);
-        EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), qs(Strings::rawValue(locale, "common.ok")));
+        EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), ::qs(Strings::rawValue(locale, "common.ok")));
         EXPECT_EQ(box->button(QDialogButtonBox::Cancel)->text(),
-                  qs(Strings::rawValue(locale, "common.cancel")));
+                  ::qs(Strings::rawValue(locale, "common.cancel")));
     }
 }
 
@@ -114,13 +115,13 @@ TEST_F(test_ui_DialogTranslations, MessageBoxButtonsUseTheApplicationTable)
         QMessageBox question(QMessageBox::Question, QStringLiteral("title"), QStringLiteral("text"),
                              QMessageBox::Yes | QMessageBox::No);
         VLMS::localizeMessageBox(&question);
-        EXPECT_EQ(question.button(QMessageBox::Yes)->text(), qs(Strings::rawValue(locale, "common.yes")));
-        EXPECT_EQ(question.button(QMessageBox::No)->text(), qs(Strings::rawValue(locale, "common.no")));
+        EXPECT_EQ(question.button(QMessageBox::Yes)->text(), ::qs(Strings::rawValue(locale, "common.yes")));
+        EXPECT_EQ(question.button(QMessageBox::No)->text(), ::qs(Strings::rawValue(locale, "common.no")));
 
         QMessageBox warning(QMessageBox::Warning, QStringLiteral("title"), QStringLiteral("text"),
                             QMessageBox::Ok);
         VLMS::localizeMessageBox(&warning);
-        EXPECT_EQ(warning.button(QMessageBox::Ok)->text(), qs(Strings::rawValue(locale, "common.ok")));
+        EXPECT_EQ(warning.button(QMessageBox::Ok)->text(), ::qs(Strings::rawValue(locale, "common.ok")));
     }
 }
 
@@ -153,9 +154,9 @@ TEST_F(test_ui_DialogTranslations, StandardButtonLabelsSurviveALanguageChange)
     Locale::setCode(kArabic);
     // Not just "no English": Qt's own Arabic would pass that. Every label must
     // be the application's word, or the action button's own text ("a").
-    const QStringList ours{qs(Strings::t("common.ok")), qs(Strings::t("common.cancel")),
-                           qs(Strings::t("common.yes")), qs(Strings::t("common.no")),
-                           qs(Strings::t("common.close")), qs(Strings::t("file.open")),
+    const QStringList ours{::qs(Strings::t("common.ok")), ::qs(Strings::t("common.cancel")),
+                           ::qs(Strings::t("common.yes")), ::qs(Strings::t("common.no")),
+                           ::qs(Strings::t("common.close")), ::qs(Strings::t("file.open")),
                            QStringLiteral("a")};
 
     const auto labelsAfterLanguageChange = [](const std::function<void()>& open) {
@@ -234,9 +235,9 @@ TEST_F(test_ui_DialogTranslations, InputDialogButtonsAreReachedThroughItsHiddenB
 
     auto* box = dialog.findChild<QDialogButtonBox*>();
     ASSERT_NE(box, nullptr);
-    EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), qs(Strings::rawValue(kArabic, "common.ok")));
+    EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), ::qs(Strings::rawValue(kArabic, "common.ok")));
     EXPECT_EQ(box->button(QDialogButtonBox::Cancel)->text(),
-              qs(Strings::rawValue(kArabic, "common.cancel")));
+              ::qs(Strings::rawValue(kArabic, "common.cancel")));
 }
 
 TEST_F(test_ui_DialogTranslations, LocalizersTolerateANullBox)
@@ -390,7 +391,7 @@ TEST_F(test_ui_DialogTranslations, EveryFailureMessageIsTranslatedInEveryLocale)
         const QString key = failureFor(member).messageKey;
         ASSERT_FALSE(key.isEmpty());
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
-            const QString text = qs(Strings::rawValue(locale, key.toStdString()));
+            const QString text = ::qs(Strings::rawValue(locale, key.toStdString()));
             EXPECT_FALSE(text.isEmpty() || text == key)
                 << "no " << locale << " text for '" << key.toStdString() << "'";
         }

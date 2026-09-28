@@ -19,7 +19,8 @@
 
 using VLMS::Locale;
 using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_CatalogRemoval : public ::testing::Test {
 protected:

@@ -14,7 +14,8 @@
 #include <vector>
 
 using VLMS::Date;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_core_MetricsRepository : public ::testing::Test {
 protected:

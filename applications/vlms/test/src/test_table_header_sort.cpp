@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 TEST(test_ui_TableHeaderSort, FirstClickAscendingThenToggles)
 {
     QTableWidget table(0, 2);
