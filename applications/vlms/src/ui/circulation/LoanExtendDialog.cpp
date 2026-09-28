@@ -24,9 +24,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Clock;
-using VLMS::Strings;
-
 }  // namespace
 
 LoanExtendDialog::LoanExtendDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
@@ -56,7 +53,7 @@ void LoanExtendDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     VLMS::setIsoDateFormat(m_dueDateEdit);
 
     const QDate currentDue = QDate::fromString(qs(loan.dueAt), Qt::ISODate);
-    const auto today = Clock::today();
+    const auto today = VLMS::Core::Clock::today();
     m_dueDateEdit->setMinimumDate(qd(VLMS::Repositories::LoanPolicy::minimumExtensionDate(cd(currentDue), today)));
     m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedExtensionDate(cd(currentDue), today)));
     form->addRow(new QLabel(this), m_dueDateEdit);

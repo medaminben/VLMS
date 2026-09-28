@@ -153,9 +153,9 @@ void MainWindow::buildUi() {
     connect(m_metricsNav, &QPushButton::clicked, this, [this]() { showPage(Page::Metrics); });
     connect(m_manualButton, &QPushButton::clicked, this, [this]() {
         const QString path = VLMS::manualIndexPath(
-            VLMS::qs(VLMS::Paths::projectRoot()),
+            VLMS::qs(VLMS::Core::Paths::projectRoot()),
             QCoreApplication::applicationDirPath(),
-            VLMS::qs(VLMS::Locale::code()));
+            VLMS::qs(VLMS::Core::Locale::code()));
         if (path.isEmpty()) {
             VLMS::showWarning(this, T("nav.help"), T("help.notFound"));
             return;
@@ -303,7 +303,7 @@ void MainWindow::updateBrandBanner()
     // a banner this tall, and the header grows to suit.
     static constexpr int kBannerHeight = 105;
 
-    const QString code = qs(VLMS::Locale::code());
+    const QString code = qs(VLMS::Core::Locale::code());
     const QString language =
         (code == QLatin1String("ar") || code == QLatin1String("fr")) ? code
                                                                     : QStringLiteral("en");
@@ -423,8 +423,6 @@ void MainWindow::onThemeChanged()
 
 void MainWindow::updateThemeToggle()
 {
-    using VLMS::Strings;
-
     if (m_themeToggle == nullptr) {
         return;
     }
@@ -457,7 +455,7 @@ void MainWindow::updateManualButton()
     m_manualButton->setText({});
     m_manualButton->setIcon(VLMS::manualButtonIcon(
         VLMS::Theme::mode(), kIconSize, m_manualButton->devicePixelRatioF(),
-        VLMS::Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight));
+        VLMS::Core::Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight));
     m_manualButton->setIconSize(QSize(kIconSize, kIconSize));
     m_manualButton->setToolTip(T("help.tooltip"));
     m_manualButton->setAccessibleName(T("nav.help"));
@@ -465,9 +463,6 @@ void MainWindow::updateManualButton()
 
 void MainWindow::retranslateUi()
 {
-    using VLMS::Clock;
-    using VLMS::Strings;
-
     setWindowTitle(T("app.title"));
 
     updateBrandBanner();
@@ -481,11 +476,11 @@ void MainWindow::retranslateUi()
     updateThemeToggle();
     updateManualButton();
 
-    m_languageSelector->setCurrentLanguage(VLMS::qs(VLMS::Locale::code()));
+    m_languageSelector->setCurrentLanguage(VLMS::qs(VLMS::Core::Locale::code()));
     m_languageSelector->retranslateUi();
 
     m_footerLabel->setText(T("footer.copyright", "year",
-                             std::to_string(Clock::today().year())));
+                             std::to_string(VLMS::Core::Clock::today().year())));
     // The label keeps its appearance -- no underline, no hover change. The
     // pointing hand (set by ClickableLabel) and this tooltip are the only
     // cues that it opens anything.

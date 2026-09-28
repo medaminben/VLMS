@@ -13,9 +13,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Date;
-using VLMS::DateTime;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -83,7 +80,7 @@ protected:
 
     /// Saves the book with its live copies minus `dropped`, plus `extra`, the
     /// way the editor does after the librarian removed that row.
-    VLMS::Status saveWithout(std::int64_t bookId,
+    Core::Status saveWithout(std::int64_t bookId,
                                    std::int64_t dropped,
                                    const std::vector<Repositories::BookCopyInput>& extra = {})
     {
@@ -138,7 +135,7 @@ TEST_F(test_core_ArchiveCatalog, LiveListsHideArchivedBooksAndTheArchiveShowsOnl
 TEST_F(test_core_ArchiveCatalog, ArchiveBookStampsTheBookAndEveryLiveCopyAlike)
 {
     const std::int64_t bookId = seedBookWithCopies(3, 2);
-    const ScopedClock pinned(DateTime(Date(2026, 9, 19), 10, 0, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
     ASSERT_TRUE(m_repository->archiveBook(bookId));
 
     EXPECT_EQ(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId))
@@ -226,11 +223,11 @@ TEST_F(test_core_ArchiveCatalog, RestoreBookBringsBackOnlyTheCopiesArchivedWithI
     const std::int64_t bookId = seedBookWithCopies(9, 3);
     const std::vector<std::int64_t> copies = copyIdsOf(*m_db, bookId);
     {
-        const ScopedClock earlier(DateTime(Date(2026, 9, 1), 9, 0, 0));
+        const Core::ScopedClock earlier(Core::DateTime(Core::Date(2026, 9, 1), 9, 0, 0));
         ASSERT_TRUE(saveWithout(bookId, copies.at(0)));
     }
     {
-        const ScopedClock later(DateTime(Date(2026, 9, 19), 10, 0, 0));
+        const Core::ScopedClock later(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
         ASSERT_TRUE(m_repository->archiveBook(bookId));
     }
 
@@ -279,7 +276,7 @@ TEST_F(test_core_ArchiveCatalog, ArchivedCopyListShowsTitleNumberAndStamp)
     const std::int64_t bookId = seedBookWithCopies(13, 2);
     const std::vector<std::int64_t> copies = copyIdsOf(*m_db, bookId);
     {
-        const ScopedClock pinned(DateTime(Date(2026, 9, 19), 10, 0, 0));
+        const Core::ScopedClock pinned(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
         ASSERT_TRUE(saveWithout(bookId, copies.at(0)));
     }
 

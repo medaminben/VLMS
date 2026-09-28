@@ -4,7 +4,7 @@
 
 namespace VLMS::Repositories::LoanPolicy {
 
-Date suggestedDueDate(const Date& borrowedOn)
+Core::Date suggestedDueDate(const Core::Date& borrowedOn)
 {
     if (!borrowedOn.isValid()) {
         return {};
@@ -12,18 +12,18 @@ Date suggestedDueDate(const Date& borrowedOn)
     return borrowedOn.addDays(defaultLoanDays());
 }
 
-Date minimumExtensionDate(const Date& currentDue, const Date& today)
+Core::Date minimumExtensionDate(const Core::Date& currentDue, const Core::Date& today)
 {
     if (!currentDue.isValid()) {
         return today;
     }
-    const Date dayAfterCurrentDue = currentDue.addDays(1);
+    const Core::Date dayAfterCurrentDue = currentDue.addDays(1);
     return dayAfterCurrentDue < today ? today : dayAfterCurrentDue;
 }
 
-Date suggestedExtensionDate(const Date& currentDue, const Date& today)
+Core::Date suggestedExtensionDate(const Core::Date& currentDue, const Core::Date& today)
 {
-    const Date effectiveFrom = (currentDue.isValid() && currentDue > today) ? currentDue : today;
+    const Core::Date effectiveFrom = (currentDue.isValid() && currentDue > today) ? currentDue : today;
     return effectiveFrom.addDays(defaultLoanDays());
 }
 
@@ -37,22 +37,22 @@ Validation rejected(std::string key, std::string message)
     return {false, std::move(key), std::move(message)};
 }
 
-Date parseIsoDate(std::string_view text)
+Core::Date parseIsoDate(std::string_view text)
 {
-    return Date::fromIso(trim(text));
+    return Core::Date::fromIso(Core::trim(text));
 }
 
 Validation validateLoanDates(std::string_view borrowedAt,
                              std::string_view dueAt,
-                             const Date& today)
+                             const Core::Date& today)
 {
-    const Date borrowed = parseIsoDate(borrowedAt);
+    const Core::Date borrowed = parseIsoDate(borrowedAt);
     if (!borrowed.isValid()) {
         return rejected("error.loan.borrowUnreadable",
                         "Borrow date must be a real date in YYYY-MM-DD form.");
     }
 
-    const Date due = parseIsoDate(dueAt);
+    const Core::Date due = parseIsoDate(dueAt);
     if (!due.isValid()) {
         return rejected("error.loan.dueUnreadable",
                         "Due date must be a real date in YYYY-MM-DD form.");
@@ -72,15 +72,15 @@ Validation validateLoanDates(std::string_view borrowedAt,
 
 Validation validateReturnDate(std::string_view returnedAt,
                               std::string_view storedBorrowedAt,
-                              const Date& today)
+                              const Core::Date& today)
 {
-    const Date returned = parseIsoDate(returnedAt);
+    const Core::Date returned = parseIsoDate(returnedAt);
     if (!returned.isValid()) {
         return rejected("error.loan.returnUnreadable",
                         "Return date must be a real date in YYYY-MM-DD form.");
     }
 
-    const Date borrowed = parseIsoDate(storedBorrowedAt);
+    const Core::Date borrowed = parseIsoDate(storedBorrowedAt);
     if (!borrowed.isValid()) {
         return rejected("error.loan.storedBorrowUnreadable",
                         "This loan's borrow date cannot be read, so a return date cannot be checked "
@@ -101,15 +101,15 @@ Validation validateReturnDate(std::string_view returnedAt,
 
 Validation validateExtension(std::string_view newDueAt,
                              std::string_view storedDueAt,
-                             const Date& today)
+                             const Core::Date& today)
 {
-    const Date newDue = parseIsoDate(newDueAt);
+    const Core::Date newDue = parseIsoDate(newDueAt);
     if (!newDue.isValid()) {
         return rejected("error.loan.dueUnreadable",
                         "Due date must be a real date in YYYY-MM-DD form.");
     }
 
-    const Date currentDue = parseIsoDate(storedDueAt);
+    const Core::Date currentDue = parseIsoDate(storedDueAt);
     if (!currentDue.isValid()) {
         return rejected("error.loan.storedDueUnreadable",
                         "This loan's due date cannot be read, so it cannot be extended. Correct the "

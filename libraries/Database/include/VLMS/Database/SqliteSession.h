@@ -29,16 +29,16 @@ public:
 
     [[nodiscard]] bool valid() const { return m_stmt != nullptr; }
 
-    Status bind(int index, std::int64_t value);
-    Status bind(int index, std::string_view value);
-    Status bindNull(int index);
-    Status bind(const std::string& name, std::int64_t value);
-    Status bind(const std::string& name, std::string_view value);
-    Status bindNull(const std::string& name);
-    Status bindOptional(const std::string& name, const std::optional<std::string>& value);
+    Core::Status bind(int index, std::int64_t value);
+    Core::Status bind(int index, std::string_view value);
+    Core::Status bindNull(int index);
+    Core::Status bind(const std::string& name, std::int64_t value);
+    Core::Status bind(const std::string& name, std::string_view value);
+    Core::Status bindNull(const std::string& name);
+    Core::Status bindOptional(const std::string& name, const std::optional<std::string>& value);
 
     /// INSERT/UPDATE/DELETE: step once and expect DONE.
-    Status exec();
+    Core::Status exec();
     /// SELECT: true when a row is ready. False means done or error; check ok().
     bool next();
     [[nodiscard]] bool ok() const { return m_ok; }
@@ -52,7 +52,7 @@ public:
     void reset();
 
 private:
-    Status bindIndex(const std::string& name, int* index);
+    Core::Status bindIndex(const std::string& name, int* index);
     void captureError();
 
     sqlite3* m_db = nullptr;
@@ -63,15 +63,15 @@ private:
 
 class SqliteSession {
 public:
-    static Result<std::unique_ptr<SqliteSession>> open(const std::string& path);
+    static Core::Result<std::unique_ptr<SqliteSession>> open(const std::string& path);
     ~SqliteSession();
 
     SqliteSession(const SqliteSession&) = delete;
     SqliteSession& operator=(const SqliteSession&) = delete;
 
-    Status exec(const std::string& sql);
-    Result<SqliteStatement> prepare(const std::string& sql);
-    Status transaction(const std::function<Status()>& work);
+    Core::Status exec(const std::string& sql);
+    Core::Result<SqliteStatement> prepare(const std::string& sql);
+    Core::Status transaction(const std::function<Core::Status()>& work);
 
     [[nodiscard]] std::int64_t lastInsertRowId() const;
     [[nodiscard]] const std::string& lastError() const { return m_error; }

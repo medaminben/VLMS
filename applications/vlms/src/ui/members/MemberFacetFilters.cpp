@@ -68,18 +68,18 @@ void MemberFacetFilters::refresh()
 {
     m_status->setEntries(T("members.allStatuses"),
                          codedEntries(Repositories::MemberRepository::statusCodes(),
-                                      Strings::memberStatusLabel));
+                                      Core::Strings::memberStatusLabel));
     m_status->fitRows(m_status->count());
     m_sex->setEntries(T("members.allSexes"),
-                      codedEntries(Repositories::MemberRepository::sexCodes(), Strings::memberSexLabel));
+                      codedEntries(Repositories::MemberRepository::sexCodes(), Core::Strings::memberSexLabel));
     m_sex->fitRows(m_sex->count());
     m_ageGroup->setEntries(T("members.allAgeGroups"),
                            codedEntries(Repositories::MemberRepository::ageGroupCodes(),
-                                        Strings::memberAgeGroupLabel));
+                                        Core::Strings::memberAgeGroupLabel));
     m_ageGroup->fitRows(m_ageGroup->count());
 
     const auto fillValues = [this](FacetList* list, const QString& allLabel,
-                                   const Result<std::vector<std::string>>& values) {
+                                   const Core::Result<std::vector<std::string>>& values) {
         if (!values) {
             showRepoError(this, values.error());
             return;

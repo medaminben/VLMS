@@ -24,9 +24,6 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -77,13 +74,13 @@ QStringList selectedFilterCodes(QListWidget* list)
 
 class test_ui_CirculationFilters : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         // Pinned for the whole test, not just the seeding: which loans are
         // Open and which are Overdue depends on what day the page thinks it is.
-        m_clock = std::make_unique<ScopedClock>(Date(2026, 9, 19));
+        m_clock = std::make_unique<Core::ScopedClock>(Core::Date(2026, 9, 19));
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
@@ -116,7 +113,7 @@ protected:
         const auto copies = copyIdsOf(*m_db, bookId);
         ASSERT_EQ(copies.size(), 3u);
 
-        const Date today = Date(2026, 9, 19);
+        const Core::Date today = Core::Date(2026, 9, 19);
         m_openId = rawInsertLoan(*m_db, m_memberId, copies.at(0),
                                  today.addDays(-2).toIso(), today.addDays(12).toIso());
         m_overdueId = rawInsertLoan(*m_db, m_memberId, copies.at(1),
@@ -129,7 +126,7 @@ protected:
         ASSERT_GT(m_returnedId, 0);
     }
 
-    std::unique_ptr<ScopedClock> m_clock;
+    std::unique_ptr<Core::ScopedClock> m_clock;
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_memberRepo;

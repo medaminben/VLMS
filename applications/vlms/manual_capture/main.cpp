@@ -65,7 +65,7 @@ int main(int argc, char** argv)
     }
 #endif
     // Before Application: its constructor keeps a non-empty root and opens <root>/database.
-    VLMS::Paths::setProjectRoot(sandbox.toStdString());
+    VLMS::Core::Paths::setProjectRoot(sandbox.toStdString());
     // Settings (language, theme) go into the sandbox, never the user's own profile.
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, sandbox + QStringLiteral("/config"));
     QSettings::setPath(QSettings::NativeFormat, QSettings::UserScope, sandbox + QStringLiteral("/config"));
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     if (!app.isDatabaseReady()) {
         return refuse(QStringLiteral("the sandbox database did not open"));
     }
-    if (VLMS::qs(VLMS::Paths::databaseDirectory()) != sandbox + QStringLiteral("/database")) {
+    if (VLMS::qs(VLMS::Core::Paths::databaseDirectory()) != sandbox + QStringLiteral("/database")) {
         return refuse(QStringLiteral("the project root moved away from the sandbox"));
     }
 

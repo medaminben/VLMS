@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 /** Project-local data layout:
  *   database/vlms.db
@@ -22,4 +22,4 @@ public:
     static bool ensureLayout();
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

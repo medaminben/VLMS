@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Date;
 using namespace VLMS;
 using namespace Test;
 
@@ -82,7 +81,7 @@ TEST_F(test_core_MetricsRepository, AvailableCopiesExcludesOpenLoans)
     ASSERT_GT(bookId, 0);
 
     const auto copies = copyIdsOf(*m_db, bookId);
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copies.at(0), today.toIso(),
                             today.addDays(14).toIso()),
               0);
@@ -126,7 +125,7 @@ TEST_F(test_core_MetricsRepository, OpenPlusReturnedEqualsTotalLoans)
     ASSERT_GT(bookId, 0);
 
     const auto copies = copyIdsOf(*m_db, bookId);
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copies.at(0), today.toIso(),
                             today.addDays(14).toIso()),
@@ -149,7 +148,7 @@ TEST_F(test_core_MetricsRepository, OpenLoansAreTheOnesStillWithinTheirDueDate)
     BookSeed book = uniqueBookSeed(31);
     book.initialCopyCount = 3;
     const auto copies = copyIdsOf(*m_db, seedBook(*m_db, book));
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     ASSERT_GT(rawInsertLoan(*m_db, memberId, copies.at(0), today.addDays(-3).toIso(),
                             today.addDays(11).toIso()),
@@ -181,7 +180,7 @@ TEST_F(test_core_MetricsRepository, OverdueCountMatchesOverdueLoans)
     ASSERT_GT(bookId, 0);
 
     const auto copies = copyIdsOf(*m_db, bookId);
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     // Comfortably overdue and comfortably current, so the UTC/local boundary
     // cannot make this test flaky. The boundary itself is pinned in Phase B.

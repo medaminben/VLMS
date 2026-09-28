@@ -18,7 +18,6 @@
 
 #include <memory>
 
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
@@ -28,7 +27,7 @@ constexpr int kLocalNumberColumn = 3;
 
 class test_ui_CatalogLocalNumber : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {

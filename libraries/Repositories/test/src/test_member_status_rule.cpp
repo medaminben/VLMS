@@ -9,15 +9,13 @@
 
 using namespace VLMS;
 
-using VLMS::Date;
-
 /**
  * The one-year rule on its own, with no database: which day a member's
  * year ends, and what a librarian's pick in the editor does to it.
  */
 class test_core_MemberStatusRule : public ::testing::Test {
 protected:
-    const Date m_today{2026, 9, 23};
+    const Core::Date m_today{2026, 9, 23};
 };
 
 TEST_F(test_core_MemberStatusRule, StatusCodesAreActiveAndNotActiveOnly)
@@ -28,19 +26,19 @@ TEST_F(test_core_MemberStatusRule, StatusCodesAreActiveAndNotActiveOnly)
 
 TEST_F(test_core_MemberStatusRule, AddYearsKeepsTheDayOfTheMonth)
 {
-    EXPECT_EQ(Date(2025, 9, 24).addYears(1), Date(2026, 9, 24));
+    EXPECT_EQ(Core::Date(2025, 9, 24).addYears(1), Core::Date(2026, 9, 24));
 }
 
 TEST_F(test_core_MemberStatusRule, AddYearsRollsALeapDayToTheFirstOfMarch)
 {
     // SQLite's date('2024-02-29', '+1 year') is 2025-03-01; the migration
     // uses SQLite and the repository uses Date, so they must agree.
-    EXPECT_EQ(Date(2024, 2, 29).addYears(1), Date(2025, 3, 1));
+    EXPECT_EQ(Core::Date(2024, 2, 29).addYears(1), Core::Date(2025, 3, 1));
 }
 
 TEST_F(test_core_MemberStatusRule, AddYearsOnAnInvalidDateStaysInvalid)
 {
-    EXPECT_FALSE(Date().addYears(1).isValid());
+    EXPECT_FALSE(Core::Date().addYears(1).isValid());
 }
 
 TEST_F(test_core_MemberStatusRule, ActiveOnTheLastDayNotActiveTheDayAfter)
@@ -62,7 +60,7 @@ TEST_F(test_core_MemberStatusRule, ANewMemberIsActiveForAYearLessADay)
 
 TEST_F(test_core_MemberStatusRule, ANewMemberRegisteredOnALeapDayEndsOnTheLastDayOfFebruary)
 {
-    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", Repositories::MemberStatus::kActive, Date(2024, 2, 29)),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", Repositories::MemberStatus::kActive, Core::Date(2024, 2, 29)),
               "2025-02-28");
 }
 

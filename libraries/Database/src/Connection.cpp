@@ -15,8 +15,6 @@
 #include <sstream>
 #include <utility>
 
-using VLMS::Status;
-
 namespace VLMS::Database {
 
 namespace {
@@ -27,7 +25,7 @@ std::string bundledSchemaPath()
         return fromEnv;
     }
 
-    const std::filesystem::path root(VLMS::Paths::projectRoot());
+    const std::filesystem::path root(Core::Paths::projectRoot());
     const auto besideExe = root / "schema.sql";
     if (std::filesystem::exists(besideExe)) {
         return besideExe.string();
@@ -83,10 +81,10 @@ std::string copyAsideBeforeMigrating(SqliteSession& session,
     if (!vacuum) {
         return vacuum.error().detail;
     }
-    if (const Status bound = vacuum->bind(":target", target.string()); !bound) {
+    if (const Core::Status bound = vacuum->bind(":target", target.string()); !bound) {
         return bound.error().detail;
     }
-    if (const Status done = vacuum->exec(); !done) {
+    if (const Core::Status done = vacuum->exec(); !done) {
         return "cannot copy the database to " + target.string() + ": " + done.error().detail;
     }
     return {};
@@ -339,16 +337,16 @@ bool Connection::migratePublicationDatesIfNeeded()
         return true;
     }
 
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         if (!m_session->exec("ALTER TABLE books ADD COLUMN publication_date_original TEXT")
             || !m_session->exec("UPDATE books SET publication_date_original = publication_date")) {
-            return Status::fail(VLMS::ErrorKind::Sql, "error.sql", m_session->lastError());
+            return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_session->lastError());
         }
 
         auto read = m_session->prepare(
             "SELECT id, publication_date FROM books WHERE publication_date IS NOT NULL");
         if (!read) {
-            return VLMS::asStatus(read);
+            return Core::asStatus(read);
         }
 
         struct Rewrite {
@@ -358,7 +356,7 @@ bool Connection::migratePublicationDatesIfNeeded()
         std::vector<Rewrite> rewrites;
         while (read->next()) {
             const std::string original = read->text(1);
-            const std::string normalised = VLMS::DateText::normalizePublicationDate(original);
+            const std::string normalised = Core::DateText::normalizePublicationDate(original);
             if (normalised != original) {
                 rewrites.push_back({read->int64(0), normalised});
             }
@@ -366,18 +364,18 @@ bool Connection::migratePublicationDatesIfNeeded()
 
         auto update = m_session->prepare("UPDATE books SET publication_date = :value WHERE id = :id");
         if (!update) {
-            return VLMS::asStatus(update);
+            return Core::asStatus(update);
         }
         for (const auto& [id, value] : rewrites) {
             update->reset();
             if (!update->bind(":value", value) || !update->bind(":id", id) || !update->exec()) {
-                return Status::fail(VLMS::ErrorKind::Sql, "error.sql", m_session->lastError());
+                return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_session->lastError());
             }
         }
         std::fprintf(stderr,
                      "Publication dates normalised: %zu of the catalog rewritten.\n",
                      rewrites.size());
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
         warn("Publication date migration failed: " + work.error().detail);
@@ -498,21 +496,21 @@ bool Connection::rebuildTablesWithDateConstraints()
         "CREATE INDEX IF NOT EXISTS idx_members_archived ON members(archived_at)",
     };
 
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         if (!execAll(loansRebuild, "Loan date constraint migration")
             || !execAll(membersRebuild, "Member date constraint migration")) {
-            return Status::fail(VLMS::ErrorKind::Sql, "error.sql", m_session->lastError());
+            return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_session->lastError());
         }
         auto fkCheck = m_session->prepare("PRAGMA foreign_key_check");
         if (!fkCheck) {
-            return VLMS::asStatus(fkCheck);
+            return Core::asStatus(fkCheck);
         }
         if (fkCheck->next()) {
             warn("The date constraint migration left a dangling reference in table '"
                  + fkCheck->text(0) + "'; rolling back.");
-            return Status::fail(VLMS::ErrorKind::Sql, "error.sql", "fk check");
+            return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", "fk check");
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
         warn("Could not finish the date constraint migration: " + work.error().detail);
@@ -678,21 +676,21 @@ bool Connection::migrateBookLanguageIfNeeded()
              + m_session->lastError());
         return false;
     }
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         for (const std::string& statement : SqlText::splitStatements(migrationSql)) {
-            if (const Status done = m_session->exec(statement); !done) {
+            if (const Core::Status done = m_session->exec(statement); !done) {
                 return done;
             }
         }
         auto check = m_session->prepare("PRAGMA foreign_key_check");
         if (!check) {
-            return VLMS::asStatus(check);
+            return Core::asStatus(check);
         }
         if (check->next()) {
-            return Status::fail(VLMS::ErrorKind::Sql, "error.sql",
+            return Core::Status::fail(Core::ErrorKind::Sql, "error.sql",
                                 "foreign_key_check found rows after the books rebuild");
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     const bool keysOn = static_cast<bool>(m_session->exec("PRAGMA foreign_keys = ON"));
     if (!work) {
@@ -838,7 +836,7 @@ bool Connection::migrateArchiveColumnsIfNeeded()
              + m_session->lastError());
         return false;
     }
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         static const char* const steps[] = {
             R"SQL(
                 CREATE TABLE book_copies_new (
@@ -874,19 +872,19 @@ bool Connection::migrateArchiveColumnsIfNeeded()
             "CREATE INDEX IF NOT EXISTS idx_copies_archived ON book_copies(archived_at)",
         };
         for (const char* step : steps) {
-            if (const Status done = m_session->exec(step); !done) {
+            if (const Core::Status done = m_session->exec(step); !done) {
                 return done;
             }
         }
         auto check = m_session->prepare("PRAGMA foreign_key_check");
         if (!check) {
-            return VLMS::asStatus(check);
+            return Core::asStatus(check);
         }
         if (check->next()) {
-            return Status::fail(VLMS::ErrorKind::Sql, "error.sql",
+            return Core::Status::fail(Core::ErrorKind::Sql, "error.sql",
                                 "foreign_key_check found rows after the book_copies rebuild");
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     const bool keysOn = static_cast<bool>(m_session->exec("PRAGMA foreign_keys = ON"));
     if (!work) {
@@ -909,9 +907,9 @@ bool Connection::migrateMemberActiveUntilIfNeeded()
     if (!addColumn && !dropStatus) {
         return true;
     }
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         if (addColumn) {
-            if (const Status added = m_session->exec(
+            if (const Core::Status added = m_session->exec(
                     "ALTER TABLE members ADD COLUMN active_until TEXT "
                     "CHECK (date(active_until) IS active_until)");
                 !added) {
@@ -921,7 +919,7 @@ bool Connection::migrateMemberActiveUntilIfNeeded()
             // active through 2026-09-23. The stored status is deliberately not
             // read -- the year is the rule, and a status nobody expired is not
             // evidence.
-            if (const Status filled = m_session->exec(
+            if (const Core::Status filled = m_session->exec(
                     "UPDATE members SET active_until = date(registered_at, '+1 year', '-1 day')");
                 !filled) {
                 return filled;
@@ -932,13 +930,13 @@ bool Connection::migrateMemberActiveUntilIfNeeded()
             // refuses an indexed column, so the index goes first; the CHECK is
             // the column's own and goes with it. No rows are deleted, so
             // member_status_history's ON DELETE CASCADE never fires.
-            if (const Status dropped = m_session->exec("DROP INDEX IF EXISTS idx_members_status");
+            if (const Core::Status dropped = m_session->exec("DROP INDEX IF EXISTS idx_members_status");
                 !dropped) {
                 return dropped;
             }
             return m_session->exec("ALTER TABLE members DROP COLUMN status");
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
         warn("Member active_until migration failed: " + work.error().detail);
@@ -1003,7 +1001,7 @@ bool Connection::normalizePublicationDatesFromOriginals()
     while (read->next()) {
         const std::string stored = read->text(1);
         const std::string original = read->text(2);
-        const std::string normalised = VLMS::DateText::normalizePublicationDate(original);
+        const std::string normalised = Core::DateText::normalizePublicationDate(original);
         if (normalised != stored) {
             rewrites.push_back({read->int64(0), normalised});
         }
@@ -1012,25 +1010,25 @@ bool Connection::normalizePublicationDatesFromOriginals()
         return true;
     }
 
-    const Status work = m_session->transaction([&] {
+    const Core::Status work = m_session->transaction([&] {
         auto update = m_session->prepare("UPDATE books SET publication_date = :value WHERE id = :id");
         if (!update) {
-            return VLMS::asStatus(update);
+            return Core::asStatus(update);
         }
         for (const auto& [id, value] : rewrites) {
             update->reset();
             if (value.empty()) {
                 if (!update->bindNull(":value")) {
-                    return Status::fail(VLMS::ErrorKind::Sql, "error.sql");
+                    return Core::Status::fail(Core::ErrorKind::Sql, "error.sql");
                 }
             } else if (!update->bind(":value", value)) {
-                return Status::fail(VLMS::ErrorKind::Sql, "error.sql");
+                return Core::Status::fail(Core::ErrorKind::Sql, "error.sql");
             }
             if (!update->bind(":id", id) || !update->exec()) {
-                return Status::fail(VLMS::ErrorKind::Sql, "error.sql", m_session->lastError());
+                return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_session->lastError());
             }
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
         warn("Publication date normalisation failed: " + work.error().detail);

@@ -7,10 +7,6 @@
 #include "RepoSql.h"
 #include <VLMS/Database/SqliteSession.h>
 
-using VLMS::Clock;
-using VLMS::Date;
-using VLMS::Result;
-
 namespace VLMS::Repositories {
 
 MetricsRepository::MetricsRepository(Database::SqliteSession& session)
@@ -18,7 +14,7 @@ MetricsRepository::MetricsRepository(Database::SqliteSession& session)
 {
 }
 
-Result<int> MetricsRepository::scalarCount(const std::string& sql,
+Core::Result<int> MetricsRepository::scalarCount(const std::string& sql,
                                            const std::map<std::string, std::string>& binds) const
 {
     auto query = m_session.prepare(sql);
@@ -34,14 +30,14 @@ Result<int> MetricsRepository::scalarCount(const std::string& sql,
         if (!query->ok()) {
             return RepoSql::sqlResult<int>(m_session.lastError());
         }
-        return Result<int>::ok(0);
+        return Core::Result<int>::ok(0);
     }
-    return Result<int>::ok(query->integer(0));
+    return Core::Result<int>::ok(query->integer(0));
 }
 
 MetricsRepository::DateRange MetricsRepository::rangeFor(const Window window)
 {
-    const Date today = Clock::today();
+    const Core::Date today = Core::Clock::today();
 
     switch (window) {
     case Window::Today:
@@ -49,13 +45,13 @@ MetricsRepository::DateRange MetricsRepository::rangeFor(const Window window)
     case Window::ThisWeek:
         return {today.addDays(-6), today};
     case Window::ThisMonth:
-        return {Date(today.year(), today.month(), 1), today};
+        return {Core::Date(today.year(), today.month(), 1), today};
     }
 
     return {today, today};
 }
 
-Result<MetricsPeriodCounts> MetricsRepository::fetchPeriodCounts(const Window window) const
+Core::Result<MetricsPeriodCounts> MetricsRepository::fetchPeriodCounts(const Window window) const
 {
     MetricsPeriodCounts counts;
     const DateRange range = rangeFor(window);
@@ -88,10 +84,10 @@ Result<MetricsPeriodCounts> MetricsRepository::fetchPeriodCounts(const Window wi
     } else if (!query->ok()) {
         return RepoSql::sqlResult<MetricsPeriodCounts>(m_session.lastError());
     }
-    return Result<MetricsPeriodCounts>::ok(counts);
+    return Core::Result<MetricsPeriodCounts>::ok(counts);
 }
 
-Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
+Core::Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
 {
     LibraryMetrics metrics;
 
@@ -118,25 +114,25 @@ Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
         {&metrics.totalMembers, "SELECT COUNT(*) FROM members", {}},
         {&metrics.membersActive,
          "SELECT COUNT(*) FROM members m WHERE " + MemberSql::isActive("m."),
-         {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
+         {{LoanSql::todayPlaceholder(), Core::Clock::todayIso()}}},
         {&metrics.membersNonActive,
          "SELECT COUNT(*) FROM members m WHERE NOT " + MemberSql::isActive("m."),
-         {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
+         {{LoanSql::todayPlaceholder(), Core::Clock::todayIso()}}},
         // Same three states as the Circulation filter: Open stops at the due date.
         {&metrics.openLoans,
          std::string("SELECT COUNT(*) FROM loans WHERE returned_at IS NULL AND NOT ")
              + LoanSql::isOverdue(),
-         {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
+         {{LoanSql::todayPlaceholder(), Core::Clock::todayIso()}}},
         {&metrics.overdueLoans,
          std::string("SELECT COUNT(*) FROM loans WHERE ") + LoanSql::isOverdue(),
-         {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
+         {{LoanSql::todayPlaceholder(), Core::Clock::todayIso()}}},
         {&metrics.returnedLoans, "SELECT COUNT(*) FROM loans WHERE returned_at IS NOT NULL", {}},
     };
 
     for (const auto& item : counts) {
         const auto value = scalarCount(item.sql, item.binds);
         if (!value) {
-            return Result<LibraryMetrics>::fail(value.error().kind, value.error().key,
+            return Core::Result<LibraryMetrics>::fail(value.error().kind, value.error().key,
                                                 value.error().detail);
         }
         *item.dest = value.value();
@@ -144,20 +140,20 @@ Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
 
     const auto today = fetchPeriodCounts(Window::Today);
     if (!today) {
-        return Result<LibraryMetrics>::fail(today.error().kind, today.error().key,
+        return Core::Result<LibraryMetrics>::fail(today.error().kind, today.error().key,
                                             today.error().detail);
     }
     metrics.today = today.value();
 
     const auto week = fetchPeriodCounts(Window::ThisWeek);
     if (!week) {
-        return Result<LibraryMetrics>::fail(week.error().kind, week.error().key, week.error().detail);
+        return Core::Result<LibraryMetrics>::fail(week.error().kind, week.error().key, week.error().detail);
     }
     metrics.thisWeek = week.value();
 
     const auto month = fetchPeriodCounts(Window::ThisMonth);
     if (!month) {
-        return Result<LibraryMetrics>::fail(month.error().kind, month.error().key,
+        return Core::Result<LibraryMetrics>::fail(month.error().kind, month.error().key,
                                             month.error().detail);
     }
     metrics.thisMonth = month.value();
@@ -188,7 +184,7 @@ Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
         return RepoSql::sqlResult<LibraryMetrics>(m_session.lastError());
     }
 
-    return Result<LibraryMetrics>::ok(metrics);
+    return Core::Result<LibraryMetrics>::ok(metrics);
 }
 
 }  // namespace VLMS::Repositories

@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS::DateText {
+namespace VLMS::Core::DateText {
 
 /**
  * Normalises a bibliographic publication date to reduced-precision ISO 8601.
@@ -13,4 +13,4 @@ namespace VLMS::DateText {
  */
 [[nodiscard]] std::string normalizePublicationDate(std::string_view value);
 
-}  // namespace VLMS::DateText
+}  // namespace VLMS::Core::DateText

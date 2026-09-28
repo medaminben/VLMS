@@ -14,7 +14,6 @@
 
 #include <gtest/gtest.h>
 
-using VLMS::Clock;
 using namespace VLMS;
 using namespace Test;
 
@@ -29,7 +28,7 @@ protected:
 
     void TearDown() override
     {
-        EXPECT_FALSE(Clock::isOverridden()) << "a test leaked a clock override";
+        EXPECT_FALSE(Core::Clock::isOverridden()) << "a test leaked a clock override";
         m_repository.reset();
         m_db.reset();
     }

@@ -17,15 +17,13 @@
 #include <cstdint>
 #include <memory>
 
-using VLMS::Locale;
-using VLMS::Strings;
 using namespace VLMS;
 using namespace Test;
 
 class test_ui_CatalogRemoval : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
@@ -57,7 +55,7 @@ protected:
         FAIL() << "book " << bookId << " is not on the catalogue page";
     }
 
-    void clickDelete() { clickButtonWithText(m_page.get(), qs(Strings::t("catalog.delete"))); }
+    void clickDelete() { clickButtonWithText(m_page.get(), qs(Core::Strings::t("catalog.delete"))); }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
@@ -79,11 +77,11 @@ TEST_F(test_ui_CatalogRemoval, ABookWithACopyOutIsRefusedBeforeTheConfirmationIs
     // One box, and it is the refusal -- not a confirmation followed by a no.
     const QList<ModalOutcome> outcomes =
         runAndAnswerModals([this]() { clickDelete(); },
-                           {ModalAnswer{qs(Strings::t("common.ok")), std::nullopt, {}},
-                            ModalAnswer{qs(Strings::t("common.yes")), std::nullopt, {}}});
+                           {ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}},
+                            ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
-    EXPECT_EQ(outcomes.at(0).text, qs(Strings::t("error.book.hasActiveLoans")));
+    EXPECT_EQ(outcomes.at(0).text, qs(Core::Strings::t("error.book.hasActiveLoans")));
     EXPECT_FALSE(outcomes.at(1).appeared);
     EXPECT_TRUE(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId))
                     .isNull());
@@ -98,10 +96,10 @@ TEST_F(test_ui_CatalogRemoval, ABookWhoseCopiesAreAllInArchivesTheTitleOnYes)
     openPageAndSelect(bookId);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("catalog.deleteConfirm")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("catalog.deleteConfirm")));
     EXPECT_FALSE(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId))
                      .isNull());
     // Archived, never destroyed -- and the neighbour is untouched.
@@ -141,7 +139,7 @@ TEST_F(test_ui_CatalogRemoval, TwoTickedBooksAreArchivedAndTheHighlightedThirdSt
     tickBook(m_table, second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 books?"));
@@ -163,10 +161,10 @@ TEST_F(test_ui_CatalogRemoval, ATickedBookOnLoanStaysWhileTheOtherIsArchived)
     tickBook(m_table, free);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Strings::t("catalog.deleteConfirm")));
+    EXPECT_NE(outcome.text, qs(Core::Strings::t("catalog.deleteConfirm")));
     EXPECT_FALSE(isArchived(*m_db, onLoan));
     EXPECT_TRUE(isArchived(*m_db, free));
 }

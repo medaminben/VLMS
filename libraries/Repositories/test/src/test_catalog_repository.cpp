@@ -15,7 +15,6 @@
 #include <string_view>
 #include <vector>
 
-using VLMS::Date;
 using namespace VLMS;
 using namespace Test;
 
@@ -373,7 +372,7 @@ TEST_F(test_core_CatalogRepository, DeleteBookRefusesWhenActiveLoansExist)
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, id).front(),
                             today.toIso(),
                             today.addDays(14).toIso()),
@@ -607,7 +606,7 @@ TEST_F(test_core_CatalogRepository, AvailableCopiesExcludesOpenLoans)
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, id).front(),
                             today.toIso(),
                             today.addDays(14).toIso()),
@@ -668,7 +667,7 @@ TEST_F(test_core_CatalogRepository, LastErrorIsSetOnEveryFailurePath)
         SCOPED_TRACE(scenario);
         ASSERT_TRUE(resetStore()) << m_db->lastError();
 
-        VLMS::Error error;
+        Core::Error error;
         bool result = true;
         if (std::string_view(scenario) == "createEmptyTitle") {
             BookSeed seed = uniqueBookSeed(80);
@@ -726,7 +725,7 @@ TEST_F(test_core_CatalogRepository, GetBookMissingIdIsNotFoundNotSql)
 {
     const auto missing = m_repository->getBook(999999);
     EXPECT_FALSE(missing);
-    EXPECT_EQ(missing.kind(), VLMS::ErrorKind::NotFound);
+    EXPECT_EQ(missing.kind(), Core::ErrorKind::NotFound);
     EXPECT_EQ(missing.error().key, "error.book.notFound");
 }
 
@@ -735,7 +734,7 @@ TEST_F(test_core_CatalogRepository, GetBookExecFailureIsSql)
     ASSERT_TRUE(m_db->exec("DROP TABLE books"));
     const auto failed = m_repository->getBook(1);
     EXPECT_FALSE(failed);
-    EXPECT_EQ(failed.kind(), VLMS::ErrorKind::Sql);
+    EXPECT_EQ(failed.kind(), Core::ErrorKind::Sql);
     EXPECT_EQ(failed.error().key, "error.sql");
 }
 
@@ -747,7 +746,7 @@ TEST_F(test_core_CatalogRepository, SaveNewBookRollsBackWhenCoverFails)
 
     const auto created = m_repository->saveNewBook(write);
     EXPECT_FALSE(created);
-    EXPECT_EQ(created.kind(), VLMS::ErrorKind::Validation);
+    EXPECT_EQ(created.kind(), Core::ErrorKind::Validation);
     EXPECT_EQ(m_db->count("books"), 0);
 }
 
@@ -841,7 +840,7 @@ TEST_F(test_core_CatalogRepository, ListCopiesFlagsCopiesOnLoan)
     ASSERT_GT(memberId, 0);
 
     const std::vector<std::int64_t> copyIds = copyIdsOf(*m_db, bookId);
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIds.front(), today.toIso(),
                             today.addDays(14).toIso()),
               0);
@@ -964,7 +963,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRefusesToDeleteACopyOnLoan)
     ASSERT_GT(memberId, 0);
 
     const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, before.at(0).id, today.toIso(),
                             today.addDays(14).toIso()),
               0);
@@ -1265,7 +1264,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesTheCopiesThatAreOutOnLoan)
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_GT(rawInsertLoan(*m_db, memberId, copyIds[1], today.toIso(),
                             today.addDays(14).toIso()),
               0);
@@ -1293,7 +1292,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesNoCopiesOnLoanWhenEveryLoanIsR
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     const std::int64_t loanId = rawInsertLoan(*m_db, memberId, copyIds.front(),
                                               today.addDays(-20).toIso(),
                                               today.addDays(-6).toIso());
@@ -1330,7 +1329,7 @@ TEST_F(test_core_CatalogRepository, ACopyWithoutALocalNumberNeverLeaksABlankOnLo
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_GT(rawInsertLoan(*m_db, memberId, copyIds[1], today.toIso(),
                             today.addDays(14).toIso()),
               0);

@@ -10,8 +10,6 @@
 
 using namespace VLMS;
 
-using VLMS::ErrorKind;
-
 namespace {
 
 class ScopedTempDir {
@@ -83,7 +81,7 @@ TEST(test_core_SqliteSession, PrepareFailureIsSqlNotARow)
     ASSERT_TRUE(opened);
     const auto stmt = opened.value()->prepare("SELECT * FROM no_such_table");
     EXPECT_FALSE(stmt);
-    EXPECT_EQ(stmt.kind(), ErrorKind::Sql);
+    EXPECT_EQ(stmt.kind(), Core::ErrorKind::Sql);
     EXPECT_EQ(stmt.error().key, "error.sql");
 }
 
@@ -102,7 +100,7 @@ TEST(test_core_SqliteSession, TransactionRollsBackAFailedWrite)
     const auto status = db.transaction([&] {
         auto insert = db.prepare("INSERT INTO t (name) VALUES (:name)");
         if (!insert) {
-            return VLMS::asStatus(insert);
+            return Core::asStatus(insert);
         }
         if (const auto bound = insert->bind(":name", std::string_view{"kept"}); !bound) {
             return bound;

@@ -36,19 +36,19 @@ void unsetEnv(const char* name)
 
 }  // namespace
 
-VLMS::Date utcToday()
+VLMS::Core::Date utcToday()
 {
     const auto now = std::chrono::system_clock::now();
     const auto days = std::chrono::floor<std::chrono::days>(now);
     const std::chrono::year_month_day ymd{days};
-    return VLMS::Date(static_cast<int>(ymd.year()),
+    return VLMS::Core::Date(static_cast<int>(ymd.year()),
                 static_cast<int>(static_cast<unsigned>(ymd.month())),
                 static_cast<int>(static_cast<unsigned>(ymd.day())));
 }
 
 bool localDateDiffersFromUtcDate()
 {
-    return VLMS::Date::todayLocal() != utcToday();
+    return VLMS::Core::Date::todayLocal() != utcToday();
 }
 
 std::string timeZoneDescription()
@@ -63,8 +63,8 @@ std::string timeZoneDescription()
     localtime_r(&now, &local);
     gmtime_r(&now, &utc);
 #endif
-    const VLMS::Date localDate = VLMS::Date::todayLocal();
-    const VLMS::Date utcDate = utcToday();
+    const VLMS::Core::Date localDate = VLMS::Core::Date::todayLocal();
+    const VLMS::Core::Date utcDate = utcToday();
     std::ostringstream out;
     const char* tz = std::getenv("TZ");
     out << (tz != nullptr ? tz : "local")

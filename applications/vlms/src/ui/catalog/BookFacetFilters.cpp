@@ -53,7 +53,7 @@ void BookFacetFilters::refresh()
     } else {
         QList<FacetList::Entry> entries;
         for (const Repositories::LanguageRecord& language : languages.value()) {
-            entries.append({withCount(qs(Strings::bookLanguageLabel(language.code)),
+            entries.append({withCount(qs(Core::Strings::bookLanguageLabel(language.code)),
                                       language.bookCount, showCounts),
                             qs(language.code)});
         }

@@ -21,8 +21,6 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using VLMS::Strings;
 using namespace VLMS;
 using namespace Test;
 
@@ -39,8 +37,8 @@ void tickRow(QTableWidget* table, int row)
 
 class test_ui_BulkCopies : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
@@ -64,7 +62,7 @@ protected:
     void clickRemove()
     {
         m_copies->retranslateUi();
-        clickButtonWithText(m_copies.get(), qs(Strings::t("book.copy.remove")));
+        clickButtonWithText(m_copies.get(), qs(Core::Strings::t("book.copy.remove")));
     }
 
     std::unique_ptr<TestDatabase> m_db;
@@ -88,7 +86,7 @@ TEST_F(test_ui_BulkCopies, TwoTickedRowsAreRemovedAndTheHighlightedThirdStays)
     tickRow(table, 1);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickRemove(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickRemove(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Remove 2 copies?"));
@@ -131,7 +129,7 @@ TEST_F(test_ui_BulkCopies, ATickedOnLoanRowAndAReservedRowStay)
     tickRow(table, 2);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickRemove(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickRemove(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     ASSERT_EQ(table->rowCount(), 2);

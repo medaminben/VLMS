@@ -1,6 +1,6 @@
 #include <VLMS/Core/Locale.h>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 std::string Locale::s_code = kDefaultCode;
 
@@ -23,4 +23,4 @@ bool Locale::isRtl()
     return s_code == "ar";
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

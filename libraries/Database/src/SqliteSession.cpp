@@ -65,27 +65,27 @@ void SqliteStatement::captureError()
     m_error = m_db != nullptr ? sqlite3_errmsg(m_db) : "no sqlite connection";
 }
 
-Status SqliteStatement::bindIndex(const std::string& name, int* index)
+Core::Status SqliteStatement::bindIndex(const std::string& name, int* index)
 {
     *index = sqlite3_bind_parameter_index(m_stmt, name.c_str());
     if (*index == 0) {
         m_ok = false;
         m_error = "unknown bind name: " + name;
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status SqliteStatement::bind(int index, std::int64_t value)
+Core::Status SqliteStatement::bind(int index, std::int64_t value)
 {
     if (sqlite3_bind_int64(m_stmt, index, value) != SQLITE_OK) {
         captureError();
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status SqliteStatement::bind(int index, std::string_view value)
+Core::Status SqliteStatement::bind(int index, std::string_view value)
 {
     if (sqlite3_bind_text(m_stmt,
                           index,
@@ -94,48 +94,48 @@ Status SqliteStatement::bind(int index, std::string_view value)
                           reinterpret_cast<void (*)(void*)>(sqliteTransient()))
         != SQLITE_OK) {
         captureError();
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status SqliteStatement::bindNull(int index)
+Core::Status SqliteStatement::bindNull(int index)
 {
     if (sqlite3_bind_null(m_stmt, index) != SQLITE_OK) {
         captureError();
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status SqliteStatement::bind(const std::string& name, std::int64_t value)
+Core::Status SqliteStatement::bind(const std::string& name, std::int64_t value)
 {
     int index = 0;
-    if (const Status ready = bindIndex(name, &index); !ready) {
+    if (const Core::Status ready = bindIndex(name, &index); !ready) {
         return ready;
     }
     return bind(index, value);
 }
 
-Status SqliteStatement::bind(const std::string& name, std::string_view value)
+Core::Status SqliteStatement::bind(const std::string& name, std::string_view value)
 {
     int index = 0;
-    if (const Status ready = bindIndex(name, &index); !ready) {
+    if (const Core::Status ready = bindIndex(name, &index); !ready) {
         return ready;
     }
     return bind(index, value);
 }
 
-Status SqliteStatement::bindNull(const std::string& name)
+Core::Status SqliteStatement::bindNull(const std::string& name)
 {
     int index = 0;
-    if (const Status ready = bindIndex(name, &index); !ready) {
+    if (const Core::Status ready = bindIndex(name, &index); !ready) {
         return ready;
     }
     return bindNull(index);
 }
 
-Status SqliteStatement::bindOptional(const std::string& name,
+Core::Status SqliteStatement::bindOptional(const std::string& name,
                                      const std::optional<std::string>& value)
 {
     if (!value.has_value()) {
@@ -144,15 +144,15 @@ Status SqliteStatement::bindOptional(const std::string& name,
     return bind(name, *value);
 }
 
-Status SqliteStatement::exec()
+Core::Status SqliteStatement::exec()
 {
     const int rc = sqlite3_step(m_stmt);
     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
         captureError();
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
     sqlite3_reset(m_stmt);
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 bool SqliteStatement::next()
@@ -224,7 +224,7 @@ void SqliteSession::captureError()
     m_error = m_db != nullptr ? sqlite3_errmsg(m_db) : "no sqlite connection";
 }
 
-Result<std::unique_ptr<SqliteSession>> SqliteSession::open(const std::string& path)
+Core::Result<std::unique_ptr<SqliteSession>> SqliteSession::open(const std::string& path)
 {
     sqlite3* db = nullptr;
     if (sqlite3_open(path.c_str(), &db) != SQLITE_OK) {
@@ -232,41 +232,41 @@ Result<std::unique_ptr<SqliteSession>> SqliteSession::open(const std::string& pa
         if (db != nullptr) {
             sqlite3_close(db);
         }
-        return Result<std::unique_ptr<SqliteSession>>::fail(ErrorKind::Sql, "error.sql", message);
+        return Core::Result<std::unique_ptr<SqliteSession>>::fail(Core::ErrorKind::Sql, "error.sql", message);
     }
-    return Result<std::unique_ptr<SqliteSession>>::ok(
+    return Core::Result<std::unique_ptr<SqliteSession>>::ok(
         std::unique_ptr<SqliteSession>(new SqliteSession(db)));
 }
 
-Status SqliteSession::exec(const std::string& sql)
+Core::Status SqliteSession::exec(const std::string& sql)
 {
     char* error = nullptr;
     if (sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &error) != SQLITE_OK) {
         m_error = error != nullptr ? error : sqlite3_errmsg(m_db);
         sqlite3_free(error);
-        return Status::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Status::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Result<SqliteStatement> SqliteSession::prepare(const std::string& sql)
+Core::Result<SqliteStatement> SqliteSession::prepare(const std::string& sql)
 {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
         captureError();
-        return Result<SqliteStatement>::fail(ErrorKind::Sql, "error.sql", m_error);
+        return Core::Result<SqliteStatement>::fail(Core::ErrorKind::Sql, "error.sql", m_error);
     }
-    return Result<SqliteStatement>::ok(SqliteStatement(m_db, stmt));
+    return Core::Result<SqliteStatement>::ok(SqliteStatement(m_db, stmt));
 }
 
-Status SqliteSession::transaction(const std::function<Status()>& work)
+Core::Status SqliteSession::transaction(const std::function<Core::Status()>& work)
 {
-    if (const Status begin = exec("BEGIN"); !begin) {
+    if (const Core::Status begin = exec("BEGIN"); !begin) {
         return begin;
     }
-    const Status result = work();
+    const Core::Status result = work();
     if (result) {
-        if (const Status commit = exec("COMMIT"); !commit) {
+        if (const Core::Status commit = exec("COMMIT"); !commit) {
             exec("ROLLBACK");
             return commit;
         }

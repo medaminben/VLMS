@@ -39,8 +39,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kPreviewPanelMinWidth = 200;
 constexpr int kTitleColumnWidth = 300;
 constexpr int kMemberColumnWidth = 200;
@@ -223,7 +221,6 @@ void CirculationPage::retranslateUi() {
 
     refreshSelectedLoanPreview();
 }
-
 
 QString CirculationPage::loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const {
     if (!loan.returnedAt.empty()) {

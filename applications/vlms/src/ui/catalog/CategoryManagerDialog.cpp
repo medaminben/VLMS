@@ -23,8 +23,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 }  // namespace
 
 CategoryManagerDialog::CategoryManagerDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)

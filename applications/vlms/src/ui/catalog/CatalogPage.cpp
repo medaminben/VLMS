@@ -37,8 +37,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kTitleColumnWidth = 320;
 constexpr int kAuthorColumnWidth = 200;
 constexpr int kPreviewPanelMinWidth = 200;
@@ -222,7 +220,6 @@ void CatalogPage::retranslateUi()
     refreshSelectedBookPreview();
 }
 
-
 void CatalogPage::resetPagerAndRefresh() {
     m_pager->resetToFirstPage();
     refreshBooks();
@@ -316,7 +313,6 @@ void CatalogPage::onSearchChanged() {
     resetPagerAndRefresh();
 }
 
-
 qint64 CatalogPage::selectedBookId() const {
     const auto items = m_booksTable->selectedItems();
     if (items.isEmpty()) {
@@ -364,7 +360,7 @@ void CatalogPage::onSelectionChanged() {
 
     const auto book = m_repository.getBook(bookId);
     if (!book) {
-        if (book.kind() == VLMS::ErrorKind::Sql) {
+        if (book.kind() == VLMS::Core::ErrorKind::Sql) {
             VLMS::showRepoError(this, book.error());
         }
         return;
@@ -393,7 +389,7 @@ void CatalogPage::refreshSelectedBookPreview() {
 
     const auto book = m_repository.getBook(bookId);
     if (!book) {
-        if (book.kind() == VLMS::ErrorKind::Sql) {
+        if (book.kind() == VLMS::Core::ErrorKind::Sql) {
             VLMS::showRepoError(this, book.error());
         }
         clearBookDetails();
@@ -456,7 +452,7 @@ void CatalogPage::updateCoverPreview(const VLMS::Repositories::BookRecord& book)
         {QStringLiteral("book.field.place"), VLMS::dashIfEmpty(book.placeOfPublication)},
         {QStringLiteral("book.field.pages"), VLMS::dashIfEmpty(book.pages)},
         {QStringLiteral("book.field.dimensions"), VLMS::dashIfEmpty(book.dimensions)},
-        {QStringLiteral("book.field.language"), qs(Strings::bookLanguageLabel(book.language))},
+        {QStringLiteral("book.field.language"), qs(VLMS::Core::Strings::bookLanguageLabel(book.language))},
         {QStringLiteral("catalog.col.copies"), QString::number(book.totalCopies)},
         {QStringLiteral("catalog.col.available"), QString::number(book.availableCopies)},
     };

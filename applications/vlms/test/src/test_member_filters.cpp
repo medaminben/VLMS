@@ -25,9 +25,6 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -60,7 +57,7 @@ QString tableText(QTableWidget* table, int row, int column)
 
 class test_ui_MemberFilters : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
@@ -81,7 +78,7 @@ protected:
     void seedTunisAndSfax()
     {
         // Pinned so the 2010-born seed is youth on create whatever year this runs.
-        const ScopedClock pinned(Date(2026, 9, 19));
+        const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
         MemberSeed male = uniqueMemberSeed(1);
         male.sex = Repositories::MemberSex::kMale;
@@ -272,7 +269,7 @@ TEST_F(test_ui_MemberFilters, NotActiveKeepsOnlyTheMemberWhoseYearEnded)
     seedTunisAndSfax();
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2026-01-01' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_maleId)}}));
-    const ScopedClock pinned(Date(2026, 9, 23));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
     m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);

@@ -29,7 +29,6 @@
 
 #include <memory>
 
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
@@ -65,7 +64,7 @@ T* named(QWidget* root, const char* name)
 /// images.
 class test_ui_PageFacets : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {

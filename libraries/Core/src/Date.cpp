@@ -6,7 +6,7 @@
 #include <ctime>
 #include <tuple>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 namespace {
 
@@ -173,4 +173,4 @@ std::string DateTime::toIso() const
     return buffer;
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

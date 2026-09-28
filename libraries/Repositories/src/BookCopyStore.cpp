@@ -11,19 +11,13 @@
 #include <algorithm>
 #include <unordered_set>
 
-using VLMS::Clock;
-using VLMS::Result;
-using VLMS::Status;
-using VLMS::Strings;
-using VLMS::trim;
-
 namespace VLMS::Repositories {
 
 namespace {
 
 std::string normalizedCopySource(const std::string& source)
 {
-    return trim(source) == "arabic" ? "arabic" : "foreign";
+    return Core::trim(source) == "arabic" ? "arabic" : "foreign";
 }
 
 std::string globalCopyIdFor(const std::string& source, const std::string& localId)
@@ -37,7 +31,7 @@ std::string appendedRemark(const std::string& notes, const std::string& remark)
     return notes.empty() ? remark : notes + "\n" + remark;
 }
 
-Status nextCopyNumber(Database::SqliteSession& session,
+Core::Status nextCopyNumber(Database::SqliteSession& session,
                       const std::string& source,
                       std::int64_t* outNumber)
 {
@@ -53,14 +47,14 @@ Status nextCopyNumber(Database::SqliteSession& session,
         return RepoSql::validation("error.copy.nextNumber");
     }
     *outNumber = query->int64(0) + 1;
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status bindCopyFields(Database::SqliteStatement& query, const BookCopyInput& copy)
+Core::Status bindCopyFields(Database::SqliteStatement& query, const BookCopyInput& copy)
 {
-    if (!query.bind(":global_copy_id", trim(copy.globalCopyId))
+    if (!query.bind(":global_copy_id", Core::trim(copy.globalCopyId))
         || !query.bind(":source", normalizedCopySource(copy.source))
-        || !query.bind(":local_id", trim(copy.localId))
+        || !query.bind(":local_id", Core::trim(copy.localId))
         || !query.bindOptional(":central_id", Database::SqlText::nullableText(copy.centralId))
         || !query.bindOptional(":classification", Database::SqlText::nullableText(copy.classification))
         || !query.bindOptional(":subject", Database::SqlText::nullableText(copy.subject))
@@ -71,7 +65,7 @@ Status bindCopyFields(Database::SqliteStatement& query, const BookCopyInput& cop
         || !query.bindOptional(":index_code", Database::SqlText::nullableText(copy.indexCode))) {
         return RepoSql::sqlFailure("bind copy fields");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 /// True when the number `copy` asks for is held by an archived copy: the
@@ -86,27 +80,27 @@ bool numberHeldByArchived(Database::SqliteSession& session, const BookCopyInput&
         return false;
     }
     if (!q->bind(":source", normalizedCopySource(copy.source))
-        || !q->bind(":local_id", trim(copy.localId))
-        || !q->bind(":global_copy_id", trim(copy.globalCopyId))) {
+        || !q->bind(":local_id", Core::trim(copy.localId))
+        || !q->bind(":global_copy_id", Core::trim(copy.globalCopyId))) {
         return false;
     }
     return q->next();
 }
 
-Status describeCopyConstraint(Database::SqliteSession& session,
+Core::Status describeCopyConstraint(Database::SqliteSession& session,
                               const std::string& sqliteError,
                               const BookCopyInput& copy)
 {
     const bool globalClash = sqliteError.find("global_copy_id") != std::string::npos;
     const bool localClash = sqliteError.find("local_id") != std::string::npos;
     if ((globalClash || localClash) && numberHeldByArchived(session, copy)) {
-        return RepoSql::validation("error.copy.numberHeldByArchived", trim(copy.localId));
+        return RepoSql::validation("error.copy.numberHeldByArchived", Core::trim(copy.localId));
     }
     if (globalClash) {
-        return RepoSql::validation("error.copy.duplicateGlobal", trim(copy.globalCopyId));
+        return RepoSql::validation("error.copy.duplicateGlobal", Core::trim(copy.globalCopyId));
     }
     if (localClash) {
-        return RepoSql::validation("error.copy.duplicateLocal", trim(copy.localId));
+        return RepoSql::validation("error.copy.duplicateLocal", Core::trim(copy.localId));
     }
     return RepoSql::sqlFailure(sqliteError);
 }
@@ -119,7 +113,7 @@ std::string copyFilterClause(const CopyQuery& query)
     } else if (query.archive == ArchiveScope::Archived) {
         sql += " AND bc.archived_at IS NOT NULL ";
     }
-    if (!trim(query.search).empty()) {
+    if (!Core::trim(query.search).empty()) {
         sql += " AND (COALESCE(bc.local_id, '') LIKE :search ESCAPE '\\' "
                "OR COALESCE(bc.global_copy_id, '') LIKE :search ESCAPE '\\' "
                "OR b.title LIKE :search ESCAPE '\\' "
@@ -157,7 +151,7 @@ std::string copyFilterClause(const CopyQuery& query)
 /// Binds what copyFilterClause wrote. False when a bind failed.
 bool bindCopyFilters(Database::SqliteStatement& q, const CopyQuery& query)
 {
-    const std::string search = trim(query.search);
+    const std::string search = Core::trim(query.search);
     if (!search.empty() && !q.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%")) {
         return false;
     }
@@ -205,7 +199,7 @@ BookCopyStore::BookCopyStore(Database::SqliteSession& session)
 {
 }
 
-Result<std::vector<BookCopyRecord>> BookCopyStore::listCopies(const std::int64_t bookId) const
+Core::Result<std::vector<BookCopyRecord>> BookCopyStore::listCopies(const std::int64_t bookId) const
 {
     auto query = m_session.prepare(R"SQL(
         SELECT
@@ -257,10 +251,10 @@ Result<std::vector<BookCopyRecord>> BookCopyStore::listCopies(const std::int64_t
     if (!query->ok()) {
         return RepoSql::sqlResult<std::vector<BookCopyRecord>>(m_session.lastError());
     }
-    return Result<std::vector<BookCopyRecord>>::ok(std::move(copies));
+    return Core::Result<std::vector<BookCopyRecord>>::ok(std::move(copies));
 }
 
-Result<std::vector<BookCopyRecord>> BookCopyStore::listCopyRows(const CopyQuery& query) const
+Core::Result<std::vector<BookCopyRecord>> BookCopyStore::listCopyRows(const CopyQuery& query) const
 {
     std::string sql = R"SQL(
         SELECT bc.id, bc.book_id, COALESCE(bc.global_copy_id, ''), bc.source,
@@ -303,10 +297,10 @@ Result<std::vector<BookCopyRecord>> BookCopyStore::listCopyRows(const CopyQuery&
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<BookCopyRecord>>(m_session.lastError());
     }
-    return Result<std::vector<BookCopyRecord>>::ok(std::move(copies));
+    return Core::Result<std::vector<BookCopyRecord>>::ok(std::move(copies));
 }
 
-Result<int> BookCopyStore::countCopyRows(const CopyQuery& query) const
+Core::Result<int> BookCopyStore::countCopyRows(const CopyQuery& query) const
 {
     const std::string sql =
         "SELECT COUNT(*) FROM book_copies bc INNER JOIN books b ON b.id = bc.book_id WHERE 1 = 1"
@@ -322,15 +316,15 @@ Result<int> BookCopyStore::countCopyRows(const CopyQuery& query) const
         if (!q->ok()) {
             return RepoSql::sqlResult<int>(m_session.lastError());
         }
-        return Result<int>::ok(0);
+        return Core::Result<int>::ok(0);
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Status BookCopyStore::addCopies(const std::int64_t bookId, const std::string& language, const int count)
+Core::Status BookCopyStore::addCopies(const std::int64_t bookId, const std::string& language, const int count)
 {
     if (count <= 0) {
-        return Status::ok();
+        return Core::Status::ok();
     }
 
     const std::string source = sourceForLanguage(language);
@@ -358,7 +352,7 @@ Status BookCopyStore::addCopies(const std::int64_t bookId, const std::string& la
         }
     }
 
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 void BookCopyStore::suggestCopyIdentifiers(const std::string& language,
@@ -383,12 +377,12 @@ void BookCopyStore::suggestCopyIdentifiers(const std::string& language,
     }
 }
 
-Result<std::vector<std::string>> BookCopyStore::freeLocalNumbers(const std::string& source,
+Core::Result<std::vector<std::string>> BookCopyStore::freeLocalNumbers(const std::string& source,
                                                                  const int limit) const
 {
     std::vector<std::string> free;
     if (limit <= 0) {
-        return Result<std::vector<std::string>>::ok(std::move(free));
+        return Core::Result<std::vector<std::string>>::ok(std::move(free));
     }
 
     // One sorted read, walked in C++. A recursive CTE with a NOT EXISTS would
@@ -424,15 +418,15 @@ Result<std::vector<std::string>> BookCopyStore::freeLocalNumbers(const std::stri
     if (!query->ok()) {
         return RepoSql::sqlResult<std::vector<std::string>>(m_session.lastError());
     }
-    return Result<std::vector<std::string>>::ok(std::move(free));
+    return Core::Result<std::vector<std::string>>::ok(std::move(free));
 }
 
 std::string BookCopyStore::sourceForLanguage(const std::string& language)
 {
-    return trim(language) == "ar" ? "arabic" : "foreign";
+    return Core::trim(language) == "ar" ? "arabic" : "foreign";
 }
 
-Status BookCopyStore::restoreCopy(const std::int64_t copyId)
+Core::Status BookCopyStore::restoreCopy(const std::int64_t copyId)
 {
     std::int64_t bookId = 0;
     std::string source;
@@ -496,7 +490,7 @@ Status BookCopyStore::restoreCopy(const std::int64_t copyId)
         if (!renumber->bind(":local_id", localId)
             || !renumber->bind(":global_copy_id", globalCopyIdFor(source, localId))
             || !renumber->bind(":notes",
-                               appendedRemark(notes, Strings::t("copy.note.newIndexedAs",
+                               appendedRemark(notes, Core::Strings::t("copy.note.newIndexedAs",
                                                                 "number", localId)))
             || !renumber->bind(":id", copyId) || !renumber->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
@@ -517,14 +511,14 @@ Status BookCopyStore::restoreCopy(const std::int64_t copyId)
         if (!book) {
             return RepoSql::sqlFailure(book.error().detail);
         }
-        if (!book->bind(":now", Clock::nowIso()) || !book->bind(":id", bookId) || !book->exec()) {
+        if (!book->bind(":now", Core::Clock::nowIso()) || !book->bind(":id", bookId) || !book->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status BookCopyStore::canPurgeCopy(const std::int64_t copyId) const
+Core::Status BookCopyStore::canPurgeCopy(const std::int64_t copyId) const
 {
     auto read = m_session.prepare("SELECT archived_at IS NOT NULL FROM book_copies WHERE id = :id");
     if (!read) {
@@ -556,12 +550,12 @@ Status BookCopyStore::canPurgeCopy(const std::int64_t copyId) const
     if (loans->integer(0) > 0) {
         return RepoSql::validation("error.copy.hasHistory");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status BookCopyStore::purgeCopy(const std::int64_t copyId)
+Core::Status BookCopyStore::purgeCopy(const std::int64_t copyId)
 {
-    if (const Status gate = canPurgeCopy(copyId); !gate) {
+    if (const Core::Status gate = canPurgeCopy(copyId); !gate) {
         return gate;
     }
 
@@ -575,10 +569,10 @@ Status BookCopyStore::purgeCopy(const std::int64_t copyId)
     if (remove->changes() <= 0) {
         return RepoSql::notFound("error.copy.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
+Core::Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
                                             const std::vector<BookCopyInput>& incoming,
                                             const std::string& bookLanguage)
 {
@@ -611,7 +605,7 @@ Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
 
     const bool carried = std::any_of(incoming.begin(), incoming.end(), [&](const BookCopyInput& copy) {
         return copy.id == 0 && normalizedCopySource(copy.source) == source
-            && trim(copy.localId) == localId;
+            && Core::trim(copy.localId) == localId;
     });
     if (!carried) {
         return RepoSql::validation("error.copy.reuseStale");
@@ -628,21 +622,21 @@ Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
     if (!release) {
         return RepoSql::sqlFailure(release.error().detail);
     }
-    if (!release->bind(":notes", appendedRemark(notes, Strings::t("copy.note.wasIndexedAs",
+    if (!release->bind(":notes", appendedRemark(notes, Core::Strings::t("copy.note.wasIndexedAs",
                                                                   "number", localId)))
         || !release->bind(":id", copyId) || !release->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<BookCopyInput>& copies)
+Core::Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<BookCopyInput>& copies)
 {
     std::unordered_set<std::string> seenGlobalIds;
     std::unordered_set<std::string> seenSourceLocal;
     for (const BookCopyInput& copy : copies) {
-        const std::string localId = trim(copy.localId);
-        const std::string globalCopyId = trim(copy.globalCopyId);
+        const std::string localId = Core::trim(copy.localId);
+        const std::string globalCopyId = Core::trim(copy.globalCopyId);
         const std::string source = normalizedCopySource(copy.source);
 
         if (localId.empty() || globalCopyId.empty()) {
@@ -661,7 +655,7 @@ Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<B
 
     const auto listed = listCopies(bookId);
     if (!listed) {
-        return VLMS::asStatus(listed);
+        return Core::asStatus(listed);
     }
     const std::vector<BookCopyRecord>& stored = listed.value();
 
@@ -687,7 +681,7 @@ Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<B
     if (!archive) {
         return RepoSql::sqlFailure(archive.error().detail);
     }
-    const std::string stamp = Clock::nowIso();
+    const std::string stamp = Core::Clock::nowIso();
     for (const BookCopyRecord& copy : stored) {
         if (submittedIds.contains(copy.id)) {
             continue;
@@ -753,10 +747,10 @@ Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<B
         }
     }
 
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status BookCopyStore::saveCopies(const std::int64_t bookId, const std::vector<BookCopyInput>& copies)
+Core::Status BookCopyStore::saveCopies(const std::int64_t bookId, const std::vector<BookCopyInput>& copies)
 {
     return m_session.transaction([&] { return applyCopies(bookId, copies); });
 }

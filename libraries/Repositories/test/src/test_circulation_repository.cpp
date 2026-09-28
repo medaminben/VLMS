@@ -17,7 +17,6 @@
 #include <utility>
 #include <vector>
 
-using VLMS::Date;
 using namespace VLMS;
 using namespace Test;
 
@@ -62,7 +61,7 @@ protected:
 
     Repositories::LoanInput baseInput(int copyIndex) const
     {
-        const Date today = Date::todayLocal();
+        const Core::Date today = Core::Date::todayLocal();
         Repositories::LoanInput input;
         input.memberId = m_activeMemberId;
         input.bookCopyId = m_copyIds.at(static_cast<std::size_t>(copyIndex));
@@ -155,7 +154,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanDefaultsBorrowedAtToToday)
 
     const auto stored = m_repository->getLoan(id);
     ASSERT_TRUE(stored.has_value());
-    EXPECT_EQ(stored->borrowedAt, Date::todayLocal().toIso());
+    EXPECT_EQ(stored->borrowedAt, Core::Date::todayLocal().toIso());
 }
 
 TEST_F(test_core_CirculationRepository, CreateLoanDefaultsDueAtToTodayPlusPolicy)
@@ -171,7 +170,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanDefaultsDueAtToTodayPlusPolicy
     const auto stored = m_repository->getLoan(id);
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->dueAt,
-              Repositories::LoanPolicy::suggestedDueDate(Date::todayLocal()).toIso());
+              Repositories::LoanPolicy::suggestedDueDate(Core::Date::todayLocal()).toIso());
 }
 
 TEST_F(test_core_CirculationRepository, CreateLoanStoresBlankNotesAsNull)
@@ -197,7 +196,7 @@ TEST_F(test_core_CirculationRepository, ReturnLoanMarksLoanReturned)
     ASSERT_TRUE(created) << created.error().key;
     id = created.value();
 
-    const std::string returnDate = Date::todayLocal().toIso();
+    const std::string returnDate = Core::Date::todayLocal().toIso();
     const auto mutated = m_repository->returnLoan(id, returnDate);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
@@ -229,7 +228,7 @@ TEST_F(test_core_CirculationRepository, ReturnLoanDefaultsToToday)
 
     const auto stored = m_repository->getLoan(id);
     ASSERT_TRUE(stored.has_value());
-    EXPECT_EQ(stored->returnedAt, Date::todayLocal().toIso());
+    EXPECT_EQ(stored->returnedAt, Core::Date::todayLocal().toIso());
 }
 
 TEST_F(test_core_CirculationRepository, ReturnLoanFreesTheCopyForReborrowing)
@@ -251,7 +250,7 @@ TEST_F(test_core_CirculationRepository, ExtendLoanMovesDueDateForward)
     ASSERT_TRUE(created) << created.error().key;
     id = created.value();
 
-    const std::string newDue = Date::todayLocal().addDays(28).toIso();
+    const std::string newDue = Core::Date::todayLocal().addDays(28).toIso();
     const auto mutated = m_repository->extendLoan(id, newDue);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
@@ -268,7 +267,7 @@ TEST_F(test_core_CirculationRepository, ExtendLoanRejectsReturnedLoan)
     id = created.value();
     EXPECT_TRUE(m_repository->returnLoan(id));
 
-    const auto failed = m_repository->extendLoan(id, Date::todayLocal().addDays(28).toIso());
+    const auto failed = m_repository->extendLoan(id, Core::Date::todayLocal().addDays(28).toIso());
     EXPECT_FALSE(failed);
     EXPECT_FALSE(failed.error().key.empty());
 }
@@ -299,7 +298,7 @@ TEST_F(test_core_CirculationRepository, ExtendLoanRejectsEarlierOrEqualDueDate)
         << "an extension equal to the current due date is not an extension";
     EXPECT_TRUE(true); // error key checked on the Result/Status above when captured
 
-    const std::string earlier = Date::fromIso(stored->dueAt).addDays(-1).toIso();
+    const std::string earlier = Core::Date::fromIso(stored->dueAt).addDays(-1).toIso();
     EXPECT_FALSE(m_repository->extendLoan(id, earlier));
 }
 
@@ -359,7 +358,7 @@ TEST_F(test_core_CirculationRepository, ListLoansAndCountLoansAgree)
         SCOPED_TRACE(testCase.name);
         ASSERT_TRUE(resetStore()) << m_db->lastError();
 
-        const Date today = Date::todayLocal();
+        const Core::Date today = Core::Date::todayLocal();
         // One current, one overdue, one returned.
         EXPECT_GT(rawInsertLoan(*m_db, m_activeMemberId, m_copyIds.at(0),
                                 today.addDays(-2).toIso(),
@@ -388,7 +387,7 @@ TEST_F(test_core_CirculationRepository, ListLoansPagesCoverEveryRowExactlyOnce)
 {
     constexpr int kPageSize = 3;
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     BookSeed book = uniqueBookSeed(500);
     book.initialCopyCount = 14;
     const std::int64_t bookId = seedBook(*m_db, book);
@@ -426,7 +425,7 @@ TEST_F(test_core_CirculationRepository, ListLoansFilteredByMemberId)
     const std::int64_t otherId = seedMember(*m_db, other);
     ASSERT_GT(otherId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, m_activeMemberId, m_copyIds.at(0),
                             today.toIso(),
                             today.addDays(14).toIso()),
@@ -468,7 +467,7 @@ TEST_F(test_core_CirculationRepository, LastErrorIsSetOnEveryFailurePath)
         SCOPED_TRACE(scenario);
         ASSERT_TRUE(resetStore()) << m_db->lastError();
 
-        VLMS::Error error;
+        Core::Error error;
         bool result = true;
         if (std::string_view(scenario) == "noMember") {
             Repositories::LoanInput input = baseInput(0);
@@ -500,7 +499,7 @@ TEST_F(test_core_CirculationRepository, LastErrorIsSetOnEveryFailurePath)
             error = returned.error();
         } else if (std::string_view(scenario) == "extendUnknown") {
             const auto extended = m_repository->extendLoan(
-                999999, Date::todayLocal().addDays(30).toIso());
+                999999, Core::Date::todayLocal().addDays(30).toIso());
             result = static_cast<bool>(extended);
             error = extended.error();
         } else if (std::string_view(scenario) == "extendBlank") {
@@ -521,7 +520,7 @@ TEST_F(test_core_CirculationRepository, GetLoanMissingIdIsNotFoundNotSql)
 {
     const auto missing = m_repository->getLoan(999999);
     EXPECT_FALSE(missing);
-    EXPECT_EQ(missing.kind(), VLMS::ErrorKind::NotFound);
+    EXPECT_EQ(missing.kind(), Core::ErrorKind::NotFound);
     EXPECT_EQ(missing.error().key, "error.loan.notFound");
 }
 
@@ -530,7 +529,7 @@ TEST_F(test_core_CirculationRepository, GetLoanExecFailureIsSql)
     ASSERT_TRUE(m_db->exec("DROP TABLE loans"));
     const auto failed = m_repository->getLoan(1);
     EXPECT_FALSE(failed);
-    EXPECT_EQ(failed.kind(), VLMS::ErrorKind::Sql);
+    EXPECT_EQ(failed.kind(), Core::ErrorKind::Sql);
     EXPECT_EQ(failed.error().key, "error.sql");
 }
 
@@ -572,7 +571,7 @@ TEST_F(test_core_CirculationRepository, SearchFindsLoansByTheMembersFullName)
     const std::int64_t importedId = seedMember(*m_db, imported);
     ASSERT_GT(importedId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_GT(rawInsertLoan(*m_db, importedId, m_copyIds.at(0), today.toIso(),
                             today.addDays(14).toIso()),
               0);
@@ -597,7 +596,7 @@ TEST_F(test_core_CirculationRepository, SearchFindsLoansByFirstAndLastNameWithou
     const std::int64_t createdId = seedMember(*m_db, created);
     ASSERT_GT(createdId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_GT(rawInsertLoan(*m_db, createdId, m_copyIds.at(0), today.toIso(),
                             today.addDays(14).toIso()),
               0);

@@ -24,8 +24,6 @@
 using namespace VLMS;
 
 using VLMS::applicationStylesheet;
-using VLMS::Locale;
-using VLMS::Strings;
 using VLMS::Theme;
 using VLMS::ThemeMode;
 
@@ -52,22 +50,22 @@ const std::vector<std::string>& clauseBodyKeys()
 
 class test_ui_LicenceDialog : public ::testing::Test {
 protected:
-    void TearDown() override { Locale::setCode(Locale::kDefaultCode); }
+    void TearDown() override { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 };
 
 TEST_F(test_ui_LicenceDialog, EveryClauseIsShownInTheChosenLanguage)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         LicenceDialog dialog;
         const QString text = dialog.documentText();
 
         for (const std::string& key : clauseBodyKeys()) {
             SCOPED_TRACE(key);
-            EXPECT_TRUE(text.contains(qs(Strings::rawValue(locale, key))));
+            EXPECT_TRUE(text.contains(qs(Core::Strings::rawValue(locale, key))));
         }
-        EXPECT_TRUE(text.contains(qs(Strings::rawValue(locale, "licence.contact.author"))));
+        EXPECT_TRUE(text.contains(qs(Core::Strings::rawValue(locale, "licence.contact.author"))));
     }
 }
 
@@ -75,7 +73,7 @@ TEST_F(test_ui_LicenceDialog, TheContactDetailsAreTheSameInEveryLanguage)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         LicenceDialog dialog;
         const QString text = dialog.documentText();
 
@@ -88,19 +86,19 @@ TEST_F(test_ui_LicenceDialog, TheCloseButtonComesFromTheApplicationTable)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         LicenceDialog dialog;
         auto* box = dialog.findChild<QDialogButtonBox*>();
         ASSERT_NE(box, nullptr);
         ASSERT_NE(box->button(QDialogButtonBox::Close), nullptr);
         EXPECT_EQ(box->button(QDialogButtonBox::Close)->text(),
-                  qs(Strings::rawValue(locale, "common.close")));
+                  qs(Core::Strings::rawValue(locale, "common.close")));
     }
 }
 
 TEST_F(test_ui_LicenceDialog, OnlyTheArabicLicenceReadsRightToLeft)
 {
-    Locale::setCode(kArabic);
+    Core::Locale::setCode(kArabic);
     LicenceDialog arabic;
     auto* arabicBody = arabic.findChild<QTextBrowser*>();
     ASSERT_NE(arabicBody, nullptr);
@@ -108,7 +106,7 @@ TEST_F(test_ui_LicenceDialog, OnlyTheArabicLicenceReadsRightToLeft)
 
     for (const char* locale : {kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         LicenceDialog dialog;
         auto* body = dialog.findChild<QTextBrowser*>();
         ASSERT_NE(body, nullptr);
@@ -132,9 +130,9 @@ TEST_F(test_ui_LicenceDialog, TheWindowIsTitledInTheChosenLanguage)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         LicenceDialog dialog;
-        EXPECT_EQ(dialog.windowTitle(), qs(Strings::rawValue(locale, "licence.title")));
+        EXPECT_EQ(dialog.windowTitle(), qs(Core::Strings::rawValue(locale, "licence.title")));
     }
 }
 

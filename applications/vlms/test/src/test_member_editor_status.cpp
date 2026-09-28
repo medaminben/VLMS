@@ -17,9 +17,6 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -52,7 +49,7 @@ bool pick(QComboBox* combo, const char* code)
 
 class test_ui_MemberEditorStatus : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
@@ -84,7 +81,7 @@ TEST_F(test_ui_MemberEditorStatus, TheComboOffersActiveAndNotActiveOnly)
 
 TEST_F(test_ui_MemberEditorStatus, ANewMemberShowsAYearFromToday)
 {
-    const ScopedClock pinned(Date(2026, 9, 23));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
     MemberEditorDialog dialog(*m_repository);
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
     ASSERT_NE(until, nullptr);
@@ -93,7 +90,7 @@ TEST_F(test_ui_MemberEditorStatus, ANewMemberShowsAYearFromToday)
 
 TEST_F(test_ui_MemberEditorStatus, PickingActiveForAnExpiredMemberShowsTheRenewal)
 {
-    const ScopedClock pinned(Date(2026, 9, 23));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
     MemberEditorDialog dialog(*m_repository, memberUntil("2026-01-09", Repositories::MemberStatus::kNonActive));
     auto* combo = dialog.findChild<QComboBox*>(QStringLiteral("memberStatusCombo"));
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
@@ -110,7 +107,7 @@ TEST_F(test_ui_MemberEditorStatus, PickingActiveForAnExpiredMemberShowsTheRenewa
 
 TEST_F(test_ui_MemberEditorStatus, PickingNotActiveForAnActiveMemberShowsYesterday)
 {
-    const ScopedClock pinned(Date(2026, 9, 23));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
     MemberEditorDialog dialog(*m_repository, memberUntil("2027-03-01", Repositories::MemberStatus::kActive));
     auto* combo = dialog.findChild<QComboBox*>(QStringLiteral("memberStatusCombo"));
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
@@ -128,15 +125,15 @@ TEST_F(test_ui_MemberEditorStatus, TheRowIsLabelledInEveryLanguage)
 {
     for (const char* locale : {"ar", "fr", "en"}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         MemberEditorDialog dialog(*m_repository);
         bool found = false;
         for (QLabel* label : dialog.findChildren<QLabel*>()) {
-            if (label->text().startsWith(qs(VLMS::Strings::t("member.field.activeUntil")))) {
+            if (label->text().startsWith(qs(Core::Strings::t("member.field.activeUntil")))) {
                 found = true;
             }
         }
         EXPECT_TRUE(found);
     }
-    Locale::setCode("en");
+    Core::Locale::setCode("en");
 }

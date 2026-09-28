@@ -7,39 +7,39 @@
 
 namespace VLMS::Repositories::RepoSql {
 
-inline Status sqlFailure(const std::string& message)
+inline Core::Status sqlFailure(const std::string& message)
 {
     std::fprintf(stderr, "%s\n", message.c_str());
-    return Status::fail(ErrorKind::Sql, "error.sql");
+    return Core::Status::fail(Core::ErrorKind::Sql, "error.sql");
 }
 
 template<typename T>
-inline Result<T> sqlResult(const std::string& message)
+inline Core::Result<T> sqlResult(const std::string& message)
 {
     std::fprintf(stderr, "%s\n", message.c_str());
-    return Result<T>::fail(ErrorKind::Sql, "error.sql");
+    return Core::Result<T>::fail(Core::ErrorKind::Sql, "error.sql");
 }
 
-inline Status validation(std::string key, std::string detail = {})
+inline Core::Status validation(std::string key, std::string detail = {})
 {
-    return Status::fail(ErrorKind::Validation, std::move(key), std::move(detail));
+    return Core::Status::fail(Core::ErrorKind::Validation, std::move(key), std::move(detail));
 }
 
-inline Status notFound(std::string key)
+inline Core::Status notFound(std::string key)
 {
-    return Status::fail(ErrorKind::NotFound, std::move(key));
-}
-
-template<typename T>
-inline Result<T> notFoundResult(std::string key)
-{
-    return Result<T>::fail(ErrorKind::NotFound, std::move(key));
+    return Core::Status::fail(Core::ErrorKind::NotFound, std::move(key));
 }
 
 template<typename T>
-inline Result<T> validationResult(std::string key, std::string detail = {})
+inline Core::Result<T> notFoundResult(std::string key)
 {
-    return Result<T>::fail(ErrorKind::Validation, std::move(key), std::move(detail));
+    return Core::Result<T>::fail(Core::ErrorKind::NotFound, std::move(key));
+}
+
+template<typename T>
+inline Core::Result<T> validationResult(std::string key, std::string detail = {})
+{
+    return Core::Result<T>::fail(Core::ErrorKind::Validation, std::move(key), std::move(detail));
 }
 
 }  // namespace VLMS::Repositories::RepoSql

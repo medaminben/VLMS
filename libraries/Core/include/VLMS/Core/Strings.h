@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 class Strings {
 public:
@@ -30,4 +30,4 @@ private:
     static std::string lookup(std::string_view key);
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

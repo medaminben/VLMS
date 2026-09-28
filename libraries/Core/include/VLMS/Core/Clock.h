@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 /**
  * The single source of "now" for the whole application.
@@ -58,4 +58,4 @@ private:
     std::optional<DateTime> m_previous;
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

@@ -5,8 +5,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::trim;
-
 namespace VLMS::Repositories::BookSql {
 namespace {
 
@@ -25,7 +23,7 @@ std::string withDirection(const std::string& expression, const bool ascending)
 /// "AR-1002" — searches the text fields only.
 std::string localNumberTerm(const BookQuery& query)
 {
-    const std::string term = trim(query.search);
+    const std::string term = Core::trim(query.search);
     if (term.empty()) {
         return {};
     }
@@ -65,7 +63,7 @@ std::string filterClause(const BookQuery& query)
     } else if (query.archive == ArchiveScope::Archived) {
         sql += " AND b.archived_at IS NOT NULL ";
     }
-    if (!trim(query.search).empty()) {
+    if (!Core::trim(query.search).empty()) {
         sql += " AND (b.title LIKE :search ESCAPE '\\' "
                "OR a.name LIKE :search ESCAPE '\\' "
                "OR b.isbn LIKE :search ESCAPE '\\' ";
@@ -109,7 +107,7 @@ std::string filterClause(const BookQuery& query)
 
 void bindFilters(Database::SqliteStatement& query, const BookQuery& queryData)
 {
-    const std::string search = trim(queryData.search);
+    const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
         query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }

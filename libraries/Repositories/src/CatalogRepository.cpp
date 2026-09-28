@@ -16,23 +16,17 @@
 #include <cstdlib>
 #include <filesystem>
 
-using VLMS::Clock;
-using VLMS::DateText::normalizePublicationDate;
-using VLMS::Result;
-using VLMS::Status;
-using VLMS::trim;
-
 namespace VLMS::Repositories {
 
 namespace {
 
 std::string blankIsbnSentinel(const std::string& isbn)
 {
-    const std::string trimmed = trim(isbn);
+    const std::string trimmed = Core::trim(isbn);
     return trimmed.empty() ? std::string() : trimmed;
 }
 
-Status bindOptionalId(Database::SqliteStatement& query, const std::string& name, const std::int64_t id)
+Core::Status bindOptionalId(Database::SqliteStatement& query, const std::string& name, const std::int64_t id)
 {
     if (id > 0) {
         return query.bind(name, id);
@@ -40,18 +34,18 @@ Status bindOptionalId(Database::SqliteStatement& query, const std::string& name,
     return query.bindNull(name);
 }
 
-Status bindBookFields(Database::SqliteStatement& query,
+Core::Status bindBookFields(Database::SqliteStatement& query,
                       const BookInput& input,
                       const std::int64_t authorId,
                       const std::int64_t publisherId)
 {
-    const std::string language = trim(input.language);
-    if (!query.bind(":title", trim(input.title)) || !bindOptionalId(query, ":author_id", authorId)
+    const std::string language = Core::trim(input.language);
+    if (!query.bind(":title", Core::trim(input.title)) || !bindOptionalId(query, ":author_id", authorId)
         || !bindOptionalId(query, ":publisher_id", publisherId)
         || !bindOptionalId(query, ":category_id", input.categoryId)
         || !query.bind(":isbn", blankIsbnSentinel(input.isbn))
         || !query.bindOptional(":publication_date",
-                               Database::SqlText::nullableText(normalizePublicationDate(input.publicationDate)))
+                               Database::SqlText::nullableText(Core::DateText::normalizePublicationDate(input.publicationDate)))
         || !query.bindOptional(":publication_date_original", Database::SqlText::nullableText(input.publicationDate))
         || !query.bindOptional(":place_of_publication", Database::SqlText::nullableText(input.placeOfPublication))
         || !query.bindOptional(":pages", Database::SqlText::nullableText(input.pages))
@@ -60,7 +54,7 @@ Status bindBookFields(Database::SqliteStatement& query,
         || !query.bindOptional(":description", Database::SqlText::nullableText(input.description))) {
         return RepoSql::sqlFailure("bind book fields");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 const char* kBookSelect = R"SQL(
@@ -190,7 +184,7 @@ CatalogRepository::CatalogRepository(Database::SqliteSession& session,
 
 CatalogRepository::~CatalogRepository() = default;
 
-Result<std::vector<BookRecord>> CatalogRepository::listBooks(const BookQuery& query) const
+Core::Result<std::vector<BookRecord>> CatalogRepository::listBooks(const BookQuery& query) const
 {
     std::string sql = std::string("SELECT ") + kBookSelect + ", "
         + BookSql::matchedLocalIdColumn(query) + bookFrom(query.archive)
@@ -217,10 +211,10 @@ Result<std::vector<BookRecord>> CatalogRepository::listBooks(const BookQuery& qu
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<BookRecord>>(m_session.lastError());
     }
-    return Result<std::vector<BookRecord>>::ok(std::move(books));
+    return Core::Result<std::vector<BookRecord>>::ok(std::move(books));
 }
 
-Result<int> CatalogRepository::rankOfBook(const std::int64_t id, const BookQuery& query) const
+Core::Result<int> CatalogRepository::rankOfBook(const std::int64_t id, const BookQuery& query) const
 {
     std::string sql =
         "SELECT ranked.rank FROM (\n"
@@ -246,10 +240,10 @@ Result<int> CatalogRepository::rankOfBook(const std::int64_t id, const BookQuery
         }
         return RepoSql::notFoundResult<int>("error.book.notFound");
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Result<int> CatalogRepository::countBooks(const BookQuery& query) const
+Core::Result<int> CatalogRepository::countBooks(const BookQuery& query) const
 {
     std::string sql = R"SQL(
         SELECT COUNT(*) FROM (
@@ -271,12 +265,12 @@ Result<int> CatalogRepository::countBooks(const BookQuery& query) const
         if (!q->ok()) {
             return RepoSql::sqlResult<int>(m_session.lastError());
         }
-        return Result<int>::ok(0);
+        return Core::Result<int>::ok(0);
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Result<BookRecord> CatalogRepository::getBook(const std::int64_t id) const
+Core::Result<BookRecord> CatalogRepository::getBook(const std::int64_t id) const
 {
     // getBook has no search behind it, so nothing matched: the column is still
     // selected, and empty, to keep readBookRow's indices in one place.
@@ -296,15 +290,15 @@ Result<BookRecord> CatalogRepository::getBook(const std::int64_t id) const
         }
         return RepoSql::notFoundResult<BookRecord>("error.book.notFound");
     }
-    return Result<BookRecord>::ok(readBookRow(*q));
+    return Core::Result<BookRecord>::ok(readBookRow(*q));
 }
 
-Result<std::int64_t> CatalogRepository::insertBookRow(const BookInput& input)
+Core::Result<std::int64_t> CatalogRepository::insertBookRow(const BookInput& input)
 {
-    if (trim(input.title).empty()) {
+    if (Core::trim(input.title).empty()) {
         return RepoSql::validationResult<std::int64_t>("error.book.titleRequired");
     }
-    if (trim(input.language).empty()) {
+    if (Core::trim(input.language).empty()) {
         return RepoSql::validationResult<std::int64_t>("error.book.languageRequired");
     }
 
@@ -334,7 +328,7 @@ Result<std::int64_t> CatalogRepository::insertBookRow(const BookInput& input)
     }
     if (const auto bound = bindBookFields(*insert, input, author.value(), publisher.value());
         !bound) {
-        return Result<std::int64_t>::fail(bound.error().kind, bound.error().key,
+        return Core::Result<std::int64_t>::fail(bound.error().kind, bound.error().key,
                                           bound.error().detail);
     }
     if (const auto written = insert->exec(); !written) {
@@ -345,26 +339,26 @@ Result<std::int64_t> CatalogRepository::insertBookRow(const BookInput& input)
         }
         return RepoSql::sqlResult<std::int64_t>(error);
     }
-    return Result<std::int64_t>::ok(m_session.lastInsertRowId());
+    return Core::Result<std::int64_t>::ok(m_session.lastInsertRowId());
 }
 
-Status CatalogRepository::applyBookFields(const std::int64_t id, const BookInput& input)
+Core::Status CatalogRepository::applyBookFields(const std::int64_t id, const BookInput& input)
 {
-    if (trim(input.title).empty()) {
+    if (Core::trim(input.title).empty()) {
         return RepoSql::validation("error.book.titleRequired");
     }
-    if (trim(input.language).empty()) {
+    if (Core::trim(input.language).empty()) {
         return RepoSql::validation("error.book.languageRequired");
     }
 
     const auto author = m_names->findOrCreate(NamedEntityStore::Kind::Author, input.authorName);
     if (!author) {
-        return asStatus(author);
+        return Core::asStatus(author);
     }
     const auto publisher =
         m_names->findOrCreate(NamedEntityStore::Kind::Publisher, input.publisherName);
     if (!publisher) {
-        return asStatus(publisher);
+        return Core::asStatus(publisher);
     }
 
     auto update = m_session.prepare(R"SQL(
@@ -391,7 +385,7 @@ Status CatalogRepository::applyBookFields(const std::int64_t id, const BookInput
         !bound) {
         return bound;
     }
-    if (!update->bind(":updated_at", Clock::nowIso()) || !update->bind(":id", id)) {
+    if (!update->bind(":updated_at", Core::Clock::nowIso()) || !update->bind(":id", id)) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (const auto written = update->exec(); !written) {
@@ -405,36 +399,36 @@ Status CatalogRepository::applyBookFields(const std::int64_t id, const BookInput
     if (update->changes() <= 0) {
         return RepoSql::notFound("error.book.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Result<std::int64_t> CatalogRepository::createBook(const BookInput& input)
+Core::Result<std::int64_t> CatalogRepository::createBook(const BookInput& input)
 {
     if (input.initialCopyCount < 1) {
         return RepoSql::validationResult<std::int64_t>("error.book.minCopies");
     }
 
     std::int64_t bookId = 0;
-    const Status work = m_session.transaction([&] {
+    const Core::Status work = m_session.transaction([&] {
         const auto inserted = insertBookRow(input);
         if (!inserted) {
-            return asStatus(inserted);
+            return Core::asStatus(inserted);
         }
         bookId = inserted.value();
-        return m_copies->addCopies(bookId, trim(input.language), input.initialCopyCount);
+        return m_copies->addCopies(bookId, Core::trim(input.language), input.initialCopyCount);
     });
     if (!work) {
-        return Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
+        return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
-    return Result<std::int64_t>::ok(bookId);
+    return Core::Result<std::int64_t>::ok(bookId);
 }
 
-Status CatalogRepository::updateBook(const std::int64_t id, const BookInput& input)
+Core::Status CatalogRepository::updateBook(const std::int64_t id, const BookInput& input)
 {
     return m_session.transaction([&] { return applyBookFields(id, input); });
 }
 
-Status CatalogRepository::deleteBook(const std::int64_t id)
+Core::Status CatalogRepository::deleteBook(const std::int64_t id)
 {
     auto loanCheck = m_session.prepare(
         "SELECT COUNT(*) FROM loans l "
@@ -467,10 +461,10 @@ Status CatalogRepository::deleteBook(const std::int64_t id)
         std::error_code error;
         std::filesystem::remove_all(bookDir, error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Result<bool> CatalogRepository::bookHasOpenLoans(const std::int64_t id) const
+Core::Result<bool> CatalogRepository::bookHasOpenLoans(const std::int64_t id) const
 {
     auto loanCheck = m_session.prepare(
         "SELECT COUNT(*) FROM loans l "
@@ -482,14 +476,14 @@ Result<bool> CatalogRepository::bookHasOpenLoans(const std::int64_t id) const
     if (!loanCheck->bind(":book_id", id) || !loanCheck->next()) {
         return RepoSql::sqlResult<bool>(m_session.lastError());
     }
-    return Result<bool>::ok(loanCheck->integer(0) > 0);
+    return Core::Result<bool>::ok(loanCheck->integer(0) > 0);
 }
 
-Status CatalogRepository::canArchiveBook(const std::int64_t id) const
+Core::Status CatalogRepository::canArchiveBook(const std::int64_t id) const
 {
     const auto open = bookHasOpenLoans(id);
     if (!open) {
-        return asStatus(open);
+        return Core::asStatus(open);
     }
     if (open.value()) {
         return RepoSql::validation("error.book.hasActiveLoans");
@@ -509,20 +503,20 @@ Status CatalogRepository::canArchiveBook(const std::int64_t id) const
         }
         return RepoSql::notFound("error.book.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CatalogRepository::archiveBook(const std::int64_t id)
+Core::Status CatalogRepository::archiveBook(const std::int64_t id)
 {
     return m_session.transaction([&] {
-        if (const Status gate = canArchiveBook(id); !gate) {
+        if (const Core::Status gate = canArchiveBook(id); !gate) {
             return gate;
         }
 
         // One read of the clock for the book and every copy: restoreBook brings
         // back exactly the copies that carry the book's own stamp. The cover
         // folder stays -- the Archive still shows it.
-        const std::string stamp = Clock::nowIso();
+        const std::string stamp = Core::Clock::nowIso();
         auto book = m_session.prepare(
             "UPDATE books SET archived_at = :stamp, updated_at = :stamp "
             "WHERE id = :id AND archived_at IS NULL");
@@ -545,11 +539,11 @@ Status CatalogRepository::archiveBook(const std::int64_t id)
         if (!copies->bind(":stamp", stamp) || !copies->bind(":id", id) || !copies->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
 }
 
-Status CatalogRepository::restoreBook(const std::int64_t id)
+Core::Status CatalogRepository::restoreBook(const std::int64_t id)
 {
     return m_session.transaction([&] {
         std::string stamp;
@@ -578,7 +572,7 @@ Status CatalogRepository::restoreBook(const std::int64_t id)
         if (!book) {
             return RepoSql::sqlFailure(book.error().detail);
         }
-        if (!book->bind(":now", Clock::nowIso()) || !book->bind(":id", id) || !book->exec()) {
+        if (!book->bind(":now", Core::Clock::nowIso()) || !book->bind(":id", id) || !book->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
 
@@ -594,11 +588,11 @@ Status CatalogRepository::restoreBook(const std::int64_t id)
         if (!copies->bind(":id", id) || !copies->bind(":stamp", stamp) || !copies->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
 }
 
-Status CatalogRepository::canPurgeBook(const std::int64_t id) const
+Core::Status CatalogRepository::canPurgeBook(const std::int64_t id) const
 {
     auto read = m_session.prepare("SELECT archived_at IS NOT NULL FROM books WHERE id = :id");
     if (!read) {
@@ -629,13 +623,13 @@ Status CatalogRepository::canPurgeBook(const std::int64_t id) const
     if (copies->integer(0) > 0) {
         return RepoSql::validation("error.book.hasCopies");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CatalogRepository::purgeBook(const std::int64_t id)
+Core::Status CatalogRepository::purgeBook(const std::int64_t id)
 {
-    const auto removed = m_session.transaction([&]() -> Status {
-        if (const Status gate = canPurgeBook(id); !gate) {
+    const auto removed = m_session.transaction([&]() -> Core::Status {
+        if (const Core::Status gate = canPurgeBook(id); !gate) {
             return gate;
         }
 
@@ -649,7 +643,7 @@ Status CatalogRepository::purgeBook(const std::int64_t id)
         if (remove->changes() <= 0) {
             return RepoSql::notFound("error.book.notFound");
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!removed) {
         return removed;
@@ -663,20 +657,20 @@ Status CatalogRepository::purgeBook(const std::int64_t id)
         std::error_code error;
         std::filesystem::remove_all(bookDir, error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CatalogRepository::restoreCopy(const std::int64_t copyId)
+Core::Status CatalogRepository::restoreCopy(const std::int64_t copyId)
 {
     return m_session.transaction([&] { return m_copies->restoreCopy(copyId); });
 }
 
-Status CatalogRepository::canPurgeCopy(const std::int64_t copyId) const
+Core::Status CatalogRepository::canPurgeCopy(const std::int64_t copyId) const
 {
     return m_copies->canPurgeCopy(copyId);
 }
 
-Status CatalogRepository::purgeCopy(const std::int64_t copyId)
+Core::Status CatalogRepository::purgeCopy(const std::int64_t copyId)
 {
     return m_session.transaction([&] { return m_copies->purgeCopy(copyId); });
 }
@@ -686,12 +680,12 @@ std::string CatalogRepository::copySourceForLanguage(const std::string& language
     return BookCopyStore::sourceForLanguage(language);
 }
 
-Result<std::vector<BookCopyRecord>> CatalogRepository::listCopyRows(const CopyQuery& query) const
+Core::Result<std::vector<BookCopyRecord>> CatalogRepository::listCopyRows(const CopyQuery& query) const
 {
     return m_copies->listCopyRows(query);
 }
 
-Result<int> CatalogRepository::countCopyRows(const CopyQuery& query) const
+Core::Result<int> CatalogRepository::countCopyRows(const CopyQuery& query) const
 {
     return m_copies->countCopyRows(query);
 }
@@ -709,10 +703,10 @@ bool CatalogRepository::archivedBookHasKey(const BookInput& input,
     if (!q) {
         return false;
     }
-    if (!q->bind(":title", trim(input.title)) || !q->bind(":author_id", authorId)
+    if (!q->bind(":title", Core::trim(input.title)) || !q->bind(":author_id", authorId)
         || !q->bind(":publisher_id", publisherId)
         || !q->bind(":isbn", blankIsbnSentinel(input.isbn))
-        || !q->bind(":language", trim(input.language))) {
+        || !q->bind(":language", Core::trim(input.language))) {
         return false;
     }
     return q->next();
@@ -730,7 +724,7 @@ std::string CatalogRepository::resolveCoverPath(const std::string& storedPath) c
     return (std::filesystem::path(m_resourcesDirectory) / storedPath).string();
 }
 
-Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
+Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
                                           const std::string& sourceFilePath)
 {
     if (sourceFilePath.empty()) {
@@ -773,29 +767,29 @@ Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
     if (!update) {
         return RepoSql::sqlFailure(update.error().detail);
     }
-    if (!update->bind(":path", relativePath) || !update->bind(":updated_at", Clock::nowIso())
+    if (!update->bind(":path", relativePath) || !update->bind(":updated_at", Core::Clock::nowIso())
         || !update->bind(":id", bookId) || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CatalogRepository::setCoverImage(const std::int64_t bookId, const std::string& sourceFilePath)
+Core::Status CatalogRepository::setCoverImage(const std::int64_t bookId, const std::string& sourceFilePath)
 {
     return applyCoverImage(bookId, sourceFilePath);
 }
 
-Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write)
+Core::Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write)
 {
     std::int64_t bookId = 0;
-    const Status work = m_session.transaction([&] {
+    const Core::Status work = m_session.transaction([&] {
         BookInput input = write.book;
         if (write.copies.empty() && input.initialCopyCount < 1) {
             return RepoSql::validation("error.book.minCopies");
         }
         if (write.releaseFromCopyId > 0) {
             if (const auto released = m_copies->releaseArchivedNumber(
-                    write.releaseFromCopyId, write.copies, trim(write.book.language));
+                    write.releaseFromCopyId, write.copies, Core::trim(write.book.language));
                 !released) {
                 return released;
             }
@@ -806,13 +800,13 @@ Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write)
 
         const auto inserted = insertBookRow(input);
         if (!inserted) {
-            return asStatus(inserted);
+            return Core::asStatus(inserted);
         }
         bookId = inserted.value();
 
         if (write.copies.empty()) {
             if (const auto copies =
-                    m_copies->addCopies(bookId, trim(input.language), input.initialCopyCount);
+                    m_copies->addCopies(bookId, Core::trim(input.language), input.initialCopyCount);
                 !copies) {
                 return copies;
             }
@@ -825,20 +819,20 @@ Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write)
                 return cover;
             }
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
-        return Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
+        return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
-    return Result<std::int64_t>::ok(bookId);
+    return Core::Result<std::int64_t>::ok(bookId);
 }
 
-Status CatalogRepository::saveExistingBook(const std::int64_t id, const BookWrite& write)
+Core::Status CatalogRepository::saveExistingBook(const std::int64_t id, const BookWrite& write)
 {
     return m_session.transaction([&] {
         if (write.releaseFromCopyId > 0) {
             if (const auto released = m_copies->releaseArchivedNumber(
-                    write.releaseFromCopyId, write.copies, trim(write.book.language));
+                    write.releaseFromCopyId, write.copies, Core::trim(write.book.language));
                 !released) {
                 return released;
             }
@@ -854,16 +848,16 @@ Status CatalogRepository::saveExistingBook(const std::int64_t id, const BookWrit
                 return cover;
             }
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
 }
 
-Result<std::vector<BookCopyRecord>> CatalogRepository::listCopies(const std::int64_t bookId) const
+Core::Result<std::vector<BookCopyRecord>> CatalogRepository::listCopies(const std::int64_t bookId) const
 {
     return m_copies->listCopies(bookId);
 }
 
-Status CatalogRepository::saveCopies(const std::int64_t bookId,
+Core::Status CatalogRepository::saveCopies(const std::int64_t bookId,
                                      const std::vector<BookCopyInput>& copies)
 {
     return m_copies->saveCopies(bookId, copies);
@@ -877,51 +871,51 @@ void CatalogRepository::suggestCopyIdentifiers(const std::string& language,
     m_copies->suggestCopyIdentifiers(language, outSource, outLocalId, outGlobalCopyId);
 }
 
-Result<std::vector<std::string>> CatalogRepository::listFreeLocalNumbers(const std::string& source,
+Core::Result<std::vector<std::string>> CatalogRepository::listFreeLocalNumbers(const std::string& source,
                                                                          const int limit) const
 {
     return m_copies->freeLocalNumbers(source, limit);
 }
 
-Result<std::vector<CategoryRecord>> CatalogRepository::listCategories() const
+Core::Result<std::vector<CategoryRecord>> CatalogRepository::listCategories() const
 {
     return m_categories->listCategories();
 }
 
-Result<std::vector<CategoryRecord>> CatalogRepository::listAllCategories() const
+Core::Result<std::vector<CategoryRecord>> CatalogRepository::listAllCategories() const
 {
     return m_categories->listAllCategories();
 }
 
-Result<std::int64_t> CatalogRepository::createCategory(const std::string& code,
+Core::Result<std::int64_t> CatalogRepository::createCategory(const std::string& code,
                                                        const std::string& label)
 {
     return m_categories->createCategory(code, label);
 }
 
-Status CatalogRepository::updateCategory(const std::int64_t id,
+Core::Status CatalogRepository::updateCategory(const std::int64_t id,
                                          const std::string& code,
                                          const std::string& label)
 {
     return m_categories->updateCategory(id, code, label);
 }
 
-Status CatalogRepository::deleteCategory(const std::int64_t id)
+Core::Status CatalogRepository::deleteCategory(const std::int64_t id)
 {
     return m_categories->deleteCategory(id);
 }
 
-Result<std::vector<std::string>> CatalogRepository::listAuthorNames() const
+Core::Result<std::vector<std::string>> CatalogRepository::listAuthorNames() const
 {
     return m_names->listNames(NamedEntityStore::Kind::Author);
 }
 
-Result<std::vector<std::string>> CatalogRepository::listPublisherNames() const
+Core::Result<std::vector<std::string>> CatalogRepository::listPublisherNames() const
 {
     return m_names->listNames(NamedEntityStore::Kind::Publisher);
 }
 
-Result<std::vector<LanguageRecord>> CatalogRepository::listBookLanguages(
+Core::Result<std::vector<LanguageRecord>> CatalogRepository::listBookLanguages(
     const ArchiveScope scope) const
 {
     std::string scopeCondition;
@@ -949,7 +943,7 @@ Result<std::vector<LanguageRecord>> CatalogRepository::listBookLanguages(
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<LanguageRecord>>(m_session.lastError());
     }
-    return Result<std::vector<LanguageRecord>>::ok(std::move(languages));
+    return Core::Result<std::vector<LanguageRecord>>::ok(std::move(languages));
 }
 
 }  // namespace VLMS::Repositories

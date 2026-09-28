@@ -39,8 +39,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kNameColumnWidth = 260;
 constexpr int kPhoneColumnWidth = 160;
 constexpr int kPreviewPanelMinWidth = 200;
@@ -214,7 +212,6 @@ void MembersPage::retranslateUi() {
     refreshSelectedMemberPreview();
 }
 
-
 void MembersPage::refreshAllFilters()
 {
     m_filters->refresh();
@@ -274,7 +271,7 @@ void MembersPage::refreshMembers() {
         m_membersTable->setItem(row, 1, new QTableWidgetItem(fullName));
         m_membersTable->setItem(row, 2, new QTableWidgetItem(qs(member.phone)));
         m_membersTable->setItem(row, 3, new QTableWidgetItem(qs(member.city)));
-        m_membersTable->setItem(row, 4, new QTableWidgetItem(qs(Strings::memberStatusLabel(member.status))));
+        m_membersTable->setItem(row, 4, new QTableWidgetItem(qs(VLMS::Core::Strings::memberStatusLabel(member.status))));
         auto* loansItem = new QTableWidgetItem;
         loansItem->setData(Qt::DisplayRole, member.activeLoanCount);
         m_membersTable->setItem(row, 5, loansItem);
@@ -447,13 +444,13 @@ void MembersPage::updatePreview(const VLMS::Repositories::MemberRecord& member) 
         {QStringLiteral("member.field.number"), qs(member.membershipNumber)},
         {QStringLiteral("member.field.sex"),
          member.sex.empty() ? VLMS::dashIfEmpty(member.sex)
-                            : qs(Strings::memberSexLabel(member.sex))},
-        {QStringLiteral("member.field.status"), qs(Strings::memberStatusLabel(member.status))},
+                            : qs(VLMS::Core::Strings::memberSexLabel(member.sex))},
+        {QStringLiteral("member.field.status"), qs(VLMS::Core::Strings::memberStatusLabel(member.status))},
         {QStringLiteral("member.field.activeUntil"), VLMS::dashIfEmpty(member.activeUntil)},
         {QStringLiteral("member.field.occupation"), VLMS::dashIfEmpty(member.occupation)},
         {QStringLiteral("member.field.ageGroup"),
          member.ageGroup.empty() ? VLMS::dashIfEmpty(member.ageGroup)
-                                 : qs(Strings::memberAgeGroupLabel(member.ageGroup))},
+                                 : qs(VLMS::Core::Strings::memberAgeGroupLabel(member.ageGroup))},
         {QStringLiteral("member.field.phone"), VLMS::dashIfEmpty(member.phone)},
         {QStringLiteral("member.field.city"), VLMS::dashIfEmpty(member.city)},
         {QStringLiteral("member.field.address"), VLMS::dashIfEmpty(member.address)},

@@ -13,7 +13,6 @@
 #include <string>
 #include <system_error>
 
-using VLMS::Clock;
 using namespace VLMS;
 using namespace Test;
 
@@ -58,7 +57,7 @@ protected:
 
     void TearDown() override
     {
-        EXPECT_FALSE(Clock::isOverridden());
+        EXPECT_FALSE(Core::Clock::isOverridden());
         if (!m_scratch.empty()) {
             std::error_code error;
             std::filesystem::remove_all(m_scratch, error);

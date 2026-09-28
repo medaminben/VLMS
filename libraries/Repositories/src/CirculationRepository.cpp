@@ -11,11 +11,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::Clock;
-using VLMS::Result;
-using VLMS::Status;
-using VLMS::trim;
-
 namespace VLMS::Repositories {
 
 namespace {
@@ -93,7 +88,7 @@ std::vector<std::string> CirculationRepository::filterCodes()
     };
 }
 
-Result<std::vector<LoanRecord>> CirculationRepository::listLoans(const LoanQuery& query) const
+Core::Result<std::vector<LoanRecord>> CirculationRepository::listLoans(const LoanQuery& query) const
 {
     std::string sql = loanSelectSql() + "        WHERE 1 = 1\n";
     sql += LoanSql::filterClause(query);
@@ -120,10 +115,10 @@ Result<std::vector<LoanRecord>> CirculationRepository::listLoans(const LoanQuery
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<LoanRecord>>(m_session.lastError());
     }
-    return Result<std::vector<LoanRecord>>::ok(std::move(loans));
+    return Core::Result<std::vector<LoanRecord>>::ok(std::move(loans));
 }
 
-Result<int> CirculationRepository::rankOfLoan(const std::int64_t id, const LoanQuery& query) const
+Core::Result<int> CirculationRepository::rankOfLoan(const std::int64_t id, const LoanQuery& query) const
 {
     std::string sql =
         "SELECT ranked.rank FROM (\n"
@@ -153,10 +148,10 @@ Result<int> CirculationRepository::rankOfLoan(const std::int64_t id, const LoanQ
         }
         return RepoSql::notFoundResult<int>("error.loan.notFound");
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Result<int> CirculationRepository::countLoans(const LoanQuery& query) const
+Core::Result<int> CirculationRepository::countLoans(const LoanQuery& query) const
 {
     std::string sql = R"SQL(
         SELECT COUNT(*)
@@ -179,12 +174,12 @@ Result<int> CirculationRepository::countLoans(const LoanQuery& query) const
         if (!q->ok()) {
             return RepoSql::sqlResult<int>(m_session.lastError());
         }
-        return Result<int>::ok(0);
+        return Core::Result<int>::ok(0);
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Result<std::vector<std::string>> CirculationRepository::listLoanYears(const ArchiveScope scope) const
+Core::Result<std::vector<std::string>> CirculationRepository::listLoanYears(const ArchiveScope scope) const
 {
     std::string sql = "SELECT DISTINCT substr(borrowed_at, 1, 4) FROM loans"
                       " WHERE length(trim(borrowed_at)) >= 4";
@@ -205,16 +200,16 @@ Result<std::vector<std::string>> CirculationRepository::listLoanYears(const Arch
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<std::string>>(m_session.lastError());
     }
-    return Result<std::vector<std::string>>::ok(std::move(years));
+    return Core::Result<std::vector<std::string>>::ok(std::move(years));
 }
 
-Result<LoanRecord> CirculationRepository::getLoan(const std::int64_t id) const
+Core::Result<LoanRecord> CirculationRepository::getLoan(const std::int64_t id) const
 {
     auto q = m_session.prepare(loanSelectSql() + "        WHERE l.id = :id\n");
     if (!q) {
         return RepoSql::sqlResult<LoanRecord>(q.error().detail);
     }
-    if (!q->bind(LoanSql::todayPlaceholder(), Clock::todayIso()) || !q->bind(":id", id)) {
+    if (!q->bind(LoanSql::todayPlaceholder(), Core::Clock::todayIso()) || !q->bind(":id", id)) {
         return RepoSql::sqlResult<LoanRecord>(m_session.lastError());
     }
     if (!q->next()) {
@@ -223,17 +218,17 @@ Result<LoanRecord> CirculationRepository::getLoan(const std::int64_t id) const
         }
         return RepoSql::notFoundResult<LoanRecord>("error.loan.notFound");
     }
-    return Result<LoanRecord>::ok(readLoanRow(*q));
+    return Core::Result<LoanRecord>::ok(readLoanRow(*q));
 }
 
-Status CirculationRepository::memberCanBorrow(const std::int64_t memberId) const
+Core::Status CirculationRepository::memberCanBorrow(const std::int64_t memberId) const
 {
     auto q = m_session.prepare("SELECT " + MemberSql::isActive("")
                                + ", archived_at FROM members WHERE id = :id");
     if (!q) {
         return RepoSql::sqlFailure(q.error().detail);
     }
-    if (!q->bind(":id", memberId) || !q->bind(LoanSql::todayPlaceholder(), Clock::todayIso())) {
+    if (!q->bind(":id", memberId) || !q->bind(LoanSql::todayPlaceholder(), Core::Clock::todayIso())) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (!q->next()) {
@@ -249,10 +244,10 @@ Status CirculationRepository::memberCanBorrow(const std::int64_t memberId) const
     if (q->integer(0) == 0) {
         return RepoSql::validation("error.loan.memberInactive");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CirculationRepository::copyIsAvailable(const std::int64_t bookCopyId) const
+Core::Status CirculationRepository::copyIsAvailable(const std::int64_t bookCopyId) const
 {
     auto exists = m_session.prepare("SELECT archived_at IS NOT NULL FROM book_copies WHERE id = :id");
     if (!exists) {
@@ -285,10 +280,10 @@ Status CirculationRepository::copyIsAvailable(const std::int64_t bookCopyId) con
     if (!openLoan->ok()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& input)
+Core::Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& input)
 {
     if (input.memberId <= 0) {
         return RepoSql::validationResult<std::int64_t>("error.loan.memberRequired");
@@ -298,18 +293,18 @@ Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& input)
     }
 
     const std::string borrowedAt =
-        trim(input.borrowedAt).empty() ? Clock::today().toIso() : trim(input.borrowedAt);
-    const std::string dueAt = trim(input.dueAt).empty()
-        ? LoanPolicy::suggestedDueDate(Clock::today()).toIso()
-        : trim(input.dueAt);
+        Core::trim(input.borrowedAt).empty() ? Core::Clock::today().toIso() : Core::trim(input.borrowedAt);
+    const std::string dueAt = Core::trim(input.dueAt).empty()
+        ? LoanPolicy::suggestedDueDate(Core::Clock::today()).toIso()
+        : Core::trim(input.dueAt);
 
-    if (const auto dates = LoanPolicy::validateLoanDates(borrowedAt, dueAt, Clock::today());
+    if (const auto dates = LoanPolicy::validateLoanDates(borrowedAt, dueAt, Core::Clock::today());
         !dates) {
-        return Result<std::int64_t>::fail(VLMS::ErrorKind::Validation, dates.key);
+        return Core::Result<std::int64_t>::fail(Core::ErrorKind::Validation, dates.key);
     }
 
     std::int64_t newId = 0;
-    const Status work = m_session.transaction([&] {
+    const Core::Status work = m_session.transaction([&] {
         if (const auto member = memberCanBorrow(input.memberId); !member) {
             return member;
         }
@@ -334,33 +329,33 @@ Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& input)
             return RepoSql::sqlFailure(m_session.lastError());
         }
         newId = m_session.lastInsertRowId();
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
-        return Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
+        return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
-    return Result<std::int64_t>::ok(newId);
+    return Core::Result<std::int64_t>::ok(newId);
 }
 
-Status CirculationRepository::returnLoan(const std::int64_t loanId,
+Core::Status CirculationRepository::returnLoan(const std::int64_t loanId,
                                          const std::string& returnedAt,
                                          const std::string& notes)
 {
     const auto existing = getLoan(loanId);
     if (!existing) {
-        return asStatus(existing);
+        return Core::asStatus(existing);
     }
     if (!existing->returnedAt.empty()) {
         return RepoSql::validation("error.loan.alreadyReturned");
     }
 
     const std::string returnDate =
-        trim(returnedAt).empty() ? Clock::today().toIso() : trim(returnedAt);
+        Core::trim(returnedAt).empty() ? Core::Clock::today().toIso() : Core::trim(returnedAt);
 
     if (const auto dates =
-            LoanPolicy::validateReturnDate(returnDate, existing->borrowedAt, Clock::today());
+            LoanPolicy::validateReturnDate(returnDate, existing->borrowedAt, Core::Clock::today());
         !dates) {
-        return Status::fail(VLMS::ErrorKind::Validation, dates.key);
+        return Core::Status::fail(Core::ErrorKind::Validation, dates.key);
     }
 
     auto update = m_session.prepare(R"SQL(
@@ -379,27 +374,27 @@ Status CirculationRepository::returnLoan(const std::int64_t loanId,
     if (update->changes() <= 0) {
         return RepoSql::validation("error.loan.cannotReturn");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CirculationRepository::extendLoan(const std::int64_t loanId, const std::string& dueAt)
+Core::Status CirculationRepository::extendLoan(const std::int64_t loanId, const std::string& dueAt)
 {
     const auto existing = getLoan(loanId);
     if (!existing) {
-        return asStatus(existing);
+        return Core::asStatus(existing);
     }
     if (!existing->returnedAt.empty()) {
         return RepoSql::validation("error.loan.alreadyReturned");
     }
 
-    const std::string newDueAt = trim(dueAt);
+    const std::string newDueAt = Core::trim(dueAt);
     if (newDueAt.empty()) {
         return RepoSql::validation("error.loan.dueRequired");
     }
 
-    if (const auto dates = LoanPolicy::validateExtension(newDueAt, existing->dueAt, Clock::today());
+    if (const auto dates = LoanPolicy::validateExtension(newDueAt, existing->dueAt, Core::Clock::today());
         !dates) {
-        return Status::fail(VLMS::ErrorKind::Validation, dates.key);
+        return Core::Status::fail(Core::ErrorKind::Validation, dates.key);
     }
 
     auto update = m_session.prepare(R"SQL(
@@ -415,10 +410,10 @@ Status CirculationRepository::extendLoan(const std::int64_t loanId, const std::s
     if (update->changes() <= 0) {
         return RepoSql::validation("error.loan.cannotExtend");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CirculationRepository::canArchiveLoan(const std::int64_t loanId) const
+Core::Status CirculationRepository::canArchiveLoan(const std::int64_t loanId) const
 {
     auto read = m_session.prepare(
         "SELECT returned_at IS NULL, archived_at IS NOT NULL FROM loans WHERE id = :id");
@@ -441,13 +436,13 @@ Status CirculationRepository::canArchiveLoan(const std::int64_t loanId) const
     if (read->integer(1) != 0) {
         return RepoSql::notFound("error.loan.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CirculationRepository::archiveLoan(const std::int64_t loanId)
+Core::Status CirculationRepository::archiveLoan(const std::int64_t loanId)
 {
     return m_session.transaction([&] {
-    if (const Status gate = canArchiveLoan(loanId); !gate) {
+    if (const Core::Status gate = canArchiveLoan(loanId); !gate) {
         return gate;
     }
 
@@ -455,15 +450,15 @@ Status CirculationRepository::archiveLoan(const std::int64_t loanId)
     if (!archive) {
         return RepoSql::sqlFailure(archive.error().detail);
     }
-    if (!archive->bind(":stamp", Clock::nowIso()) || !archive->bind(":id", loanId)
+    if (!archive->bind(":stamp", Core::Clock::nowIso()) || !archive->bind(":id", loanId)
         || !archive->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
     });
 }
 
-Status CirculationRepository::restoreLoan(const std::int64_t loanId)
+Core::Status CirculationRepository::restoreLoan(const std::int64_t loanId)
 {
     auto restore = m_session.prepare(
         "UPDATE loans SET archived_at = NULL WHERE id = :id AND archived_at IS NOT NULL");
@@ -474,7 +469,7 @@ Status CirculationRepository::restoreLoan(const std::int64_t loanId)
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (restore->changes() > 0) {
-        return Status::ok();
+        return Core::Status::ok();
     }
 
     auto exists = m_session.prepare("SELECT 1 FROM loans WHERE id = :id");
@@ -490,7 +485,7 @@ Status CirculationRepository::restoreLoan(const std::int64_t loanId)
     return RepoSql::notFound("error.loan.notFound");
 }
 
-Status CirculationRepository::canPurgeLoan(const std::int64_t loanId) const
+Core::Status CirculationRepository::canPurgeLoan(const std::int64_t loanId) const
 {
     auto read = m_session.prepare("SELECT archived_at IS NOT NULL FROM loans WHERE id = :id");
     if (!read) {
@@ -510,13 +505,13 @@ Status CirculationRepository::canPurgeLoan(const std::int64_t loanId) const
     if (read->integer(0) == 0) {
         return RepoSql::validation("error.loan.notArchived");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CirculationRepository::purgeLoan(const std::int64_t loanId)
+Core::Status CirculationRepository::purgeLoan(const std::int64_t loanId)
 {
     return m_session.transaction([&] {
-    if (const Status gate = canPurgeLoan(loanId); !gate) {
+    if (const Core::Status gate = canPurgeLoan(loanId); !gate) {
         return gate;
     }
 
@@ -530,18 +525,18 @@ Status CirculationRepository::purgeLoan(const std::int64_t loanId)
     if (remove->changes() <= 0) {
         return RepoSql::notFound("error.loan.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
     });
 }
 
-Result<std::vector<LoanMemberOption>>
+Core::Result<std::vector<LoanMemberOption>>
 CirculationRepository::listBorrowableMembers(const std::string& search) const
 {
     std::string sql = "SELECT id, membership_number, first_name, last_name, "
         + MemberSql::statusExpression("") + " FROM members WHERE " + MemberSql::isActive("")
         + " AND archived_at IS NULL ";
 
-    const std::string trimmedSearch = trim(search);
+    const std::string trimmedSearch = Core::trim(search);
     if (!trimmedSearch.empty()) {
         sql += " AND (membership_number LIKE :search ESCAPE '\\' "
                "OR first_name LIKE :search ESCAPE '\\' "
@@ -554,7 +549,7 @@ CirculationRepository::listBorrowableMembers(const std::string& search) const
     if (!q) {
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(q.error().detail);
     }
-    if (!q->bind(LoanSql::todayPlaceholder(), Clock::todayIso())) {
+    if (!q->bind(LoanSql::todayPlaceholder(), Core::Clock::todayIso())) {
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
     if (!trimmedSearch.empty()
@@ -575,10 +570,10 @@ CirculationRepository::listBorrowableMembers(const std::string& search) const
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
-    return Result<std::vector<LoanMemberOption>>::ok(std::move(members));
+    return Core::Result<std::vector<LoanMemberOption>>::ok(std::move(members));
 }
 
-Result<std::vector<LoanCopyOption>>
+Core::Result<std::vector<LoanCopyOption>>
 CirculationRepository::listAvailableCopies(const std::string& search,
                                            const std::int64_t bookId) const
 {
@@ -607,7 +602,7 @@ CirculationRepository::listAvailableCopies(const std::string& search,
         sql += " AND bc.book_id = :book_id ";
     }
 
-    const std::string trimmedSearch = trim(search);
+    const std::string trimmedSearch = Core::trim(search);
     if (!trimmedSearch.empty()) {
         sql += " AND (b.title LIKE :search ESCAPE '\\' "
                "OR bc.local_id LIKE :search ESCAPE '\\' "
@@ -643,7 +638,7 @@ CirculationRepository::listAvailableCopies(const std::string& search,
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<LoanCopyOption>>(m_session.lastError());
     }
-    return Result<std::vector<LoanCopyOption>>::ok(std::move(copies));
+    return Core::Result<std::vector<LoanCopyOption>>::ok(std::move(copies));
 }
 
 }  // namespace VLMS::Repositories

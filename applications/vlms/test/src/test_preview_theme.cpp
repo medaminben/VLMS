@@ -20,7 +20,6 @@
 
 #include <cstdint>
 
-using VLMS::Locale;
 using VLMS::Theme;
 using VLMS::ThemeMode;
 using namespace VLMS;
@@ -55,7 +54,7 @@ protected:
     void SetUp() override
     {
         m_original = Theme::mode();
-        Locale::setCode("ar");
+        Core::Locale::setCode("ar");
         qApp->setLayoutDirection(Qt::RightToLeft);
         applyMode(ThemeMode::Light);
         ASSERT_TRUE(m_db.isValid()) << m_db.lastError();
@@ -68,7 +67,7 @@ protected:
     {
         applyMode(m_original);
         qApp->setLayoutDirection(Qt::LeftToRight);
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
     }
 
     ThemeMode m_original = ThemeMode::Light;

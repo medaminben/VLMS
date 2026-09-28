@@ -11,7 +11,6 @@
 using namespace VLMS;
 
 using VLMS::LanguageSelector;
-using VLMS::Locale;
 
 namespace {
 
@@ -124,19 +123,19 @@ TEST(test_ui_LanguageSelector, ThePickedFlagIsMarkedForTheStylesheet)
 
 TEST(test_ui_LanguageSelector, TooltipsFollowTheUiLanguage)
 {
-    const std::string restore = Locale::code();
+    const std::string restore = Core::Locale::code();
     LanguageSelector selector;
 
-    Locale::setCode("en");
+    Core::Locale::setCode("en");
     selector.retranslateUi();
     EXPECT_EQ(buttonFor(selector, QStringLiteral("fr"))->toolTip(), QStringLiteral("Français"));
 
-    Locale::setCode("ar");
+    Core::Locale::setCode("ar");
     selector.retranslateUi();
     EXPECT_EQ(buttonFor(selector, QStringLiteral("ar"))->toolTip(),
               QString::fromUtf8("العربية"));
     // A screen reader gets nothing but this.
     EXPECT_FALSE(buttonFor(selector, QStringLiteral("en"))->accessibleName().isEmpty());
 
-    Locale::setCode(restore);
+    Core::Locale::setCode(restore);
 }

@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 /**
  * Why a repository call failed. The UI maps `key` through Strings::t() --
@@ -106,4 +106,4 @@ template<typename T>
     return result ? Status::ok() : asStatus(result.error());
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

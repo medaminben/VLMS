@@ -22,7 +22,6 @@
 #include <functional>
 #include <memory>
 
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
@@ -72,7 +71,7 @@ void onViewer(std::function<void(ImageViewerDialog*)> handle)
 
 class test_ui_MemberImageViewer : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {

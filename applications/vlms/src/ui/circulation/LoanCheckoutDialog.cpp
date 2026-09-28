@@ -28,9 +28,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Clock;
-using VLMS::Strings;
-
 QString memberOptionLabel(const VLMS::Repositories::LoanMemberOption& member) {
     return QStringLiteral("%1 — %2 %3")
         .arg(qs(member.membershipNumber), qs(member.firstName), qs(member.lastName))
@@ -97,18 +94,18 @@ void LoanCheckoutDialog::buildUi() {
     m_borrowedDateEdit = new QDateEdit(this);
     m_borrowedDateEdit->setCalendarPopup(true);
     VLMS::setIsoDateFormat(m_borrowedDateEdit);
-    m_borrowedDateEdit->setDate(qd(Clock::today()));
+    m_borrowedDateEdit->setDate(qd(VLMS::Core::Clock::today()));
     // The UI half of finding 4. Without a ceiling the field keeps QDateEdit's
     // default of 9999-12-31 and the calendar popup hands over next month with
     // one click -- a checkout that has not happened yet. Core refuses it now;
     // this stops the librarian being offered it in the first place.
-    m_borrowedDateEdit->setMaximumDate(qd(Clock::today()));
+    m_borrowedDateEdit->setMaximumDate(qd(VLMS::Core::Clock::today()));
     form->addRow(new QLabel(this), m_borrowedDateEdit);
 
     m_dueDateEdit = new QDateEdit(this);
     m_dueDateEdit->setCalendarPopup(true);
     VLMS::setIsoDateFormat(m_dueDateEdit);
-    m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedDueDate(Clock::today())));
+    m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedDueDate(VLMS::Core::Clock::today())));
     form->addRow(new QLabel(this), m_dueDateEdit);
 
     connect(m_borrowedDateEdit, &QDateEdit::dateChanged, this, [this](const QDate& date) {

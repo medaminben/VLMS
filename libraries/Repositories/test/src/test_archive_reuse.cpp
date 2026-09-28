@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
@@ -59,7 +58,7 @@ class test_core_ArchiveReuse : public ::testing::Test {
 protected:
     void SetUp() override
     {
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
@@ -70,7 +69,7 @@ protected:
     {
         m_repository.reset();
         m_db.reset();
-        Locale::setCode(Locale::kDefaultCode);
+        Core::Locale::setCode(Core::Locale::kDefaultCode);
     }
 
     /// A new book whose only copy is archived; `localId` receives its number.

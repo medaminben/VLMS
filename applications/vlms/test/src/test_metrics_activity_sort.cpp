@@ -16,14 +16,12 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
 class test_ui_MetricsActivitySort : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
@@ -45,7 +43,7 @@ protected:
         ASSERT_EQ(m_copies.size(), 3u);
     }
 
-    bool borrowOn(const int copyIndex, const Date& borrowed)
+    bool borrowOn(const int copyIndex, const Core::Date& borrowed)
     {
         return rawInsertLoan(*m_db, m_memberId, m_copies.at(static_cast<std::size_t>(copyIndex)),
                              borrowed.toIso(), borrowed.addDays(14).toIso())
@@ -81,7 +79,7 @@ protected:
 
 TEST_F(test_ui_MetricsActivitySort, RefreshKeepsCountsOnSortedPeriodRows)
 {
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_TRUE(borrowOn(0, today));
     ASSERT_TRUE(borrowOn(1, today.addDays(-6)));
     ASSERT_TRUE(borrowOn(2, today.addDays(-6)));

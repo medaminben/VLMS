@@ -443,7 +443,7 @@ void showWarning(QWidget* parent, const QString& title, const QString& text)
     runMessageBox(parent, QMessageBox::Warning, title, text, QMessageBox::Ok, QMessageBox::Ok);
 }
 
-void showRepoError(QWidget* parent, const Error& error)
+void showRepoError(QWidget* parent, const Core::Error& error)
 {
     showWarning(parent, T("common.error"), errorText(error));
 }

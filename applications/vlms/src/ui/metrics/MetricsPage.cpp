@@ -29,8 +29,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kSectionSpacing = 12;
 constexpr int kMetricGridSpacing = 8;
 constexpr int kMetricCardPadding = 8;
