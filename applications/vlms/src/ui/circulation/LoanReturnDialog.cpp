@@ -23,18 +23,15 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Clock;
-using VLMS::Strings;
-
 }  // namespace
 
-LoanReturnDialog::LoanReturnDialog(const LoanRecord& loan, QWidget* parent)
+LoanReturnDialog::LoanReturnDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
     : QDialog(parent) {
     buildUi(loan);
     retranslateUi(loan);
 }
 
-void LoanReturnDialog::buildUi(const LoanRecord& loan) {
+void LoanReturnDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     resize(480, 280);
 
     auto* layout = new QVBoxLayout(this);
@@ -50,8 +47,8 @@ void LoanReturnDialog::buildUi(const LoanRecord& loan) {
     m_returnedDateEdit = new QDateEdit(this);
     m_returnedDateEdit->setCalendarPopup(true);
     VLMS::setIsoDateFormat(m_returnedDateEdit);
-    m_returnedDateEdit->setDate(qd(Clock::today()));
-    m_returnedDateEdit->setMaximumDate(qd(Clock::today()));
+    m_returnedDateEdit->setDate(qd(VLMS::Core::Clock::today()));
+    m_returnedDateEdit->setMaximumDate(qd(VLMS::Core::Clock::today()));
     const QDate borrowed = QDate::fromString(qs(loan.borrowedAt), Qt::ISODate);
     if (borrowed.isValid()) {
         m_returnedDateEdit->setMinimumDate(borrowed);
@@ -68,7 +65,7 @@ void LoanReturnDialog::buildUi(const LoanRecord& loan) {
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     VLMS::localizeButtonBox(buttons);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
-        if (m_returnedDateEdit->date() > qd(Clock::today())) {
+        if (m_returnedDateEdit->date() > qd(VLMS::Core::Clock::today())) {
             VLMS::showWarning(
                 this,
                 T("loan.validation"),
@@ -81,7 +78,7 @@ void LoanReturnDialog::buildUi(const LoanRecord& loan) {
     layout->addWidget(buttons);
 }
 
-void LoanReturnDialog::retranslateUi(const LoanRecord& loan) {
+void LoanReturnDialog::retranslateUi(const VLMS::Repositories::LoanRecord& loan) {
     setWindowTitle(T("loan.returnTitle"));
 
     VLMS::retranslateStandardButtons(findChild<QDialogButtonBox*>());

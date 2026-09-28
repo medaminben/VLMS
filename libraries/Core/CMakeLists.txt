@@ -1,20 +1,15 @@
 set(TARGET_NAME Core)
 set(RAW_TARGET_NAME vlms_core)
 
-include(${CMAKE_SOURCE_DIR}/cmake/Sqlite.cmake)
-
 set(CORE_HEADERS
     include/VLMS/Core/Clock.h
     include/VLMS/Core/Date.h
     include/VLMS/Core/DateText.h
-    include/VLMS/Core/Database.h
+    include/VLMS/Core/Locale.h
+    include/VLMS/Core/Paths.h
     include/VLMS/Core/Result.h
-    include/VLMS/Core/CatalogRepository.h
-    include/VLMS/Core/MemberRepository.h
-    include/VLMS/Core/CirculationRepository.h
-    include/VLMS/Core/MetricsRepository.h
-    include/VLMS/Core/LoanPolicy.h
-    include/VLMS/Core/SqlText.h
+    include/VLMS/Core/Strings.h
+    include/VLMS/Core/Text.h
 )
 
 add_library(${RAW_TARGET_NAME}
@@ -22,30 +17,8 @@ add_library(${RAW_TARGET_NAME}
     src/Clock.cpp
     src/Date.cpp
     src/DateText.cpp
-    src/SqlText.cpp
-    src/LoanPolicy.cpp
-    src/LoanSql.h
-    src/LoanSql.cpp
-    src/BookSql.h
-    src/BookSql.cpp
-    src/MemberSql.h
-    src/MemberSql.cpp
-    src/RepoSql.h
-    src/NamedEntityStore.h
-    src/NamedEntityStore.cpp
-    src/BookCopyStore.h
-    src/BookCopyStore.cpp
-    src/CategoryStore.h
-    src/CategoryStore.cpp
-    src/SqliteSession.h
-    src/SqliteSession.cpp
-    src/Database.cpp
-    src/CatalogRepository.cpp
-    src/MemberRepository.cpp
-    src/CirculationRepository.cpp
-    src/MetricsRepository.cpp
-    src/Paths.cpp
     src/Locale.cpp
+    src/Paths.cpp
     src/Strings.cpp
 )
 add_library(${CMAKE_ROOT_NAME}::${TARGET_NAME} ALIAS ${RAW_TARGET_NAME})
@@ -56,14 +29,8 @@ target_include_directories(${RAW_TARGET_NAME}
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(${RAW_TARGET_NAME}
-    PRIVATE
-        ${VLMS_SQLITE3_TARGET}
-)
-
-if(VLMS_SQLITE3_USE_SYSTEM_HEADER)
-    target_compile_definitions(${RAW_TARGET_NAME} PRIVATE VLMS_HAS_SQLITE3_H)
-endif()
+# No links, deliberately: Core is std only. SQLite belongs to VLMS::Database,
+# and Qt to the application.
 
 vlms_configure_target(${RAW_TARGET_NAME})
 
@@ -74,14 +41,8 @@ set_target_properties(${RAW_TARGET_NAME} PROPERTIES
     AUTORCC OFF
 )
 
-# Development builds resolve database/schema from the source tree.
-option(VLMS_DEV_PATHS "Use source-tree paths for database and schema (development)" ON)
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(VLMS_DEV_PATHS OFF)
-endif()
 if(VLMS_DEV_PATHS)
     target_compile_definitions(${RAW_TARGET_NAME} PRIVATE
-        VLMS_SCHEMA_PATH="${CMAKE_SOURCE_DIR}/database/schema.sql"
         VLMS_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
     )
 endif()

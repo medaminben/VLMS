@@ -1,7 +1,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 
 #include <VLMS/Core/Clock.h>
-#include <VLMS/Core/LoanPolicy.h>
+#include <VLMS/Repositories/LoanPolicy.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
@@ -28,17 +28,13 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Clock;
-using VLMS::Strings;
-namespace LoanPolicy = VLMS::LoanPolicy;
-
-QString memberOptionLabel(const LoanMemberOption& member) {
+QString memberOptionLabel(const VLMS::Repositories::LoanMemberOption& member) {
     return QStringLiteral("%1 — %2 %3")
         .arg(qs(member.membershipNumber), qs(member.firstName), qs(member.lastName))
         .trimmed();
 }
 
-QString copyOptionLabel(const LoanCopyOption& copy) {
+QString copyOptionLabel(const VLMS::Repositories::LoanCopyOption& copy) {
     const QString code = qs(copy.globalCopyId.empty() ? copy.localId : copy.globalCopyId);
     if (copy.authorName.empty()) {
         return QStringLiteral("%1 — %2").arg(code, qs(copy.bookTitle));
@@ -48,7 +44,7 @@ QString copyOptionLabel(const LoanCopyOption& copy) {
 
 }  // namespace
 
-LoanCheckoutDialog::LoanCheckoutDialog(CirculationRepository& repository,
+LoanCheckoutDialog::LoanCheckoutDialog(VLMS::Repositories::CirculationRepository& repository,
                                        const LoanScope& scope,
                                        QWidget* parent)
     : QDialog(parent),
@@ -98,22 +94,22 @@ void LoanCheckoutDialog::buildUi() {
     m_borrowedDateEdit = new QDateEdit(this);
     m_borrowedDateEdit->setCalendarPopup(true);
     VLMS::setIsoDateFormat(m_borrowedDateEdit);
-    m_borrowedDateEdit->setDate(qd(Clock::today()));
+    m_borrowedDateEdit->setDate(qd(VLMS::Core::Clock::today()));
     // The UI half of finding 4. Without a ceiling the field keeps QDateEdit's
     // default of 9999-12-31 and the calendar popup hands over next month with
     // one click -- a checkout that has not happened yet. Core refuses it now;
     // this stops the librarian being offered it in the first place.
-    m_borrowedDateEdit->setMaximumDate(qd(Clock::today()));
+    m_borrowedDateEdit->setMaximumDate(qd(VLMS::Core::Clock::today()));
     form->addRow(new QLabel(this), m_borrowedDateEdit);
 
     m_dueDateEdit = new QDateEdit(this);
     m_dueDateEdit->setCalendarPopup(true);
     VLMS::setIsoDateFormat(m_dueDateEdit);
-    m_dueDateEdit->setDate(qd(LoanPolicy::suggestedDueDate(Clock::today())));
+    m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedDueDate(VLMS::Core::Clock::today())));
     form->addRow(new QLabel(this), m_dueDateEdit);
 
     connect(m_borrowedDateEdit, &QDateEdit::dateChanged, this, [this](const QDate& date) {
-        m_dueDateEdit->setDate(qd(LoanPolicy::suggestedDueDate(cd(date))));
+        m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedDueDate(cd(date))));
     });
 
     m_notesEdit = new QPlainTextEdit(this);
@@ -217,7 +213,7 @@ void LoanCheckoutDialog::refreshMembers() {
         return;
     }
 
-    for (const LoanMemberOption& member : members) {
+    for (const VLMS::Repositories::LoanMemberOption& member : members) {
         m_memberCombo->addItem(memberOptionLabel(member), QVariant::fromValue(member.id));
     }
 
@@ -252,7 +248,7 @@ void LoanCheckoutDialog::refreshCopies() {
         m_buttons->button(QDialogButtonBox::Ok)->setEnabled(true);
     }
 
-    for (const LoanCopyOption& copy : copies) {
+    for (const VLMS::Repositories::LoanCopyOption& copy : copies) {
         m_copyCombo->addItem(copyOptionLabel(copy), QVariant::fromValue(copy.id));
     }
 
@@ -262,8 +258,8 @@ void LoanCheckoutDialog::refreshCopies() {
     }
 }
 
-LoanInput LoanCheckoutDialog::loanInput() const {
-    LoanInput input;
+VLMS::Repositories::LoanInput LoanCheckoutDialog::loanInput() const {
+    VLMS::Repositories::LoanInput input;
     input.memberId = m_scope.memberId > 0 ? m_scope.memberId
                                           : m_memberCombo->currentData().toLongLong();
     input.bookCopyId = m_copyCombo->currentData().toLongLong();

@@ -3,12 +3,12 @@
 #include "QtBridge.h"
 #include "ui/Theme.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/Database.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Database/Connection.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 #include <VLMS/Core/Paths.h>
 
 #include <QGuiApplication>
@@ -39,27 +39,27 @@ void loadLocale()
 {
     QSettings settings;
     const QString stored = settings.value(QStringLiteral("ui/locale"),
-                                          QString::fromLatin1(VLMS::Locale::kDefaultCode))
+                                          QString::fromLatin1(VLMS::Core::Locale::kDefaultCode))
                                .toString();
-    VLMS::Locale::setCode(VLMS::ss(stored));
+    VLMS::Core::Locale::setCode(VLMS::ss(stored));
 }
 
 void saveLocale()
 {
     QSettings settings;
-    settings.setValue(QStringLiteral("ui/locale"), VLMS::qs(VLMS::Locale::code()));
+    settings.setValue(QStringLiteral("ui/locale"), VLMS::qs(VLMS::Core::Locale::code()));
 }
 
 void applyLocale(QGuiApplication* app)
 {
-    app->setLayoutDirection(VLMS::Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight);
+    app->setLayoutDirection(VLMS::Core::Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight);
 
     // A widget takes its QLocale from the default when it is built, and the
     // calendar pop-up names its months and weekdays from that. Left alone, the
     // default is the operating system's, so an Arabic session showed a German
     // or French calendar. Tunisian Arabic, not plain Arabic: it writes Latin
     // digits, as everything else in the application does.
-    const std::string code = VLMS::Locale::code();
+    const std::string code = VLMS::Core::Locale::code();
     if (code == "fr") {
         QLocale::setDefault(QLocale(QLocale::French, QLocale::France));
     } else if (code == "en") {
@@ -100,8 +100,8 @@ Application::Application(int& argc, char** argv)
         setStyle(fusion);
     }
 
-    if (VLMS::Paths::projectRoot().empty()) {
-        VLMS::Paths::setProjectRoot(applicationDirPath().toStdString());
+    if (VLMS::Core::Paths::projectRoot().empty()) {
+        VLMS::Core::Paths::setProjectRoot(applicationDirPath().toStdString());
     }
 
     loadLocale();
@@ -111,9 +111,9 @@ Application::Application(int& argc, char** argv)
     VLMS::Theme::loadSaved();
     applyTheme();
 
-    VLMS::Paths::ensureLayout();
+    VLMS::Core::Paths::ensureLayout();
 
-    m_database = new Database(VLMS::Paths::databaseDirectory());
+    m_database = new VLMS::Database::Connection(VLMS::Core::Paths::databaseDirectory());
     // The result was discarded here until D2 gave open() a reason to refuse on
     // purpose -- a database written by a newer build. Carrying on regardless
     // means every page renders empty and every action fails with a blank
@@ -126,17 +126,17 @@ Application::Application(int& argc, char** argv)
         return;
     }
 
-    m_catalogRepository = new CatalogRepository(m_database->session(),
-                                                VLMS::Paths::resourcesDirectory());
-    m_memberRepository = new MemberRepository(m_database->session(),
-                                              VLMS::Paths::resourcesDirectory());
-    m_circulationRepository = new CirculationRepository(m_database->session());
-    m_metricsRepository = new MetricsRepository(m_database->session());
+    m_catalogRepository = new VLMS::Repositories::CatalogRepository(m_database->session(),
+                                                                    VLMS::Core::Paths::resourcesDirectory());
+    m_memberRepository = new VLMS::Repositories::MemberRepository(m_database->session(),
+                                                                  VLMS::Core::Paths::resourcesDirectory());
+    m_circulationRepository = new VLMS::Repositories::CirculationRepository(m_database->session());
+    m_metricsRepository = new VLMS::Repositories::MetricsRepository(m_database->session());
 }
 
 Application::~Application() {
     // Repositories go first: they hold a session reference and must not
-    // outlive Database. Database itself is no longer a QObject child.
+    // outlive Connection. Connection itself is no longer a QObject child.
     delete m_metricsRepository;
     m_metricsRepository = nullptr;
     delete m_circulationRepository;
@@ -152,7 +152,7 @@ Application::~Application() {
 
 QString Application::uiLocale() const
 {
-    return VLMS::qs(VLMS::Locale::code());
+    return VLMS::qs(VLMS::Core::Locale::code());
 }
 
 void Application::setUiLocale(const QString& code)
@@ -161,7 +161,7 @@ void Application::setUiLocale(const QString& code)
         return;
     }
 
-    VLMS::Locale::setCode(VLMS::ss(code));
+    VLMS::Core::Locale::setCode(VLMS::ss(code));
     saveLocale();
     applyLocale(this);
     applyQtCatalogue();

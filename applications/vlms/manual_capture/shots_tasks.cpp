@@ -8,9 +8,9 @@
 #include "ui/catalog/LocalNumberDelegate.h"
 #include "ui/members/BirthDateEdit.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -197,17 +197,17 @@ void showBook(Capture& capture, qint64 bookId, const QString& search)
     }
 }
 
-BookRecord firstBook(bool fewestFirst, const auto& accept)
+VLMS::Repositories::BookRecord firstBook(bool fewestFirst, const auto& accept)
 {
-    BookQuery query;
-    query.sortColumn = BookSort::kCopies;
+    VLMS::Repositories::BookQuery query;
+    query.sortColumn = VLMS::Repositories::BookSort::kCopies;
     query.sortAscending = fewestFirst;
     query.limit = 200;
     const auto books = app().catalog().listBooks(query);
     if (!books) {
         fail("could not list books");
     }
-    for (const BookRecord& book : books.value()) {
+    for (const VLMS::Repositories::BookRecord& book : books.value()) {
         if (accept(book)) {
             return book;
         }
@@ -215,24 +215,24 @@ BookRecord firstBook(bool fewestFirst, const auto& accept)
     fail("no book matches the shot");
 }
 
-BookRecord multiCopyOnLoan()
+VLMS::Repositories::BookRecord multiCopyOnLoan()
 {
-    return firstBook(false, [](const BookRecord& book) {
+    return firstBook(false, [](const VLMS::Repositories::BookRecord& book) {
         return book.localIds.size() >= 3 && !book.localIdsOnLoan.empty();
     });
 }
 
-BookRecord shelfCopies(int minimum)
+VLMS::Repositories::BookRecord shelfCopies(int minimum)
 {
-    BookQuery query;
-    query.sortColumn = BookSort::kAvailable;
+    VLMS::Repositories::BookQuery query;
+    query.sortColumn = VLMS::Repositories::BookSort::kAvailable;
     query.sortAscending = false;
     query.limit = 80;
     const auto books = app().catalog().listBooks(query);
     if (!books) {
         fail("could not list books");
     }
-    for (const BookRecord& book : books.value()) {
+    for (const VLMS::Repositories::BookRecord& book : books.value()) {
         if (static_cast<int>(book.localIds.size()) >= minimum && book.localIdsOnLoan.empty()) {
             return book;
         }
@@ -240,11 +240,11 @@ BookRecord shelfCopies(int minimum)
     fail("no shelf title matches the shot");
 }
 
-BookRecord neverBorrowed()
+VLMS::Repositories::BookRecord neverBorrowed()
 {
     for (int offset = 0; offset < 240; offset += 40) {
-        BookQuery query;
-        query.sortColumn = BookSort::kTitle;
+        VLMS::Repositories::BookQuery query;
+        query.sortColumn = VLMS::Repositories::BookSort::kTitle;
         query.sortAscending = true;
         query.limit = 40;
         query.offset = offset;
@@ -252,13 +252,13 @@ BookRecord neverBorrowed()
         if (!books || books.value().empty()) {
             break;
         }
-        for (const BookRecord& book : books.value()) {
+        for (const VLMS::Repositories::BookRecord& book : books.value()) {
             if (book.localIds.empty()) {
                 continue;
             }
-            LoanQuery loans;
+            VLMS::Repositories::LoanQuery loans;
             loans.bookId = book.id;
-            loans.archive = ArchiveScope::Any;
+            loans.archive = VLMS::Repositories::ArchiveScope::Any;
             loans.limit = 1;
             const auto count = app().circulation().countLoans(loans);
             if (count && count.value() == 0) {
@@ -269,10 +269,10 @@ BookRecord neverBorrowed()
     fail("no never-borrowed title");
 }
 
-MemberRecord nonActiveMember()
+VLMS::Repositories::MemberRecord nonActiveMember()
 {
-    MemberQuery query;
-    query.statuses = {MemberStatus::kNonActive};
+    VLMS::Repositories::MemberQuery query;
+    query.statuses = {VLMS::Repositories::MemberStatus::kNonActive};
     query.limit = 1;
     const auto members = app().members().listMembers(query);
     if (!members || members.value().empty()) {
@@ -287,8 +287,8 @@ void ensureArchivedBook()
     if (done) {
         return;
     }
-    BookQuery archived;
-    archived.archive = ArchiveScope::Archived;
+    VLMS::Repositories::BookQuery archived;
+    archived.archive = VLMS::Repositories::ArchiveScope::Archived;
     archived.limit = 1;
     const auto existing = app().catalog().listBooks(archived);
     if (!existing) {
@@ -298,7 +298,7 @@ void ensureArchivedBook()
         done = true;
         return;
     }
-    const BookRecord book = shelfCopies(1);
+    const VLMS::Repositories::BookRecord book = shelfCopies(1);
     if (!app().catalog().archiveBook(book.id)) {
         fail("could not archive a book in the sandbox");
     }
@@ -324,8 +324,8 @@ void showTab(QWidget* dialog, const char* key)
 
 const char* unreturnedFilterKey()
 {
-    LoanQuery query;
-    query.filters = {LoanFilter::kOpen};
+    VLMS::Repositories::LoanQuery query;
+    query.filters = {VLMS::Repositories::LoanFilter::kOpen};
     query.limit = 1;
     const auto open = app().circulation().listLoans(query);
     if (open && !open.value().empty()) {
@@ -513,7 +513,7 @@ void shotRegFilled(Capture& capture)
 
 void shotRegRenew(Capture& capture)
 {
-    const MemberRecord member = nonActiveMember();
+    const VLMS::Repositories::MemberRecord member = nonActiveMember();
     capture.goTo("nav.members");
     setSearch(capture, qs(member.membershipNumber));
     if (!selectId(capture.table(), member.id)) {
@@ -536,7 +536,7 @@ void shotRegRenew(Capture& capture)
 
 void shotRegRenewed(Capture& capture)
 {
-    const MemberRecord member = nonActiveMember();
+    const VLMS::Repositories::MemberRecord member = nonActiveMember();
     capture.goTo("nav.members");
     setSearch(capture, qs(member.membershipNumber));
     if (!selectId(capture.table(), member.id)) {
@@ -598,7 +598,7 @@ void shotLendFilled(Capture& capture)
 
 void shotLendFromBook(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIds.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.loans")); },
@@ -615,18 +615,18 @@ void shotLendFromBook(Capture& capture)
 
 void shotLendFromMember(Capture& capture)
 {
-    LoanQuery query;
-    query.filters = {LoanFilter::kOpen};
+    VLMS::Repositories::LoanQuery query;
+    query.filters = {VLMS::Repositories::LoanFilter::kOpen};
     query.limit = 1;
     const auto loans = app().circulation().listLoans(query);
     if (!loans || loans.value().empty()) {
-        query.filters = {LoanFilter::kOverdue};
+        query.filters = {VLMS::Repositories::LoanFilter::kOverdue};
     }
     const auto chosen = app().circulation().listLoans(query);
     if (!chosen || chosen.value().empty()) {
         fail("no loan is still out");
     }
-    const LoanRecord loan = chosen.value().front();
+    const VLMS::Repositories::LoanRecord loan = chosen.value().front();
     capture.goTo("nav.members");
     setSearch(capture, qs(loan.membershipNumber));
     if (!selectId(capture.table(), loan.memberId)) {
@@ -647,7 +647,7 @@ void shotLendFromMember(Capture& capture)
 
 void shotLendEmptyHistory(Capture& capture)
 {
-    const BookRecord book = neverBorrowed();
+    const VLMS::Repositories::BookRecord book = neverBorrowed();
     showBook(capture, book.id, qs(book.localIds.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.loans")); },
@@ -681,7 +681,7 @@ void shotExtDialog(Capture& capture)
 
 void shotRetFromHistory(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIdsOnLoan.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.loans")); },
@@ -695,7 +695,7 @@ void shotRetFromHistory(Capture& capture)
 
 void shotRmBookConfirm(Capture& capture)
 {
-    const BookRecord book = shelfCopies(1);
+    const VLMS::Repositories::BookRecord book = shelfCopies(1);
     showBook(capture, book.id, qs(book.localIds.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.delete")); },
@@ -707,7 +707,7 @@ void shotRmBookConfirm(Capture& capture)
 
 void shotRmBookRefused(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIdsOnLoan.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.delete")); },
@@ -719,7 +719,7 @@ void shotRmBookRefused(Capture& capture)
 
 void shotRmCopyRow(Capture& capture)
 {
-    const BookRecord book = shelfCopies(2);
+    const VLMS::Repositories::BookRecord book = shelfCopies(2);
     showBook(capture, book.id, qs(book.localIds.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.edit")); },

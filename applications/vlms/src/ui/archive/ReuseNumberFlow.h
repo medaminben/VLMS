@@ -1,12 +1,14 @@
 #pragma once
 
-#include <VLMS/Core/CatalogTypes.h>
+#include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QDialog>
 
 #include <string>
 
+namespace VLMS::Repositories {
 class CatalogRepository;
+}  // namespace VLMS::Repositories
 class QLineEdit;
 class QListWidget;
 
@@ -17,8 +19,8 @@ class ReuseBookChooser final : public QDialog {
     Q_OBJECT
 
 public:
-    ReuseBookChooser(CatalogRepository& catalog,
-                     const BookCopyRecord& archivedCopy,
+    ReuseBookChooser(VLMS::Repositories::CatalogRepository& catalog,
+                     const VLMS::Repositories::BookCopyRecord& archivedCopy,
                      QWidget* parent = nullptr);
 
     /// 0 for "New book", -1 when nothing is chosen.
@@ -27,7 +29,7 @@ public:
 private:
     void refreshBooks();
 
-    CatalogRepository& m_catalog;
+    VLMS::Repositories::CatalogRepository& m_catalog;
     std::string m_source;
     QLineEdit* m_search = nullptr;
     QListWidget* m_books = nullptr;
@@ -40,7 +42,7 @@ namespace VLMS {
 /// Returns true when a save committed; on cancel or failure the archived copy
 /// still holds its number.
 bool runReuseNumberFlow(QWidget* parent,
-                        CatalogRepository& catalog,
-                        const BookCopyRecord& archivedCopy);
+                        Repositories::CatalogRepository& catalog,
+                        const Repositories::BookCopyRecord& archivedCopy);
 
 }  // namespace VLMS

@@ -7,7 +7,7 @@ function(_vlms_add_gtest_entry test_name executable timezone)
     set(_env
         "QT_QPA_PLATFORM=offscreen"
         "VLMS_SCHEMA_PATH=${CMAKE_SOURCE_DIR}/database/schema.sql"
-        "VLMS_TEST_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Core/test/data"
+        "VLMS_TEST_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Database/test/data"
         "VLMS_TEST_OCR_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Ocr/test/data"
         "TZ=${timezone}"
         "XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-config/${test_name}"
@@ -94,7 +94,7 @@ function(build_gtest_executable)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LABELS "${test_LABELS}"
-                ENVIRONMENT "QT_QPA_PLATFORM=offscreen;VLMS_SCHEMA_PATH=${CMAKE_SOURCE_DIR}/database/schema.sql;VLMS_TEST_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Core/test/data;VLMS_TEST_OCR_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Ocr/test/data;TZ=Africa/Tunis;XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-config/${test_NAME}"
+                ENVIRONMENT "QT_QPA_PLATFORM=offscreen;VLMS_SCHEMA_PATH=${CMAKE_SOURCE_DIR}/database/schema.sql;VLMS_TEST_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Database/test/data;VLMS_TEST_OCR_DATA_DIR=${CMAKE_SOURCE_DIR}/libraries/Ocr/test/data;TZ=Africa/Tunis;XDG_CONFIG_HOME=${CMAKE_BINARY_DIR}/test-config/${test_NAME}"
                 TIMEOUT ${test_TIMEOUT}
         )
     else()

@@ -11,6 +11,8 @@
 
 #include <string>
 
+using namespace VLMS;
+
 using VLMS::languageFlagIcon;
 
 namespace {

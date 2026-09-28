@@ -1,10 +1,12 @@
 #pragma once
 
-#include <VLMS/Core/CatalogTypes.h>
+#include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QWidget>
 
+namespace VLMS::Repositories {
 class CatalogRepository;
+}  // namespace VLMS::Repositories
 class QPushButton;
 class QTableWidget;
 class TableRowChecks;
@@ -14,7 +16,7 @@ class BookCopiesTable final : public QWidget {
     Q_OBJECT
 
 public:
-    explicit BookCopiesTable(CatalogRepository& repository, QWidget* parent = nullptr);
+    explicit BookCopiesTable(VLMS::Repositories::CatalogRepository& repository, QWidget* parent = nullptr);
 
     void retranslateUi();
     void loadCopies(qint64 bookId);
@@ -22,7 +24,7 @@ public:
     /// A new copy row whose number comes from an archived copy (Archive ->
     /// Reuse). Number, global id, and source are locked for this session.
     void addReservedRow(const QString& source, const QString& localId, const QString& globalCopyId);
-    [[nodiscard]] std::vector<BookCopyInput> copyInputs() const;
+    [[nodiscard]] std::vector<VLMS::Repositories::BookCopyInput> copyInputs() const;
     [[nodiscard]] int copyCount() const;
     [[nodiscard]] bool validate(QWidget* dialogParent);
 
@@ -31,11 +33,11 @@ signals:
     void addRequested();
 
 private:
-    void appendCopyRow(const BookCopyRecord& copy);
+    void appendCopyRow(const VLMS::Repositories::BookCopyRecord& copy);
     void sizeCopyColumns();
     void removeSelectedRow();
 
-    CatalogRepository& m_repository;
+    VLMS::Repositories::CatalogRepository& m_repository;
     QTableWidget* m_table = nullptr;
     TableRowChecks* m_checks = nullptr;
     QPushButton* m_addButton = nullptr;

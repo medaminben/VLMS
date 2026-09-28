@@ -11,10 +11,8 @@
 
 #include <gtest/gtest.h>
 
-using VLMS::ErrorKind;
-using VLMS::Locale;
-using VLMS::Status;
-using VLMS::Strings;
+using namespace VLMS;
+
 using VLMS::qs;
 
 namespace {
@@ -22,10 +20,10 @@ namespace {
 BulkActionTexts archiveBooks()
 {
     BulkActionTexts texts;
-    texts.title = qs(Strings::t("catalog.deleteBook"));
-    texts.verb = qs(Strings::t("bulk.verb.archive"));
-    texts.passive = qs(Strings::t("bulk.passive.archive"));
-    texts.noun = qs(Strings::t("bulk.noun.books"));
+    texts.title = qs(Core::Strings::t("catalog.deleteBook"));
+    texts.verb = qs(Core::Strings::t("bulk.verb.archive"));
+    texts.passive = qs(Core::Strings::t("bulk.passive.archive"));
+    texts.noun = qs(Core::Strings::t("bulk.noun.books"));
     return texts;
 }
 
@@ -42,8 +40,8 @@ BulkRow row(qint64 id, const QString& label)
 
 class test_ui_BulkAction : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 };
 
 TEST_F(test_ui_BulkAction, NoLeavesEveryRowAlone)
@@ -53,14 +51,14 @@ TEST_F(test_ui_BulkAction, NoLeavesEveryRowAlone)
         [&]() {
             const int done = runBulkAction(
                 nullptr, archiveBooks(), {row(1, QStringLiteral("A")), row(2, QStringLiteral("B"))},
-                [](const BulkRow&) { return Status::ok(); },
+                [](const BulkRow&) { return Core::Status::ok(); },
                 [&](const BulkRow&) {
                     ++acted;
-                    return Status::ok();
+                    return Core::Status::ok();
                 });
             EXPECT_EQ(done, 0);
         },
-        qs(Strings::t("common.no")));
+        qs(Core::Strings::t("common.no")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 books?"));
@@ -74,15 +72,15 @@ TEST_F(test_ui_BulkAction, YesActsOnEveryPassingRow)
         [&]() {
             const int done = runBulkAction(
                 nullptr, archiveBooks(), {row(1, QStringLiteral("A")), row(2, QStringLiteral("B"))},
-                [](const BulkRow&) { return Status::ok(); },
+                [](const BulkRow&) { return Core::Status::ok(); },
                 [&](const BulkRow& bulk) {
                     acted.append(bulk.id);
-                    return Status::ok();
+                    return Core::Status::ok();
                 });
             EXPECT_EQ(done, 2);
         },
-        {ModalAnswer{qs(Strings::t("common.yes")), std::nullopt, {}},
-         ModalAnswer{qs(Strings::t("common.ok")), std::nullopt, {}}});
+        {ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}},
+         ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
     EXPECT_FALSE(outcomes.at(1).appeared);
@@ -100,22 +98,22 @@ TEST_F(test_ui_BulkAction, ABlockedRowIsListedAndTheOthersStillRun)
                  row(3, QStringLiteral("Also"))},
                 [](const BulkRow& bulk) {
                     if (bulk.id == 2) {
-                        return Status::fail(ErrorKind::Validation, "error.book.hasActiveLoans");
+                        return Core::Status::fail(Core::ErrorKind::Validation, "error.book.hasActiveLoans");
                     }
-                    return Status::ok();
+                    return Core::Status::ok();
                 },
                 [&](const BulkRow& bulk) {
                     acted.append(bulk.id);
-                    return Status::ok();
+                    return Core::Status::ok();
                 });
             EXPECT_EQ(done, 2);
         },
-        qs(Strings::t("common.yes")));
+        qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_TRUE(outcome.text.contains(QStringLiteral("1 of 3 books can't be archived:")));
     EXPECT_TRUE(outcome.text.contains(QStringLiteral("Out — ")
-                                      + qs(Strings::t("error.book.hasActiveLoans"))));
+                                      + qs(Core::Strings::t("error.book.hasActiveLoans"))));
     EXPECT_TRUE(outcome.text.contains(QStringLiteral("Archive the other 2?")));
     EXPECT_EQ(acted, (QList<qint64>{1, 3}));
 }
@@ -129,15 +127,15 @@ TEST_F(test_ui_BulkAction, AllBlockedStopsBeforeAnyAction)
                 nullptr, archiveBooks(),
                 {row(1, QStringLiteral("A")), row(2, QStringLiteral("B"))},
                 [](const BulkRow&) {
-                    return Status::fail(ErrorKind::Validation, "error.book.hasActiveLoans");
+                    return Core::Status::fail(Core::ErrorKind::Validation, "error.book.hasActiveLoans");
                 },
                 [&](const BulkRow&) {
                     ++acted;
-                    return Status::ok();
+                    return Core::Status::ok();
                 });
             EXPECT_EQ(done, 0);
         },
-        qs(Strings::t("common.ok")));
+        qs(Core::Strings::t("common.ok")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_TRUE(outcome.text.contains(QStringLiteral("2 of 2 books can't be archived:")));
@@ -159,13 +157,13 @@ TEST_F(test_ui_BulkAction, ALongBlockedListStopsAfterTenLines)
                 nullptr, archiveBooks(), rows,
                 [](const BulkRow& bulk) {
                     if (bulk.id == 100) {
-                        return Status::ok();
+                        return Core::Status::ok();
                     }
-                    return Status::fail(ErrorKind::Validation, "error.book.hasCopies");
+                    return Core::Status::fail(Core::ErrorKind::Validation, "error.book.hasCopies");
                 },
-                [](const BulkRow&) { return Status::ok(); });
+                [](const BulkRow&) { return Core::Status::ok(); });
         },
-        qs(Strings::t("common.no")));
+        qs(Core::Strings::t("common.no")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_TRUE(outcome.text.contains(QStringLiteral("…and 2 more")));
@@ -180,22 +178,22 @@ TEST_F(test_ui_BulkAction, AFailureDuringTheRunIsSummarised)
         [&]() {
             const int done = runBulkAction(
                 nullptr, archiveBooks(), {row(1, QStringLiteral("A")), row(2, QStringLiteral("B"))},
-                [](const BulkRow&) { return Status::ok(); },
+                [](const BulkRow&) { return Core::Status::ok(); },
                 [](const BulkRow& bulk) {
                     if (bulk.id == 2) {
-                        return Status::fail(ErrorKind::NotFound, "error.book.notFound");
+                        return Core::Status::fail(Core::ErrorKind::NotFound, "error.book.notFound");
                     }
-                    return Status::ok();
+                    return Core::Status::ok();
                 });
             EXPECT_EQ(done, 1);
         },
-        {ModalAnswer{qs(Strings::t("common.yes")), std::nullopt, {}},
-         ModalAnswer{qs(Strings::t("common.ok")), std::nullopt, {}}});
+        {ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}},
+         ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
     ASSERT_TRUE(outcomes.at(1).appeared);
     EXPECT_EQ(outcomes.at(1).text,
-              QStringLiteral("1 archived, 1 failed: ") + qs(Strings::t("error.book.notFound")));
+              QStringLiteral("1 archived, 1 failed: ") + qs(Core::Strings::t("error.book.notFound")));
 }
 
 TEST_F(test_ui_BulkAction, OneTickedRowIsNamedNotCounted)
@@ -204,10 +202,10 @@ TEST_F(test_ui_BulkAction, OneTickedRowIsNamedNotCounted)
         [&]() {
             runBulkAction(
                 nullptr, archiveBooks(), {row(1, QStringLiteral("Dune"))},
-                [](const BulkRow&) { return Status::ok(); },
-                [](const BulkRow&) { return Status::ok(); });
+                [](const BulkRow&) { return Core::Status::ok(); },
+                [](const BulkRow&) { return Core::Status::ok(); });
         },
-        qs(Strings::t("common.no")));
+        qs(Core::Strings::t("common.no")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive “Dune”?"));
@@ -220,36 +218,36 @@ TEST_F(test_ui_BulkAction, OneBlockedRowGivesItsReasonWithoutACount)
             runBulkAction(
                 nullptr, archiveBooks(), {row(1, QStringLiteral("Dune"))},
                 [](const BulkRow&) {
-                    return Status::fail(ErrorKind::Validation, "error.book.hasActiveLoans");
+                    return Core::Status::fail(Core::ErrorKind::Validation, "error.book.hasActiveLoans");
                 },
-                [](const BulkRow&) { return Status::ok(); });
+                [](const BulkRow&) { return Core::Status::ok(); });
         },
-        qs(Strings::t("common.ok")));
+        qs(Core::Strings::t("common.ok")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text,
-              QStringLiteral("Dune — ") + qs(Strings::t("error.book.hasActiveLoans")));
+              QStringLiteral("Dune — ") + qs(Core::Strings::t("error.book.hasActiveLoans")));
 }
 
 TEST_F(test_ui_BulkAction, ArabicPurgeSaysItIsPermanent)
 {
     // The Delete buttons archive and are labelled حذف; the Archive's purge has
     // to say it is final, or the two read the same.
-    Locale::setCode("ar");
+    Core::Locale::setCode("ar");
     BulkActionTexts texts;
-    texts.title = qs(Strings::t("archive.purge"));
-    texts.verb = qs(Strings::t("bulk.verb.purge"));
-    texts.passive = qs(Strings::t("bulk.passive.purge"));
-    texts.noun = qs(Strings::t("bulk.noun.books"));
+    texts.title = qs(Core::Strings::t("archive.purge"));
+    texts.verb = qs(Core::Strings::t("bulk.verb.purge"));
+    texts.passive = qs(Core::Strings::t("bulk.passive.purge"));
+    texts.noun = qs(Core::Strings::t("bulk.noun.books"));
     const ModalOutcome outcome = runAndAnswerModal(
         [&]() {
             runBulkAction(
                 nullptr, texts, {row(1, QStringLiteral("A")), row(2, QStringLiteral("B"))},
-                [](const BulkRow&) { return Status::ok(); },
-                [](const BulkRow&) { return Status::ok(); });
+                [](const BulkRow&) { return Core::Status::ok(); },
+                [](const BulkRow&) { return Core::Status::ok(); });
         },
-        qs(Strings::t("common.no")));
-    Locale::setCode("en");
+        qs(Core::Strings::t("common.no")));
+    Core::Locale::setCode("en");
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("الكتب (2): هل تريد الحذف النهائي؟"));

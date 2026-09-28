@@ -1,9 +1,9 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/LoanTypes.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/LoanTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
 
 #include "ui/TableHeaderSort.h"
 
@@ -29,9 +29,9 @@ class CirculationPage final : public QWidget {
     Q_OBJECT
 
 public:
-    CirculationPage(CirculationRepository& repository,
-                    CatalogRepository& catalogRepository,
-                    MemberRepository& memberRepository,
+    CirculationPage(VLMS::Repositories::CirculationRepository& repository,
+                    VLMS::Repositories::CatalogRepository& catalogRepository,
+                    VLMS::Repositories::MemberRepository& memberRepository,
                     QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -74,20 +74,20 @@ private:
 
     void buildUi();
     void resetPagerAndRefresh();
-    LoanQuery currentLoanQuery() const;
+    VLMS::Repositories::LoanQuery currentLoanQuery() const;
     qint64 selectedLoanId() const;
     void selectLoanId(qint64 id);
     QStringList selectedFilters() const;
     void sizeFilterList();
-    void updatePreview(const LoanRecord& loan);
+    void updatePreview(const VLMS::Repositories::LoanRecord& loan);
     void renderPreviewImages();
     void clearLoanDetails();
     void refreshSelectedLoanPreview();
-    QString loanStatusLabel(const LoanRecord& loan) const;
+    QString loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const;
 
-    CirculationRepository& m_repository;
-    CatalogRepository& m_catalogRepository;
-    MemberRepository& m_memberRepository;
+    VLMS::Repositories::CirculationRepository& m_repository;
+    VLMS::Repositories::CatalogRepository& m_catalogRepository;
+    VLMS::Repositories::MemberRepository& m_memberRepository;
     bool m_updatingFilter = false;
 
     QLineEdit* m_searchEdit = nullptr;

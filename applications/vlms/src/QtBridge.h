@@ -44,7 +44,7 @@ namespace VLMS {
     return out;
 }
 
-[[nodiscard]] inline QDate qd(const Date& date)
+[[nodiscard]] inline QDate qd(const Core::Date& date)
 {
     if (!date.isValid()) {
         return {};
@@ -52,19 +52,19 @@ namespace VLMS {
     return QDate(date.year(), date.month(), date.day());
 }
 
-[[nodiscard]] inline Date cd(const QDate& date)
+[[nodiscard]] inline Core::Date cd(const QDate& date)
 {
     if (!date.isValid()) {
         return {};
     }
-    return Date(date.year(), date.month(), date.day());
+    return Core::Date(date.year(), date.month(), date.day());
 }
 
 [[nodiscard]] inline QString T(std::string_view key,
                                std::string_view param = {},
                                std::string_view value = {})
 {
-    return qs(Strings::t(key, param, value));
+    return qs(Core::Strings::t(key, param, value));
 }
 
 [[nodiscard]] inline QString T2(std::string_view key,
@@ -73,7 +73,7 @@ namespace VLMS {
                                 std::string_view p2,
                                 std::string_view v2)
 {
-    return qs(Strings::t2(key, p1, v1, p2, v2));
+    return qs(Core::Strings::t2(key, p1, v1, p2, v2));
 }
 
 }  // namespace VLMS

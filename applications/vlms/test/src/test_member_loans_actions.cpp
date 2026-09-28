@@ -4,7 +4,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/members/MemberLoansDialog.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 #include "QtBridge.h"
@@ -19,9 +19,9 @@
 #include <cstdint>
 #include <memory>
 
-using VLMS::Locale;
 using VLMS::T;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -39,10 +39,10 @@ class test_ui_MemberLoansActions : public ::testing::Test {
 protected:
     void SetUp() override
     {
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_GT(m_memberId, 0);
     }
@@ -51,11 +51,11 @@ protected:
     {
         m_circulation.reset();
         m_db.reset();
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::int64_t m_memberId = 0;
 };
 

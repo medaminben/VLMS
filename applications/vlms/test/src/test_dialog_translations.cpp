@@ -10,7 +10,7 @@
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Core/Strings.h>
 
 #include <QAbstractButton>
@@ -32,11 +32,8 @@
 #include <utility>
 #include <vector>
 
-using VLMS::Date;
-using VLMS::Locale;
-using VLMS::ScopedClock;
-using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -49,9 +46,9 @@ BirthDateEdit* birthDate(MemberEditorDialog& dialog)
     return dialog.findChild<BirthDateEdit*>();
 }
 
-MemberRecord validMember()
+Repositories::MemberRecord validMember()
 {
-    MemberRecord member;
+    Repositories::MemberRecord member;
     member.id = 1;
     member.membershipNumber = "M-0001";
     member.firstName = "Amina";
@@ -72,37 +69,37 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
     {
-        Locale::setCode(Locale::kDefaultCode);
+        Core::Locale::setCode(Core::Locale::kDefaultCode);
         m_repository.reset();
         m_db.reset();
     }
 
-    [[nodiscard]] MemberEditorDialog::ValidationFailure failureFor(const MemberRecord& member) const
+    [[nodiscard]] MemberEditorDialog::ValidationFailure failureFor(const Repositories::MemberRecord& member) const
     {
         MemberEditorDialog dialog(*m_repository, member);
         return dialog.firstValidationFailure();
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_repository;
+    std::unique_ptr<Repositories::MemberRepository> m_repository;
 };
 
 TEST_F(test_ui_DialogTranslations, ButtonBoxUsesTheApplicationTableInEveryLocale)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         MemberEditorDialog dialog(*m_repository);
         auto* box = dialog.findChild<QDialogButtonBox*>();
         ASSERT_NE(box, nullptr);
-        EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), qs(Strings::rawValue(locale, "common.ok")));
+        EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), ::qs(Core::Strings::rawValue(locale, "common.ok")));
         EXPECT_EQ(box->button(QDialogButtonBox::Cancel)->text(),
-                  qs(Strings::rawValue(locale, "common.cancel")));
+                  ::qs(Core::Strings::rawValue(locale, "common.cancel")));
     }
 }
 
@@ -110,23 +107,23 @@ TEST_F(test_ui_DialogTranslations, MessageBoxButtonsUseTheApplicationTable)
 {
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         QMessageBox question(QMessageBox::Question, QStringLiteral("title"), QStringLiteral("text"),
                              QMessageBox::Yes | QMessageBox::No);
         VLMS::localizeMessageBox(&question);
-        EXPECT_EQ(question.button(QMessageBox::Yes)->text(), qs(Strings::rawValue(locale, "common.yes")));
-        EXPECT_EQ(question.button(QMessageBox::No)->text(), qs(Strings::rawValue(locale, "common.no")));
+        EXPECT_EQ(question.button(QMessageBox::Yes)->text(), ::qs(Core::Strings::rawValue(locale, "common.yes")));
+        EXPECT_EQ(question.button(QMessageBox::No)->text(), ::qs(Core::Strings::rawValue(locale, "common.no")));
 
         QMessageBox warning(QMessageBox::Warning, QStringLiteral("title"), QStringLiteral("text"),
                             QMessageBox::Ok);
         VLMS::localizeMessageBox(&warning);
-        EXPECT_EQ(warning.button(QMessageBox::Ok)->text(), qs(Strings::rawValue(locale, "common.ok")));
+        EXPECT_EQ(warning.button(QMessageBox::Ok)->text(), ::qs(Core::Strings::rawValue(locale, "common.ok")));
     }
 }
 
 TEST_F(test_ui_DialogTranslations, ArabicNeverShowsAnEnglishStandardButton)
 {
-    Locale::setCode(kArabic);
+    Core::Locale::setCode(kArabic);
     QMessageBox box(QMessageBox::Question, QStringLiteral("title"), QStringLiteral("text"),
                     QMessageBox::Ok | QMessageBox::Cancel | QMessageBox::Yes | QMessageBox::No
                         | QMessageBox::Close);
@@ -150,12 +147,12 @@ TEST_F(test_ui_DialogTranslations, StandardButtonLabelsSurviveALanguageChange)
     // shows, so the first warning after start-up lost its label. Send it
     // explicitly, from inside the running box, so the order tests run in
     // does not decide whether this is covered.
-    Locale::setCode(kArabic);
+    Core::Locale::setCode(kArabic);
     // Not just "no English": Qt's own Arabic would pass that. Every label must
     // be the application's word, or the action button's own text ("a").
-    const QStringList ours{qs(Strings::t("common.ok")), qs(Strings::t("common.cancel")),
-                           qs(Strings::t("common.yes")), qs(Strings::t("common.no")),
-                           qs(Strings::t("common.close")), qs(Strings::t("file.open")),
+    const QStringList ours{::qs(Core::Strings::t("common.ok")), ::qs(Core::Strings::t("common.cancel")),
+                           ::qs(Core::Strings::t("common.yes")), ::qs(Core::Strings::t("common.no")),
+                           ::qs(Core::Strings::t("common.close")), ::qs(Core::Strings::t("file.open")),
                            QStringLiteral("a")};
 
     const auto labelsAfterLanguageChange = [](const std::function<void()>& open) {
@@ -227,16 +224,16 @@ TEST_F(test_ui_DialogTranslations, StandardButtonLabelsSurviveALanguageChange)
 
 TEST_F(test_ui_DialogTranslations, InputDialogButtonsAreReachedThroughItsHiddenButtonBox)
 {
-    Locale::setCode(kArabic);
+    Core::Locale::setCode(kArabic);
     QInputDialog dialog;
     dialog.setInputMode(QInputDialog::TextInput);
     VLMS::localizeInputDialog(&dialog);
 
     auto* box = dialog.findChild<QDialogButtonBox*>();
     ASSERT_NE(box, nullptr);
-    EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), qs(Strings::rawValue(kArabic, "common.ok")));
+    EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), ::qs(Core::Strings::rawValue(kArabic, "common.ok")));
     EXPECT_EQ(box->button(QDialogButtonBox::Cancel)->text(),
-              qs(Strings::rawValue(kArabic, "common.cancel")));
+              ::qs(Core::Strings::rawValue(kArabic, "common.cancel")));
 }
 
 TEST_F(test_ui_DialogTranslations, LocalizersTolerateANullBox)
@@ -267,9 +264,9 @@ TEST_F(test_ui_DialogTranslations, ANewMemberDateOfBirthIsUnsetAndRequired)
     const auto failure = dialog.firstValidationFailure();
     EXPECT_EQ(failure.messageKey, QStringLiteral("member.dateOfBirthRequired"));
     EXPECT_EQ(failure.field, birth->dayCombo());
-    EXPECT_TRUE(Strings::rawValue(kArabic, "member.field.dateOfBirthHint").empty());
-    EXPECT_TRUE(Strings::rawValue(kFrench, "member.field.dateOfBirthHint").empty());
-    EXPECT_TRUE(Strings::rawValue(kEnglish, "member.field.dateOfBirthHint").empty());
+    EXPECT_TRUE(Core::Strings::rawValue(kArabic, "member.field.dateOfBirthHint").empty());
+    EXPECT_TRUE(Core::Strings::rawValue(kFrench, "member.field.dateOfBirthHint").empty());
+    EXPECT_TRUE(Core::Strings::rawValue(kEnglish, "member.field.dateOfBirthHint").empty());
 }
 
 TEST_F(test_ui_DialogTranslations, ThirtyFirstOfFebruaryFocusesTheDay)
@@ -291,7 +288,7 @@ TEST_F(test_ui_DialogTranslations, ThirtyFirstOfFebruaryFocusesTheDay)
 
 TEST_F(test_ui_DialogTranslations, AChosenBirthDateIsReturnedAsIso)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1990-05-12";
     MemberEditorDialog dialog(*m_repository, member);
     EXPECT_TRUE(dialog.firstValidationFailure().messageKey.isEmpty());
@@ -300,7 +297,7 @@ TEST_F(test_ui_DialogTranslations, AChosenBirthDateIsReturnedAsIso)
 
 TEST_F(test_ui_DialogTranslations, AnOutOfRangeStoredYearStaysSelected)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1890-05-12";
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -312,22 +309,22 @@ TEST_F(test_ui_DialogTranslations, AnOutOfRangeStoredYearStaysSelected)
 
 TEST_F(test_ui_DialogTranslations, ABareYearOfBirthIsRefusedBeforeTheDialogCloses)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1987";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthRequired"));
 }
 
 TEST_F(test_ui_DialogTranslations, AnImpossibleDateOfBirthIsRefused)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1987-02-31";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthInvalid"));
 }
 
 TEST_F(test_ui_DialogTranslations, ABirthDateAfterTodayIsRefused)
 {
-    const ScopedClock pinned(Date(2026, 9, 19));
-    MemberRecord member = validMember();
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "2026-09-20";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthInFuture"));
 
@@ -337,7 +334,7 @@ TEST_F(test_ui_DialogTranslations, ABirthDateAfterTodayIsRefused)
 
 TEST_F(test_ui_DialogTranslations, AnEmptyDateOfBirthIsRefused)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth.clear();
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -361,7 +358,7 @@ TEST_F(test_ui_DialogTranslations, EditorHasNoAgeGroupCombo)
 
 TEST_F(test_ui_DialogTranslations, ARefusedDateOfBirthPointsAtItsOwnField)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "not a date";
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -376,21 +373,21 @@ TEST_F(test_ui_DialogTranslations, ARefusedDateOfBirthPointsAtItsOwnField)
 
 TEST_F(test_ui_DialogTranslations, EveryFailureMessageIsTranslatedInEveryLocale)
 {
-    MemberRecord blankName = validMember();
+    Repositories::MemberRecord blankName = validMember();
     blankName.firstName.clear();
-    MemberRecord emptyDate = validMember();
+    Repositories::MemberRecord emptyDate = validMember();
     emptyDate.dateOfBirth.clear();
-    MemberRecord badDate = validMember();
+    Repositories::MemberRecord badDate = validMember();
     badDate.dateOfBirth = "1987";
-    MemberRecord futureDate = validMember();
+    Repositories::MemberRecord futureDate = validMember();
     futureDate.dateOfBirth = "2999-01-01";
-    MemberRecord badEmail = validMember();
+    Repositories::MemberRecord badEmail = validMember();
     badEmail.email = "not-an-address";
-    for (const MemberRecord& member : {blankName, emptyDate, badDate, futureDate, badEmail}) {
+    for (const Repositories::MemberRecord& member : {blankName, emptyDate, badDate, futureDate, badEmail}) {
         const QString key = failureFor(member).messageKey;
         ASSERT_FALSE(key.isEmpty());
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
-            const QString text = qs(Strings::rawValue(locale, key.toStdString()));
+            const QString text = ::qs(Core::Strings::rawValue(locale, key.toStdString()));
             EXPECT_FALSE(text.isEmpty() || text == key)
                 << "no " << locale << " text for '" << key.toStdString() << "'";
         }
@@ -410,7 +407,7 @@ TEST_F(test_ui_DialogTranslations, BirthDateBoxesFitBesideTheirLabelsInEveryLoca
     qApp->setStyleSheet(VLMS::applicationStylesheet());
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
-        Locale::setCode(locale);
+        Core::Locale::setCode(locale);
         qApp->setLayoutDirection(QString::fromLatin1(locale) == QLatin1String(kArabic) ? Qt::RightToLeft
                                                                                         : Qt::LeftToRight);
         MemberEditorDialog dialog(*m_repository, validMember());

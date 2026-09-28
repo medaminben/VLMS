@@ -1,7 +1,7 @@
 #pragma once
 
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/LoanTypes.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/LoanTypes.h>
 
 #include <QDialog>
 #include <QString>
@@ -26,11 +26,11 @@ class LoanCheckoutDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    LoanCheckoutDialog(CirculationRepository& repository,
+    LoanCheckoutDialog(VLMS::Repositories::CirculationRepository& repository,
                        const LoanScope& scope = {},
                        QWidget* parent = nullptr);
 
-    [[nodiscard]] LoanInput loanInput() const;
+    [[nodiscard]] VLMS::Repositories::LoanInput loanInput() const;
 
     /// False when the scope left nothing to lend — every copy is out.
     [[nodiscard]] bool hasLendableCopy() const;
@@ -41,7 +41,7 @@ private:
     void refreshMembers();
     void refreshCopies();
 
-    CirculationRepository& m_repository;
+    VLMS::Repositories::CirculationRepository& m_repository;
     LoanScope m_scope;
 
     QLineEdit* m_memberSearchEdit = nullptr;

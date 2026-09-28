@@ -3,7 +3,7 @@
 
 #include "ui/catalog/BookEditorDialog.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Ocr/Ocr.h>
 
 #include <QAction>
@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <memory>
 
-using namespace VLMS::Test;
-namespace Ocr = VLMS::Ocr;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_BookEditorOcr : public ::testing::Test {
 protected:
@@ -28,7 +28,7 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
-            std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -85,7 +85,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_repository;
+    std::unique_ptr<Repositories::CatalogRepository> m_repository;
     int m_seedIndex = 0;
 };
 

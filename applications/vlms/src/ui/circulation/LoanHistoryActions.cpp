@@ -13,7 +13,7 @@
 using VLMS::T;
 using VLMS::ss;
 
-LoanHistoryActions::LoanHistoryActions(CirculationRepository& repository,
+LoanHistoryActions::LoanHistoryActions(VLMS::Repositories::CirculationRepository& repository,
                                        QTableWidget* table,
                                        QWidget* parent)
     : QWidget(parent),

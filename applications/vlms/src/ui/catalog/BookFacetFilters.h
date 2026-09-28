@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/ArchiveTypes.h>
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CatalogTypes.h>
+#include <VLMS/Repositories/ArchiveTypes.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QStringList>
 #include <QWidget>
@@ -22,24 +22,24 @@ class BookFacetFilters final : public QWidget {
     Q_OBJECT
 
 public:
-    BookFacetFilters(CatalogRepository& repository, ArchiveScope scope, QWidget* parent = nullptr);
+    BookFacetFilters(Repositories::CatalogRepository& repository, Repositories::ArchiveScope scope, QWidget* parent = nullptr);
 
     /// Re-reads the labels, languages and categories; keeps the picks.
     void refresh();
     [[nodiscard]] QStringList languages() const;
     [[nodiscard]] QStringList categoryCodes() const;
-    [[nodiscard]] CoverFilter coverFilter() const;
+    [[nodiscard]] Repositories::CoverFilter coverFilter() const;
     /// Puts every list back on All, without emitting changed().
     void reset();
     /// Which books the language list is read from on the next refresh.
-    void setScope(ArchiveScope scope) { m_scope = scope; }
+    void setScope(Repositories::ArchiveScope scope) { m_scope = scope; }
 
 signals:
     void changed();
 
 private:
-    CatalogRepository& m_repository;
-    ArchiveScope m_scope;
+    Repositories::CatalogRepository& m_repository;
+    Repositories::ArchiveScope m_scope;
     FacetList* m_language = nullptr;
     FacetList* m_category = nullptr;
     FacetList* m_cover = nullptr;

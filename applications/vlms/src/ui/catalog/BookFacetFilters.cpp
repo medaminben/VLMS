@@ -21,8 +21,8 @@ QString withCount(const QString& label, const int count, const bool showCount)
 
 }  // namespace
 
-BookFacetFilters::BookFacetFilters(CatalogRepository& repository,
-                                   const ArchiveScope scope,
+BookFacetFilters::BookFacetFilters(Repositories::CatalogRepository& repository,
+                                   const Repositories::ArchiveScope scope,
                                    QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
@@ -46,14 +46,14 @@ BookFacetFilters::BookFacetFilters(CatalogRepository& repository,
 
 void BookFacetFilters::refresh()
 {
-    const bool showCounts = m_scope == ArchiveScope::Live;
+    const bool showCounts = m_scope == Repositories::ArchiveScope::Live;
 
     if (const auto languages = m_repository.listBookLanguages(m_scope); !languages) {
         showRepoError(this, languages.error());
     } else {
         QList<FacetList::Entry> entries;
-        for (const LanguageRecord& language : languages.value()) {
-            entries.append({withCount(qs(Strings::bookLanguageLabel(language.code)),
+        for (const Repositories::LanguageRecord& language : languages.value()) {
+            entries.append({withCount(qs(Core::Strings::bookLanguageLabel(language.code)),
                                       language.bookCount, showCounts),
                             qs(language.code)});
         }
@@ -64,7 +64,7 @@ void BookFacetFilters::refresh()
         showRepoError(this, categories.error());
     } else {
         QList<FacetList::Entry> entries;
-        for (const CategoryRecord& category : categories.value()) {
+        for (const Repositories::CategoryRecord& category : categories.value()) {
             const QString label = qs(category.label.empty() ? category.code : category.label);
             entries.append({withCount(label, category.bookCount, showCounts), qs(category.code)});
         }
@@ -73,9 +73,9 @@ void BookFacetFilters::refresh()
 
     m_cover->setEntries(T("catalog.allCovers"),
                         {{T("catalog.withCover"),
-                          QString::number(static_cast<int>(CoverFilter::WithCover))},
+                          QString::number(static_cast<int>(Repositories::CoverFilter::WithCover))},
                          {T("catalog.withoutCover"),
-                          QString::number(static_cast<int>(CoverFilter::WithoutCover))}});
+                          QString::number(static_cast<int>(Repositories::CoverFilter::WithoutCover))}});
     m_cover->fitRows(m_cover->count());
 }
 
@@ -89,10 +89,10 @@ QStringList BookFacetFilters::categoryCodes() const
     return m_category->selectedCodes();
 }
 
-CoverFilter BookFacetFilters::coverFilter() const
+Repositories::CoverFilter BookFacetFilters::coverFilter() const
 {
     const QStringList codes = m_cover->selectedCodes();
-    return codes.isEmpty() ? CoverFilter::All : static_cast<CoverFilter>(codes.first().toInt());
+    return codes.isEmpty() ? Repositories::CoverFilter::All : static_cast<Repositories::CoverFilter>(codes.first().toInt());
 }
 
 void BookFacetFilters::reset()

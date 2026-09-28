@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 /**
  * A local calendar date, or an invalid sentinel.
@@ -74,4 +74,4 @@ private:
     int m_second = 0;
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 class Locale {
 public:
@@ -17,4 +17,4 @@ private:
     static std::string s_code;
 };
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

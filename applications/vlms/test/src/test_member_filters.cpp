@@ -4,12 +4,12 @@
 #include "ui/members/MembersPage.h"
 #include "ui/TablePager.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QApplication>
 #include <QComboBox>
@@ -25,10 +25,8 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
-using VLMS::ScopedClock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -59,14 +57,14 @@ QString tableText(QTableWidget* table, int row, int column)
 
 class test_ui_MemberFilters : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -80,10 +78,10 @@ protected:
     void seedTunisAndSfax()
     {
         // Pinned so the 2010-born seed is youth on create whatever year this runs.
-        const ScopedClock pinned(Date(2026, 9, 19));
+        const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
         MemberSeed male = uniqueMemberSeed(1);
-        male.sex = MemberSex::kMale;
+        male.sex = Repositories::MemberSex::kMale;
         male.city = "Tunis";
         male.occupation = "قاضي";
         m_maleId = seedMember(*m_db, male);
@@ -91,7 +89,7 @@ protected:
         ASSERT_TRUE(rawSetRegisteredAt(*m_db, m_maleId, "2019-03-01 10:00:00"));
 
         MemberSeed female = uniqueMemberSeed(2);
-        female.sex = MemberSex::kFemale;
+        female.sex = Repositories::MemberSex::kFemale;
         female.city = "Sfax";
         female.occupation = "تلميذة";
         female.dateOfBirth = "2010-06-15";
@@ -101,8 +99,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MembersPage> m_page;
     qint64 m_maleId = 0;
     qint64 m_femaleId = 0;
@@ -130,7 +128,7 @@ TEST_F(test_ui_MemberFilters, SexFilterKeepsOnlyTheMatchingRow)
     EXPECT_EQ(table->rowCount(), 2);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")),
-                                 QString::fromLatin1(MemberSex::kMale)));
+                                 QString::fromLatin1(Repositories::MemberSex::kMale)));
 
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(tableText(table, 0, 3), QStringLiteral("Tunis"));
@@ -146,7 +144,7 @@ TEST_F(test_ui_MemberFilters, CityAndSexFiltersCombineWithAnd)
     ASSERT_NE(table, nullptr);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")),
-                                 QString::fromLatin1(MemberSex::kMale)));
+                                 QString::fromLatin1(Repositories::MemberSex::kMale)));
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("cityFilter")),
                                  QStringLiteral("Sfax")));
 
@@ -163,7 +161,7 @@ TEST_F(test_ui_MemberFilters, SelectingAllClearsTheDimension)
     ASSERT_NE(table, nullptr);
     ASSERT_NE(sexFilter, nullptr);
 
-    ASSERT_TRUE(selectFilterCode(sexFilter, QString::fromLatin1(MemberSex::kMale)));
+    ASSERT_TRUE(selectFilterCode(sexFilter, QString::fromLatin1(Repositories::MemberSex::kMale)));
     ASSERT_EQ(table->rowCount(), 1);
 
     ASSERT_TRUE(selectFilterCode(sexFilter, QString()));
@@ -186,7 +184,7 @@ TEST_F(test_ui_MemberFilters, YearAndAgeGroupNarrowTheTable)
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("yearFilter")),
                                  QString()));
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("ageGroupFilter")),
-                                 QString::fromLatin1(MemberAgeGroup::kYouth)));
+                                 QString::fromLatin1(Repositories::MemberAgeGroup::kYouth)));
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_femaleId);
 }
@@ -271,7 +269,7 @@ TEST_F(test_ui_MemberFilters, NotActiveKeepsOnlyTheMemberWhoseYearEnded)
     seedTunisAndSfax();
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2026-01-01' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_maleId)}}));
-    const ScopedClock pinned(Date(2026, 9, 23));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
     m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);

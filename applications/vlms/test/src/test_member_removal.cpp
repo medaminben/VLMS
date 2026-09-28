@@ -5,10 +5,10 @@
 
 #include "ui/members/MembersPage.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 #include <VLMS/Core/Strings.h>
 
 #include <QAbstractButton>
@@ -29,15 +29,14 @@
 #include <memory>
 #include <optional>
 
-using VLMS::Locale;
-using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
 void clickDelete(MembersPage* page)
 {
-    clickButtonWithText(page, qs(Strings::t("members.delete")));
+    clickButtonWithText(page, qs(Core::Strings::t("members.delete")));
 }
 
 void selectFirstMember(MembersPage* page)
@@ -52,14 +51,14 @@ void selectFirstMember(MembersPage* page)
 
 class test_ui_MemberRemoval : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -74,7 +73,7 @@ protected:
     {
         MemberSeed member;
         member.membershipNumber = "M-2024-777";
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -93,8 +92,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MembersPage> m_page;
     qint64 m_memberId = 0;
 };
@@ -109,13 +108,13 @@ TEST_F(test_ui_MemberRemoval, OpenLoansOfferGoToLoansAndEmitTheMembershipNumber)
         : QDir(qEnvironmentVariable("VLMS_TEST_SHOT_DIR")).filePath(QStringLiteral("blocked-by-loans.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Strings::t("members.goToLoans")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("members.goToLoans")), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("members.deleteBlockedByLoans")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteBlockedByLoans")));
     EXPECT_FALSE(outcome.hasCheckBox);
-    EXPECT_EQ(outcome.buttonLabels.filter(qs(Strings::t("members.goToLoans"))).size(), 1);
+    EXPECT_EQ(outcome.buttonLabels.filter(qs(Core::Strings::t("members.goToLoans"))).size(), 1);
     EXPECT_EQ(spy.count(), 1);
     EXPECT_EQ(spy.front().front().toString(),
               QString::fromStdString(m_members->getMember(m_memberId)->membershipNumber));
@@ -133,11 +132,11 @@ TEST_F(test_ui_MemberRemoval, ConfirmationIsAPlainYesOrNo)
               .filePath(QStringLiteral("confirm-delete.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Strings::t("common.no")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.no")), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("members.deleteConfirm")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
     // Delete archives. Destroying a record is the Archive's business now, so
     // there is nothing here to opt out of.
     EXPECT_FALSE(outcome.hasCheckBox);
@@ -152,7 +151,7 @@ TEST_F(test_ui_MemberRemoval, ArchivingRemovesTheMemberFromTheList)
     seedMemberWithLoan(today.addDays(-20).toString(Qt::ISODate));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Strings::t("common.yes")), std::nullopt);
+        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")), std::nullopt);
     EXPECT_TRUE(outcome.appeared);
     EXPECT_EQ(m_db->count("members"), 1);
     EXPECT_EQ(m_db->count("loans"), 1);
@@ -174,8 +173,8 @@ TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecon
     // Delete no longer offers to destroy anything.
     const QList<ModalOutcome> outcomes = runAndAnswerModals(
         [this]() { clickDelete(m_page.get()); },
-        {ModalAnswer{qs(Strings::t("common.yes")), std::nullopt, {}},
-         ModalAnswer{qs(Strings::t("common.ok")), std::nullopt, {}}});
+        {ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}},
+         ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
     EXPECT_FALSE(outcomes.at(1).appeared);
@@ -225,7 +224,7 @@ TEST_F(test_ui_MemberRemoval, TwoTickedMembersAreArchivedAndTheHighlightedThirdS
     tickMember(table, second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 members?"));
@@ -249,10 +248,10 @@ TEST_F(test_ui_MemberRemoval, ATickedMemberWithABookOutStaysWhileTheOtherIsArchi
     tickMember(table, free);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Strings::t("members.deleteConfirm")));
+    EXPECT_NE(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
     EXPECT_FALSE(memberArchived(*m_db, blocked));
     EXPECT_TRUE(memberArchived(*m_db, free));
 }

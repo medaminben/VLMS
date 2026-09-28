@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include "ui/TableHeaderSort.h"
 
@@ -29,8 +29,8 @@ class MembersPage final : public QWidget {
     Q_OBJECT
 
 public:
-    explicit MembersPage(MemberRepository& repository,
-                         CirculationRepository& circulationRepository,
+    explicit MembersPage(VLMS::Repositories::MemberRepository& repository,
+                         VLMS::Repositories::CirculationRepository& circulationRepository,
                          QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -62,17 +62,17 @@ private:
 
     void buildUi();
     void resetPagerAndRefresh();
-    MemberQuery currentMemberQuery() const;
+    VLMS::Repositories::MemberQuery currentMemberQuery() const;
     qint64 selectedMemberId() const;
     void selectMemberId(qint64 id);
     void refreshAllFilters();
-    void updatePreview(const MemberRecord& member);
+    void updatePreview(const VLMS::Repositories::MemberRecord& member);
     void renderPhotoPreview();
     void clearMemberDetails();
     void refreshSelectedMemberPreview();
 
-    MemberRepository& m_repository;
-    CirculationRepository& m_circulationRepository;
+    VLMS::Repositories::MemberRepository& m_repository;
+    VLMS::Repositories::CirculationRepository& m_circulationRepository;
 
     QLineEdit* m_searchEdit = nullptr;
     QPushButton* m_loansButton = nullptr;

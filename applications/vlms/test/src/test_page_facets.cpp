@@ -9,11 +9,11 @@
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/members/MembersPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QApplication>
 #include <QImage>
@@ -29,8 +29,8 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -64,21 +64,21 @@ T* named(QWidget* root, const char* name)
 /// images.
 class test_ui_PageFacets : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         MemberSeed male = uniqueMemberSeed(1);
-        male.sex = MemberSex::kMale;
+        male.sex = Repositories::MemberSex::kMale;
         m_maleId = seedMember(*m_db, male);
         MemberSeed female = uniqueMemberSeed(2);
-        female.sex = MemberSex::kFemale;
+        female.sex = Repositories::MemberSex::kFemale;
         m_femaleId = seedMember(*m_db, female);
         ASSERT_GT(m_maleId, 0);
         ASSERT_GT(m_femaleId, 0);
@@ -109,9 +109,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::int64_t m_maleId = 0;
     std::int64_t m_femaleId = 0;
     std::int64_t m_arabicBookId = 0;
@@ -136,7 +136,7 @@ TEST_F(test_ui_PageFacets, CirculationFiltersLoansByTheBorrowersSex)
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 2);
 
-    ASSERT_TRUE(pick(named<QListWidget>(&page, "sexFilter"), QString::fromLatin1(MemberSex::kFemale)));
+    ASSERT_TRUE(pick(named<QListWidget>(&page, "sexFilter"), QString::fromLatin1(Repositories::MemberSex::kFemale)));
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_femaleLoan);
 }
@@ -210,7 +210,7 @@ TEST_F(test_ui_PageFacets, ArchiveFiltersLoansByTheBorrowersSex)
     ASSERT_TRUE(pick(named<QListWidget>(&page, "archiveType"), QStringLiteral("loans")));
     ASSERT_EQ(table->rowCount(), 2);
 
-    ASSERT_TRUE(pick(named<QListWidget>(&page, "sexFilter"), QString::fromLatin1(MemberSex::kMale)));
+    ASSERT_TRUE(pick(named<QListWidget>(&page, "sexFilter"), QString::fromLatin1(Repositories::MemberSex::kMale)));
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_maleLoan);
 }

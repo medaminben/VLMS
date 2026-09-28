@@ -2,7 +2,7 @@
 
 #include "ui/catalog/FreeLocalNumberDelegate.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Result.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
@@ -31,8 +31,6 @@ using VLMS::ss;
 using VLMS::svl;
 
 namespace {
-
-using VLMS::Strings;
 
 enum CopyColumn {
     kCopyLocalId = 0,
@@ -75,7 +73,7 @@ constexpr int kFreeNumberLimit = 100;
 
 }  // namespace
 
-BookCopiesTable::BookCopiesTable(CatalogRepository& repository, QWidget* parent)
+BookCopiesTable::BookCopiesTable(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
     : QWidget(parent),
       m_repository(repository)
 {
@@ -132,7 +130,7 @@ void BookCopiesTable::loadCopies(const qint64 bookId)
         VLMS::showRepoError(this, copies.error());
         return;
     }
-    for (const BookCopyRecord& copy : copies.value()) {
+    for (const VLMS::Repositories::BookCopyRecord& copy : copies.value()) {
         appendCopyRow(copy);
     }
     sizeCopyColumns();
@@ -141,7 +139,7 @@ void BookCopiesTable::loadCopies(const qint64 bookId)
 
 void BookCopiesTable::addRow(const QString& language)
 {
-    BookCopyRecord copy;
+    VLMS::Repositories::BookCopyRecord copy;
     std::string source;
     std::string localId;
     std::string globalCopyId;
@@ -175,7 +173,7 @@ void BookCopiesTable::addReservedRow(const QString& source,
                                      const QString& localId,
                                      const QString& globalCopyId)
 {
-    BookCopyRecord copy;
+    VLMS::Repositories::BookCopyRecord copy;
     copy.source = ss(source);
     copy.localId = ss(localId);
     copy.globalCopyId = ss(globalCopyId);
@@ -204,9 +202,9 @@ int BookCopiesTable::copyCount() const
     return m_table->rowCount();
 }
 
-std::vector<BookCopyInput> BookCopiesTable::copyInputs() const
+std::vector<VLMS::Repositories::BookCopyInput> BookCopiesTable::copyInputs() const
 {
-    std::vector<BookCopyInput> copies;
+    std::vector<VLMS::Repositories::BookCopyInput> copies;
     copies.reserve(static_cast<std::size_t>(m_table->rowCount()));
 
     for (int row = 0; row < m_table->rowCount(); ++row) {
@@ -215,7 +213,7 @@ std::vector<BookCopyInput> BookCopiesTable::copyInputs() const
             return item == nullptr ? std::string() : ss(item->text().trimmed());
         };
 
-        BookCopyInput copy;
+        VLMS::Repositories::BookCopyInput copy;
         const QTableWidgetItem* first = m_table->item(row, kCopyLocalId);
         copy.id = first == nullptr ? 0 : first->data(kCopyIdRole).toLongLong();
         copy.localId = cell(kCopyLocalId);
@@ -243,10 +241,10 @@ bool BookCopiesTable::validate(QWidget* dialogParent)
 {
     QSet<QString> seenGlobalIds;
     QSet<QString> seenSourceLocal;
-    const std::vector<BookCopyInput> copies = copyInputs();
+    const std::vector<VLMS::Repositories::BookCopyInput> copies = copyInputs();
 
     for (int row = 0; row < static_cast<int>(copies.size()); ++row) {
-        const BookCopyInput& copy = copies[static_cast<std::size_t>(row)];
+        const VLMS::Repositories::BookCopyInput& copy = copies[static_cast<std::size_t>(row)];
 
         const auto complain = [this, dialogParent, row](const QString& key,
                                                         const QString& identifier) {
@@ -278,7 +276,7 @@ bool BookCopiesTable::validate(QWidget* dialogParent)
     return true;
 }
 
-void BookCopiesTable::appendCopyRow(const BookCopyRecord& copy)
+void BookCopiesTable::appendCopyRow(const VLMS::Repositories::BookCopyRecord& copy)
 {
     const int row = m_table->rowCount();
     m_table->insertRow(row);
@@ -383,18 +381,18 @@ void BookCopiesTable::removeSelectedRow()
             [this](const BulkRow& bulk) {
                 const QTableWidgetItem* item = m_table->item(bulk.row, kCopyLocalId);
                 if (item != nullptr && item->data(kCopyOnLoanRole).toBool()) {
-                    return VLMS::Status::fail(VLMS::ErrorKind::Validation,
+                    return VLMS::Core::Status::fail(VLMS::Core::ErrorKind::Validation,
                                                     "book.copy.cannotRemoveOnLoan");
                 }
                 if (item != nullptr && item->data(kCopyReservedRole).toBool()) {
-                    return VLMS::Status::fail(VLMS::ErrorKind::Validation,
+                    return VLMS::Core::Status::fail(VLMS::Core::ErrorKind::Validation,
                                                     "book.copy.numberReserved");
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             },
             [this](const BulkRow& bulk) {
                 m_table->removeRow(bulk.row);
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         return;
     }

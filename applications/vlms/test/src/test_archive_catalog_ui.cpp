@@ -6,8 +6,8 @@
 #include "ui/catalog/BookEditorDialog.h"
 #include "ui/catalog/CatalogPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
 #include <QAbstractButton>
@@ -22,8 +22,8 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -78,15 +78,15 @@ void rejectNextDialog()
 
 class test_ui_ArchiveCatalog : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -95,15 +95,15 @@ protected:
         m_db.reset();
     }
 
-    BookCopyRecord archivedCopy(std::int64_t copyId)
+    Repositories::BookCopyRecord archivedCopy(std::int64_t copyId)
     {
         EXPECT_TRUE(m_db->exec("UPDATE book_copies SET archived_at = '2026-09-19 10:00:00' "
                                "WHERE id = " + std::to_string(copyId)));
-        CopyQuery query;
-        query.archive = ArchiveScope::Archived;
+        Repositories::CopyQuery query;
+        query.archive = Repositories::ArchiveScope::Archived;
         // Bind the vector so the Result temporary outlives the range-for.
-        const std::vector<BookCopyRecord> rows = m_catalog->listCopyRows(query).value();
-        for (const BookCopyRecord& copy : rows) {
+        const std::vector<Repositories::BookCopyRecord> rows = m_catalog->listCopyRows(query).value();
+        for (const Repositories::BookCopyRecord& copy : rows) {
             if (copy.id == copyId) {
                 return copy;
             }
@@ -112,8 +112,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
 };
 
 TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
@@ -133,7 +133,7 @@ TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
 
 TEST_F(test_ui_ArchiveCatalog, AReservedRowCarriesTheNumberAndCannotBeEdited)
 {
-    BookCopyRecord copy;
+    Repositories::BookCopyRecord copy;
     copy.id = 42;
     copy.source = "arabic";
     copy.localId = "7";
@@ -166,7 +166,7 @@ TEST_F(test_ui_ArchiveCatalog, AReservedRowCarriesTheNumberAndCannotBeEdited)
 
 TEST_F(test_ui_ArchiveCatalog, AReservedRowCannotBeRemoved)
 {
-    BookCopyRecord copy;
+    Repositories::BookCopyRecord copy;
     copy.source = "arabic";
     copy.localId = "7";
     copy.globalCopyId = "AR-7";
@@ -196,7 +196,7 @@ TEST_F(test_ui_ArchiveCatalog, ChooserOffersANewBookAndOnlyBooksOfTheSameSource)
     french.language = "fr";
     seedBook(*m_db, french);
 
-    BookCopyRecord copy;
+    Repositories::BookCopyRecord copy;
     copy.source = "arabic";
     copy.localId = "7";
     ReuseBookChooser chooser(*m_catalog, copy);
@@ -211,7 +211,7 @@ TEST_F(test_ui_ArchiveCatalog, ChooserOffersANewBookAndOnlyBooksOfTheSameSource)
 TEST_F(test_ui_ArchiveCatalog, CancellingReuseLeavesTheArchivedNumberInPlace)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(4));
-    const BookCopyRecord copy = archivedCopy(copyIdsOf(*m_db, bookId).front());
+    const Repositories::BookCopyRecord copy = archivedCopy(copyIdsOf(*m_db, bookId).front());
     ASSERT_FALSE(copy.localId.empty());
 
     rejectNextDialog();

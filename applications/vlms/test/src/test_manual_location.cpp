@@ -9,6 +9,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 namespace {
 void touch(const QString& path)
 {

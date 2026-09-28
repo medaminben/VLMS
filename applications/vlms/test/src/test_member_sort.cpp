@@ -4,10 +4,10 @@
 #include "ui/members/MembersPage.h"
 #include "ui/TablePager.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QHeaderView>
 #include <QTableWidget>
@@ -17,19 +17,19 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_MemberSort : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -53,8 +53,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MembersPage> m_page;
 };
 

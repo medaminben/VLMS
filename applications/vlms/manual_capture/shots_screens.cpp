@@ -6,9 +6,9 @@
 #include "ui/MainWindow.h"
 #include "ui/ListPageFrame.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 
 #include <QAbstractButton>
 #include <QApplication>
@@ -178,8 +178,8 @@ void ensureArchivedBook()
     if (done) {
         return;
     }
-    BookQuery archived;
-    archived.archive = ArchiveScope::Archived;
+    VLMS::Repositories::BookQuery archived;
+    archived.archive = VLMS::Repositories::ArchiveScope::Archived;
     archived.limit = 1;
     const auto existing = app().catalog().listBooks(archived);
     if (!existing) {
@@ -192,15 +192,15 @@ void ensureArchivedBook()
 
     // Copies ascending lists the copy-less titles first. Available descending
     // starts among titles that still have a copy on the shelf.
-    BookQuery live;
-    live.sortColumn = BookSort::kAvailable;
+    VLMS::Repositories::BookQuery live;
+    live.sortColumn = VLMS::Repositories::BookSort::kAvailable;
     live.sortAscending = false;
     live.limit = 40;
     const auto books = app().catalog().listBooks(live);
     if (!books) {
         fail("could not list books to archive");
     }
-    for (const BookRecord& book : books.value()) {
+    for (const VLMS::Repositories::BookRecord& book : books.value()) {
         if (book.localIds.empty() || !book.localIdsOnLoan.empty()) {
             continue;
         }
@@ -218,17 +218,17 @@ void ensureArchivedBook()
     fail("could not archive a book in the sandbox");
 }
 
-BookRecord multiCopyOnLoan()
+VLMS::Repositories::BookRecord multiCopyOnLoan()
 {
-    BookQuery query;
-    query.sortColumn = BookSort::kCopies;
+    VLMS::Repositories::BookQuery query;
+    query.sortColumn = VLMS::Repositories::BookSort::kCopies;
     query.sortAscending = false;
     query.limit = 80;
     const auto books = app().catalog().listBooks(query);
     if (!books) {
         fail("could not list books");
     }
-    for (const BookRecord& book : books.value()) {
+    for (const VLMS::Repositories::BookRecord& book : books.value()) {
         if (book.localIds.size() >= 3 && !book.localIdsOnLoan.empty()) {
             return book;
         }
@@ -238,9 +238,9 @@ BookRecord multiCopyOnLoan()
 
 QString mixedLoanNumber()
 {
-    const BookRecord seed = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord seed = multiCopyOnLoan();
     for (const std::string& number : seed.localIdsOnLoan) {
-        BookQuery query;
+        VLMS::Repositories::BookQuery query;
         query.search = number;
         query.limit = 10;
         const auto hits = app().catalog().listBooks(query);
@@ -249,7 +249,7 @@ QString mixedLoanNumber()
         }
         bool onShelf = false;
         bool onLoan = false;
-        for (const BookRecord& book : hits.value()) {
+        for (const VLMS::Repositories::BookRecord& book : hits.value()) {
             const bool loaned = std::find(book.localIdsOnLoan.begin(), book.localIdsOnLoan.end(), number)
                 != book.localIdsOnLoan.end();
             onLoan = onLoan || loaned;
@@ -262,10 +262,10 @@ QString mixedLoanNumber()
     return qs(seed.localIdsOnLoan.front());
 }
 
-LoanRecord firstUnreturnedLoan()
+VLMS::Repositories::LoanRecord firstUnreturnedLoan()
 {
-    for (const char* filter : {LoanFilter::kOpen, LoanFilter::kOverdue}) {
-        LoanQuery query;
+    for (const char* filter : {VLMS::Repositories::LoanFilter::kOpen, VLMS::Repositories::LoanFilter::kOverdue}) {
+        VLMS::Repositories::LoanQuery query;
         query.filters = {filter};
         query.limit = 1;
         const auto loans = app().circulation().listLoans(query);
@@ -313,14 +313,14 @@ void shotCatOverview(Capture& capture)
 
 void shotCatSearchNumber(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIdsOnLoan.front()));
     capture.save(QStringLiteral("cat-search-number"), topOfTable(capture, capture.table(), 6));
 }
 
 void shotCatNumberDropdown(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIdsOnLoan.front()));
     QTableWidget* table = capture.table();
     const int column = columnByHeader(table, T("catalog.col.localNumber"));
@@ -351,7 +351,7 @@ void shotCatCopyColours(Capture& capture)
 
 void shotCatLoans(Capture& capture)
 {
-    const BookRecord book = multiCopyOnLoan();
+    const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIds.front()));
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.loans")); },
@@ -388,7 +388,7 @@ void shotMemOverview(Capture& capture)
     capture.save(QStringLiteral("mem-overview"), capture.calloutsAt(capture.grab(), marks));
 }
 
-void showMember(Capture& capture, const LoanRecord& loan)
+void showMember(Capture& capture, const VLMS::Repositories::LoanRecord& loan)
 {
     capture.goTo("nav.members");
     setSearch(capture, qs(loan.membershipNumber));
@@ -481,7 +481,7 @@ void shotCircOverdue(Capture& capture)
 
 void shotCircSearchName(Capture& capture)
 {
-    const LoanRecord loan = firstUnreturnedLoan();
+    const VLMS::Repositories::LoanRecord loan = firstUnreturnedLoan();
     capture.goTo("nav.circulation");
     pickList(capture, "loanFilter", T("circulation.filter.all"));
     setSearch(capture, qs(loan.memberName));
