@@ -136,7 +136,7 @@ Core::Status SqliteStatement::bindNull(const std::string& name)
 }
 
 Core::Status SqliteStatement::bindOptional(const std::string& name,
-                                     const std::optional<std::string>& value)
+                                           const std::optional<std::string>& value)
 {
     if (!value.has_value()) {
         return bindNull(name);

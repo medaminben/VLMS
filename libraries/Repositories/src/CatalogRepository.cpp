@@ -35,9 +35,9 @@ Core::Status bindOptionalId(Database::SqliteStatement& query, const std::string&
 }
 
 Core::Status bindBookFields(Database::SqliteStatement& query,
-                      const BookInput& input,
-                      const std::int64_t authorId,
-                      const std::int64_t publisherId)
+                            const BookInput& input,
+                            const std::int64_t authorId,
+                            const std::int64_t publisherId)
 {
     const std::string language = Core::trim(input.language);
     if (!query.bind(":title", Core::trim(input.title)) || !bindOptionalId(query, ":author_id", authorId)
@@ -329,7 +329,7 @@ Core::Result<std::int64_t> CatalogRepository::insertBookRow(const BookInput& inp
     if (const auto bound = bindBookFields(*insert, input, author.value(), publisher.value());
         !bound) {
         return Core::Result<std::int64_t>::fail(bound.error().kind, bound.error().key,
-                                          bound.error().detail);
+                                                bound.error().detail);
     }
     if (const auto written = insert->exec(); !written) {
         const std::string error = written.error().detail;
@@ -725,7 +725,7 @@ std::string CatalogRepository::resolveCoverPath(const std::string& storedPath) c
 }
 
 Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
-                                          const std::string& sourceFilePath)
+                                                const std::string& sourceFilePath)
 {
     if (sourceFilePath.empty()) {
         return RepoSql::validation("error.cover.emptyPath");
@@ -858,7 +858,7 @@ Core::Result<std::vector<BookCopyRecord>> CatalogRepository::listCopies(const st
 }
 
 Core::Status CatalogRepository::saveCopies(const std::int64_t bookId,
-                                     const std::vector<BookCopyInput>& copies)
+                                           const std::vector<BookCopyInput>& copies)
 {
     return m_copies->saveCopies(bookId, copies);
 }
@@ -872,7 +872,7 @@ void CatalogRepository::suggestCopyIdentifiers(const std::string& language,
 }
 
 Core::Result<std::vector<std::string>> CatalogRepository::listFreeLocalNumbers(const std::string& source,
-                                                                         const int limit) const
+                                                                               const int limit) const
 {
     return m_copies->freeLocalNumbers(source, limit);
 }
@@ -888,14 +888,14 @@ Core::Result<std::vector<CategoryRecord>> CatalogRepository::listAllCategories()
 }
 
 Core::Result<std::int64_t> CatalogRepository::createCategory(const std::string& code,
-                                                       const std::string& label)
+                                                             const std::string& label)
 {
     return m_categories->createCategory(code, label);
 }
 
 Core::Status CatalogRepository::updateCategory(const std::int64_t id,
-                                         const std::string& code,
-                                         const std::string& label)
+                                               const std::string& code,
+                                               const std::string& label)
 {
     return m_categories->updateCategory(id, code, label);
 }

@@ -127,9 +127,9 @@ Application::Application(int& argc, char** argv)
     }
 
     m_catalogRepository = new VLMS::Repositories::CatalogRepository(m_database->session(),
-                                                VLMS::Core::Paths::resourcesDirectory());
+                                                                    VLMS::Core::Paths::resourcesDirectory());
     m_memberRepository = new VLMS::Repositories::MemberRepository(m_database->session(),
-                                              VLMS::Core::Paths::resourcesDirectory());
+                                                                  VLMS::Core::Paths::resourcesDirectory());
     m_circulationRepository = new VLMS::Repositories::CirculationRepository(m_database->session());
     m_metricsRepository = new VLMS::Repositories::MetricsRepository(m_database->session());
 }

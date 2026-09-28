@@ -42,8 +42,8 @@ VLMS::Core::Date utcToday()
     const auto days = std::chrono::floor<std::chrono::days>(now);
     const std::chrono::year_month_day ymd{days};
     return VLMS::Core::Date(static_cast<int>(ymd.year()),
-                static_cast<int>(static_cast<unsigned>(ymd.month())),
-                static_cast<int>(static_cast<unsigned>(ymd.day())));
+                            static_cast<int>(static_cast<unsigned>(ymd.month())),
+                            static_cast<int>(static_cast<unsigned>(ymd.day())));
 }
 
 bool localDateDiffersFromUtcDate()

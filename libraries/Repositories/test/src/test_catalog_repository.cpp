@@ -39,7 +39,7 @@ protected:
             return false;
         }
         m_repository = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
-                                                           m_db->resourcesDirectory());
+                                                                         m_db->resourcesDirectory());
         return true;
     }
 

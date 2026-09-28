@@ -338,8 +338,8 @@ Core::Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& in
 }
 
 Core::Status CirculationRepository::returnLoan(const std::int64_t loanId,
-                                         const std::string& returnedAt,
-                                         const std::string& notes)
+                                               const std::string& returnedAt,
+                                               const std::string& notes)
 {
     const auto existing = getLoan(loanId);
     if (!existing) {

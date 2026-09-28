@@ -97,8 +97,8 @@ Core::Result<std::int64_t> CategoryStore::createCategory(const std::string& code
 }
 
 Core::Status CategoryStore::updateCategory(const std::int64_t id,
-                                     const std::string& code,
-                                     const std::string& label)
+                                           const std::string& code,
+                                           const std::string& label)
 {
     const std::string trimmedCode = Core::trim(code);
     if (trimmedCode.empty()) {
