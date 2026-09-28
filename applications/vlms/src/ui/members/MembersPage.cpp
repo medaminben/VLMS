@@ -39,8 +39,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kNameColumnWidth = 260;
 constexpr int kPhoneColumnWidth = 160;
 constexpr int kPreviewPanelMinWidth = 200;
@@ -77,8 +75,8 @@ QStringList memberDetailLabelKeys() {
 
 }  // namespace
 
-MembersPage::MembersPage(MemberRepository& repository,
-                         CirculationRepository& circulationRepository,
+MembersPage::MembersPage(VLMS::Repositories::MemberRepository& repository,
+                         VLMS::Repositories::CirculationRepository& circulationRepository,
                          QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
@@ -105,7 +103,7 @@ void MembersPage::buildUi() {
     rootLayout->addWidget(frame);
 
     m_filters = new VLMS::MemberFacetFilters(
-        m_repository, ArchiveScope::Live, frame->filterColumn());
+        m_repository, VLMS::Repositories::ArchiveScope::Live, frame->filterColumn());
     connect(m_filters, &VLMS::MemberFacetFilters::changed,
             this, &MembersPage::resetPagerAndRefresh);
     frame->addFilter(m_filters, 1);
@@ -134,12 +132,12 @@ void MembersPage::buildUi() {
 
     m_sort = new VLMS::TableHeaderSort(m_membersTable, this);
     m_sort->setColumnKeys({
-        QString::fromLatin1(MemberSort::kNumber),
-        QString::fromLatin1(MemberSort::kName),
-        QString::fromLatin1(MemberSort::kPhone),
-        QString::fromLatin1(MemberSort::kCity),
-        QString::fromLatin1(MemberSort::kStatus),
-        QString::fromLatin1(MemberSort::kLoans),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kNumber),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kName),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kPhone),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kCity),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kStatus),
+        QString::fromLatin1(VLMS::Repositories::MemberSort::kLoans),
     });
     connect(m_sort, &VLMS::TableHeaderSort::sortChanged,
             this, &MembersPage::onSortChanged);
@@ -225,10 +223,10 @@ void MembersPage::resetPagerAndRefresh() {
     refreshMembers();
 }
 
-MemberQuery MembersPage::currentMemberQuery() const {
-    MemberQuery query;
+VLMS::Repositories::MemberQuery MembersPage::currentMemberQuery() const {
+    VLMS::Repositories::MemberQuery query;
     query.search = ss(m_searchEdit->text());
-    const MemberFacets facets = m_filters->facets();
+    const VLMS::Repositories::MemberFacets facets = m_filters->facets();
     query.statuses = facets.statuses;
     query.sexes = facets.sexes;
     query.inscriptionYears = facets.inscriptionYears;
@@ -244,7 +242,7 @@ MemberQuery MembersPage::currentMemberQuery() const {
 }
 
 void MembersPage::refreshMembers() {
-    MemberQuery query = currentMemberQuery();
+    VLMS::Repositories::MemberQuery query = currentMemberQuery();
     const auto totalCount = m_repository.countMembers(query);
     if (!totalCount) {
         VLMS::showRepoError(this, totalCount.error());
@@ -263,7 +261,7 @@ void MembersPage::refreshMembers() {
     m_membersTable->setRowCount(members.size());
 
     for (int row = 0; row < static_cast<int>(members.size()); ++row) {
-        const MemberRecord& member = members.at(row);
+        const VLMS::Repositories::MemberRecord& member = members.at(row);
         const QString fullName = member.fullName.empty()
             ? QStringLiteral("%1 %2").arg(qs(member.firstName), qs(member.lastName)).trimmed()
             : qs(member.fullName);
@@ -274,7 +272,7 @@ void MembersPage::refreshMembers() {
         m_membersTable->setItem(row, 1, new QTableWidgetItem(fullName));
         m_membersTable->setItem(row, 2, new QTableWidgetItem(qs(member.phone)));
         m_membersTable->setItem(row, 3, new QTableWidgetItem(qs(member.city)));
-        m_membersTable->setItem(row, 4, new QTableWidgetItem(qs(Strings::memberStatusLabel(member.status))));
+        m_membersTable->setItem(row, 4, new QTableWidgetItem(qs(VLMS::Core::Strings::memberStatusLabel(member.status))));
         auto* loansItem = new QTableWidgetItem;
         loansItem->setData(Qt::DisplayRole, member.activeLoanCount);
         m_membersTable->setItem(row, 5, loansItem);
@@ -325,7 +323,7 @@ void MembersPage::onSortChanged(int, bool)
     if (id <= 0) {
         m_pager->setCurrentPage(1);
     } else {
-        MemberQuery query = currentMemberQuery();
+        VLMS::Repositories::MemberQuery query = currentMemberQuery();
         const auto rank = m_repository.rankOfMember(id, query);
         if (rank) {
             m_pager->setCurrentPage(rank.value() / m_pager->pageSize() + 1);
@@ -429,7 +427,7 @@ bool MembersPage::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void MembersPage::updatePreview(const MemberRecord& member) {
+void MembersPage::updatePreview(const VLMS::Repositories::MemberRecord& member) {
     if (member.photoPath.empty()) {
         m_previewPhotoPath.clear();
     } else {
@@ -447,13 +445,13 @@ void MembersPage::updatePreview(const MemberRecord& member) {
         {QStringLiteral("member.field.number"), qs(member.membershipNumber)},
         {QStringLiteral("member.field.sex"),
          member.sex.empty() ? VLMS::dashIfEmpty(member.sex)
-                            : qs(Strings::memberSexLabel(member.sex))},
-        {QStringLiteral("member.field.status"), qs(Strings::memberStatusLabel(member.status))},
+                            : qs(VLMS::Core::Strings::memberSexLabel(member.sex))},
+        {QStringLiteral("member.field.status"), qs(VLMS::Core::Strings::memberStatusLabel(member.status))},
         {QStringLiteral("member.field.activeUntil"), VLMS::dashIfEmpty(member.activeUntil)},
         {QStringLiteral("member.field.occupation"), VLMS::dashIfEmpty(member.occupation)},
         {QStringLiteral("member.field.ageGroup"),
          member.ageGroup.empty() ? VLMS::dashIfEmpty(member.ageGroup)
-                                 : qs(Strings::memberAgeGroupLabel(member.ageGroup))},
+                                 : qs(VLMS::Core::Strings::memberAgeGroupLabel(member.ageGroup))},
         {QStringLiteral("member.field.phone"), VLMS::dashIfEmpty(member.phone)},
         {QStringLiteral("member.field.city"), VLMS::dashIfEmpty(member.city)},
         {QStringLiteral("member.field.address"), VLMS::dashIfEmpty(member.address)},
@@ -477,7 +475,7 @@ void MembersPage::addMember() {
         return;
     }
 
-    MemberWrite write;
+    VLMS::Repositories::MemberWrite write;
     write.member = dialog.memberInput();
     if (dialog.photoChanged()) {
         write.photoSourcePath = ss(dialog.photoSourcePath());
@@ -517,7 +515,7 @@ void MembersPage::editMember() {
         return;
     }
 
-    MemberWrite write;
+    VLMS::Repositories::MemberWrite write;
     write.member = dialog.memberInput();
     if (dialog.photoChanged()) {
         write.photoSourcePath = ss(dialog.photoSourcePath());
@@ -587,7 +585,7 @@ void MembersPage::deleteMember() {
         VLMS::showRepoError(this, block.error());
         return;
     }
-    if (block.value() == MemberRepository::MemberRemovalBlock::OpenLoans) {
+    if (block.value() == VLMS::Repositories::MemberRepository::MemberRemovalBlock::OpenLoans) {
         if (VLMS::showWarningWithAction(
                 this,
                 title,

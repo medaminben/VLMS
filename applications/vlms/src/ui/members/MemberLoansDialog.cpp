@@ -26,11 +26,9 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 }  // namespace
 
-MemberLoansDialog::MemberLoansDialog(CirculationRepository& repository,
+MemberLoansDialog::MemberLoansDialog(VLMS::Repositories::CirculationRepository& repository,
                                      const qint64 memberId,
                                      const QString& memberName,
                                      QWidget* parent)
@@ -107,7 +105,7 @@ void MemberLoansDialog::retranslateUi() {
     }
 }
 
-QString MemberLoansDialog::loanStatusLabel(const LoanRecord& loan) const {
+QString MemberLoansDialog::loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const {
     if (!loan.returnedAt.empty()) {
         return T("circulation.status.returned");
     }
@@ -118,9 +116,9 @@ QString MemberLoansDialog::loanStatusLabel(const LoanRecord& loan) const {
 }
 
 void MemberLoansDialog::refresh() {
-    LoanQuery query;
+    VLMS::Repositories::LoanQuery query;
     query.memberId = m_memberId;
-    query.archive = ArchiveScope::Any;  // history: an archived loan still happened
+    query.archive = VLMS::Repositories::ArchiveScope::Any;  // history: an archived loan still happened
     query.limit = 1000;
     query.offset = 0;
 
@@ -133,7 +131,7 @@ void MemberLoansDialog::refresh() {
     m_table->setRowCount(loans.size());
 
     for (int row = 0; row < static_cast<int>(loans.size()); ++row) {
-        const LoanRecord& loan = loans.at(row);
+        const VLMS::Repositories::LoanRecord& loan = loans.at(row);
         auto* titleItem = new QTableWidgetItem(qs(loan.bookTitle));
         titleItem->setData(Qt::UserRole, QVariant::fromValue(loan.id));
         m_table->setItem(row, 0, titleItem);

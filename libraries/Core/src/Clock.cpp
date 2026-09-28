@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 namespace {
 
@@ -84,4 +84,4 @@ ScopedClock::~ScopedClock()
     }
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-using VLMS::DateText::normalizePublicationDate;
+using namespace VLMS;
 
 /**
  * The publication date normaliser.
@@ -23,7 +23,7 @@ TEST(test_core_DateText, AlreadyReducedIsoIsUnchanged)
 {
     for (const char* input : {"2014", "1999-09", "2003-03-18", "2024-02-29"}) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(normalizePublicationDate(input), input);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), input);
     }
 }
 
@@ -56,7 +56,7 @@ TEST(test_core_DateText, MonthNameFormsNormalise)
     };
     for (const auto& [input, expected] : cases) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(normalizePublicationDate(input), expected);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), expected);
     }
 }
 
@@ -71,7 +71,7 @@ TEST(test_core_DateText, NumericYearMonthNormalises)
     };
     for (const auto& [input, expected] : cases) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(normalizePublicationDate(input), expected);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), expected);
     }
 }
 
@@ -111,7 +111,7 @@ TEST(test_core_DateText, AmbiguousInputIsLeftVerbatim)
     };
     for (const std::string& input : cases) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(normalizePublicationDate(input), input);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), input);
     }
 }
 
@@ -123,7 +123,7 @@ TEST(test_core_DateText, ImpossibleDatesAreLeftVerbatim)
     // leaves a wrong value visible instead of a wrong value hidden.
     for (const char* input : {"2024-02-30", "1900-02-29", "February 30, 2024", "Jan 32, 2001"}) {
         SCOPED_TRACE(input);
-        EXPECT_EQ(normalizePublicationDate(input), input);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), input);
     }
 }
 
@@ -136,14 +136,14 @@ TEST(test_core_DateText, NormalisationIsIdempotent)
         // The migration writes on open and createBook writes on every save, so a
         // value passes through this function an unbounded number of times. If a
         // second pass moved it, the catalog would drift a little on every launch.
-        const std::string once = normalizePublicationDate(input);
-        EXPECT_EQ(normalizePublicationDate(once), once);
+        const std::string once = Core::DateText::normalizePublicationDate(input);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(once), once);
     }
 }
 
 TEST(test_core_DateText, BlankInputIsReturnedAsGiven)
 {
-    EXPECT_EQ(normalizePublicationDate({}), std::string());
-    EXPECT_EQ(normalizePublicationDate(""), std::string());
-    EXPECT_EQ(normalizePublicationDate("   "), std::string("   "));
+    EXPECT_EQ(Core::DateText::normalizePublicationDate({}), std::string());
+    EXPECT_EQ(Core::DateText::normalizePublicationDate(""), std::string());
+    EXPECT_EQ(Core::DateText::normalizePublicationDate("   "), std::string("   "));
 }

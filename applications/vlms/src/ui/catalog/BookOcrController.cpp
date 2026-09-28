@@ -18,8 +18,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kOcrPollIntervalMs = 80;
 
 }  // namespace

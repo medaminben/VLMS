@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 
 #include <QDialog>
 
@@ -11,7 +11,7 @@ class CategoryManagerDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CategoryManagerDialog(CatalogRepository& repository, QWidget* parent = nullptr);
+    explicit CategoryManagerDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent = nullptr);
 
 private slots:
     void refresh();
@@ -24,7 +24,7 @@ private:
     void retranslateUi();
     int selectedCategoryId() const;
 
-    CatalogRepository& m_repository;
+    VLMS::Repositories::CatalogRepository& m_repository;
     QTableWidget* m_table = nullptr;
     QPushButton* m_addButton = nullptr;
     QPushButton* m_editButton = nullptr;

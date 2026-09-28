@@ -1,8 +1,8 @@
 #include "ui/circulation/LoanExtendDialog.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
-#include <VLMS/Core/LoanPolicy.h>
+#include <VLMS/Repositories/LoanPolicy.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
@@ -24,19 +24,15 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Clock;
-using VLMS::Strings;
-namespace LoanPolicy = VLMS::LoanPolicy;
-
 }  // namespace
 
-LoanExtendDialog::LoanExtendDialog(const LoanRecord& loan, QWidget* parent)
+LoanExtendDialog::LoanExtendDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
     : QDialog(parent) {
     buildUi(loan);
     retranslateUi(loan);
 }
 
-void LoanExtendDialog::buildUi(const LoanRecord& loan) {
+void LoanExtendDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     resize(480, 240);
 
     auto* layout = new QVBoxLayout(this);
@@ -57,9 +53,9 @@ void LoanExtendDialog::buildUi(const LoanRecord& loan) {
     VLMS::setIsoDateFormat(m_dueDateEdit);
 
     const QDate currentDue = QDate::fromString(qs(loan.dueAt), Qt::ISODate);
-    const auto today = Clock::today();
-    m_dueDateEdit->setMinimumDate(qd(LoanPolicy::minimumExtensionDate(cd(currentDue), today)));
-    m_dueDateEdit->setDate(qd(LoanPolicy::suggestedExtensionDate(cd(currentDue), today)));
+    const auto today = VLMS::Core::Clock::today();
+    m_dueDateEdit->setMinimumDate(qd(VLMS::Repositories::LoanPolicy::minimumExtensionDate(cd(currentDue), today)));
+    m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedExtensionDate(cd(currentDue), today)));
     form->addRow(new QLabel(this), m_dueDateEdit);
 
     layout->addLayout(form);
@@ -81,7 +77,7 @@ void LoanExtendDialog::buildUi(const LoanRecord& loan) {
     layout->addWidget(buttons);
 }
 
-void LoanExtendDialog::retranslateUi(const LoanRecord& loan) {
+void LoanExtendDialog::retranslateUi(const VLMS::Repositories::LoanRecord& loan) {
     setWindowTitle(T("loan.extendTitle"));
 
     VLMS::retranslateStandardButtons(findChild<QDialogButtonBox*>());

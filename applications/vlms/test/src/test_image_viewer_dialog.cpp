@@ -14,11 +14,11 @@
 
 #include <gtest/gtest.h>
 
-using VLMS::Locale;
+using namespace VLMS;
 
 class test_ui_ImageViewerDialog : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override { ASSERT_TRUE(m_dir.isValid()); }
 

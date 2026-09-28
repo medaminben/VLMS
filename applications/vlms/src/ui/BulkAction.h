@@ -31,5 +31,5 @@ struct BulkActionTexts {
 int runBulkAction(QWidget* parent,
                   const BulkActionTexts& texts,
                   const QList<BulkRow>& rows,
-                  const std::function<VLMS::Status(const BulkRow&)>& check,
-                  const std::function<VLMS::Status(const BulkRow&)>& act);
+                  const std::function<VLMS::Core::Status(const BulkRow&)>& check,
+                  const std::function<VLMS::Core::Status(const BulkRow&)>& act);

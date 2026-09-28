@@ -90,7 +90,7 @@ void clearDetailValueText(QWidget* widget);
     return value.empty() ? T("common.emDash") : qs(value);
 }
 
-[[nodiscard]] inline QString errorText(const Error& error)
+[[nodiscard]] inline QString errorText(const Core::Error& error)
 {
     if (error.key.empty()) {
         return T("error.sql");
@@ -101,7 +101,7 @@ void clearDetailValueText(QWidget* widget);
     return T(error.key);
 }
 
-void showRepoError(QWidget* parent, const Error& error);
+void showRepoError(QWidget* parent, const Core::Error& error);
 
 /**
  * Standard buttons -- Ok, Cancel, Yes, No, Close -- are labelled by Qt, not by

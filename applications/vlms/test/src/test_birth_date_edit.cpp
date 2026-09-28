@@ -18,6 +18,8 @@
 
 #include <algorithm>
 
+using namespace VLMS;
+
 namespace {
 
 void showWindow(QWidget& window)

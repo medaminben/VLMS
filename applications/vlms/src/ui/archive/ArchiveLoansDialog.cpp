@@ -19,7 +19,7 @@ namespace {
 
 constexpr int kHistoryLimit = 100000;
 
-QString statusLabel(const LoanRecord& loan)
+QString statusLabel(const VLMS::Repositories::LoanRecord& loan)
 {
     if (!loan.returnedAt.empty()) {
         return T("circulation.status.returned");
@@ -34,8 +34,8 @@ QString dashIfEmpty(const std::string& text)
 
 }  // namespace
 
-ArchiveLoansDialog::ArchiveLoansDialog(CirculationRepository& repository,
-                                       const LoanQuery& query,
+ArchiveLoansDialog::ArchiveLoansDialog(VLMS::Repositories::CirculationRepository& repository,
+                                       const VLMS::Repositories::LoanQuery& query,
                                        const QString& name,
                                        QWidget* parent)
     : QDialog(parent),
@@ -43,7 +43,7 @@ ArchiveLoansDialog::ArchiveLoansDialog(CirculationRepository& repository,
       m_query(query)
 {
     // History: an archived loan still happened, and a live one still counts.
-    m_query.archive = ArchiveScope::Any;
+    m_query.archive = VLMS::Repositories::ArchiveScope::Any;
     m_query.limit = kHistoryLimit;
     m_query.offset = 0;
     resize(960, 420);
@@ -107,7 +107,7 @@ void ArchiveLoansDialog::refresh()
     const auto& rows = loans.value();
     m_table->setRowCount(static_cast<int>(rows.size()));
     for (int row = 0; row < m_table->rowCount(); ++row) {
-        const LoanRecord& loan = rows.at(static_cast<std::size_t>(row));
+        const VLMS::Repositories::LoanRecord& loan = rows.at(static_cast<std::size_t>(row));
         auto* member = new QTableWidgetItem(qs(loan.memberName));
         member->setData(Qt::UserRole, QVariant::fromValue(loan.id));
         m_table->setItem(row, 0, member);

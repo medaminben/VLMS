@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 
 #include <QDialog>
 
@@ -15,7 +15,7 @@ class BookLoansDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    BookLoansDialog(CirculationRepository& repository,
+    BookLoansDialog(VLMS::Repositories::CirculationRepository& repository,
                     qint64 bookId,
                     const QString& bookTitle,
                     QWidget* parent = nullptr);
@@ -25,9 +25,9 @@ private:
     void retranslateUi();
     void refresh();
     void lendACopy();
-    QString loanStatusLabel(const LoanRecord& loan) const;
+    QString loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const;
 
-    CirculationRepository& m_repository;
+    VLMS::Repositories::CirculationRepository& m_repository;
     qint64 m_bookId = 0;
     QString m_bookTitle;
     QTableWidget* m_table = nullptr;

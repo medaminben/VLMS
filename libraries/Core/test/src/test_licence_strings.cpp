@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-using VLMS::Strings;
+using namespace VLMS;
 
 namespace {
 
@@ -45,7 +45,7 @@ TEST(test_core_LicenceStrings, EveryClauseIsWrittenInEveryLanguage)
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         for (const std::string& key : licenceKeys()) {
             SCOPED_TRACE(std::string(locale) + " " + key);
-            EXPECT_FALSE(Strings::rawValue(locale, key).empty());
+            EXPECT_FALSE(Core::Strings::rawValue(locale, key).empty());
         }
     }
 }
@@ -58,7 +58,7 @@ TEST(test_core_LicenceStrings, TheArabicIsNotTheEnglish)
 {
     for (const std::string& key : licenceKeys()) {
         SCOPED_TRACE(key);
-        EXPECT_NE(Strings::rawValue(kArabic, key), Strings::rawValue(kEnglish, key));
+        EXPECT_NE(Core::Strings::rawValue(kArabic, key), Core::Strings::rawValue(kEnglish, key));
     }
 }
 
@@ -75,9 +75,9 @@ TEST(test_core_LicenceStrings, TheLicenceNamesTheAuthorOnlyInTheContactBlock)
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         for (const std::string& key : bodyKeys) {
             SCOPED_TRACE(std::string(locale) + " " + key);
-            EXPECT_EQ(Strings::rawValue(locale, key).find("Ben Hassine"), std::string::npos);
+            EXPECT_EQ(Core::Strings::rawValue(locale, key).find("Ben Hassine"), std::string::npos);
         }
     }
-    EXPECT_NE(Strings::rawValue(kEnglish, "licence.contact.author").find("Ben Hassine"),
+    EXPECT_NE(Core::Strings::rawValue(kEnglish, "licence.contact.author").find("Ben Hassine"),
               std::string::npos);
 }

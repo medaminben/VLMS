@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 
 #include <QVector>
 #include <QWidget>
@@ -33,9 +33,9 @@ class ArchivePage final : public QWidget {
 public:
     enum class Type { Members, Books, Copies, Loans };
 
-    ArchivePage(MemberRepository& members,
-                CatalogRepository& catalog,
-                CirculationRepository& circulation,
+    ArchivePage(VLMS::Repositories::MemberRepository& members,
+                VLMS::Repositories::CatalogRepository& catalog,
+                VLMS::Repositories::CirculationRepository& circulation,
                 QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -79,7 +79,7 @@ private:
     /// a photo for members, a cover for titles and copies, both for loans.
     void renderImages();
     [[nodiscard]] qint64 selectedId() const;
-    [[nodiscard]] const BookCopyRecord* selectedCopy() const;
+    [[nodiscard]] const VLMS::Repositories::BookCopyRecord* selectedCopy() const;
     /// True when nothing holds the selected row any more: no loan names a
     /// member or a copy, no copy belongs to a title. Read from the row already
     /// on screen, so the Loans (or Copies) column always agrees with the button.
@@ -87,9 +87,9 @@ private:
     /// True when the highlighted member, title or copy has ever been lent.
     [[nodiscard]] bool selectedHasLoans() const;
 
-    MemberRepository& m_members;
-    CatalogRepository& m_catalog;
-    CirculationRepository& m_circulation;
+    VLMS::Repositories::MemberRepository& m_members;
+    VLMS::Repositories::CatalogRepository& m_catalog;
+    VLMS::Repositories::CirculationRepository& m_circulation;
     Type m_type = Type::Members;
 
     QListWidget* m_typeList = nullptr;
@@ -112,8 +112,8 @@ private:
     QWidget* m_detailsPanel = nullptr;
     QVector<QWidget*> m_detailWidgets;
 
-    std::vector<MemberRecord> m_memberRows;
-    std::vector<BookRecord> m_bookRows;
-    std::vector<BookCopyRecord> m_copyRows;
-    std::vector<LoanRecord> m_loanRows;
+    std::vector<VLMS::Repositories::MemberRecord> m_memberRows;
+    std::vector<VLMS::Repositories::BookRecord> m_bookRows;
+    std::vector<VLMS::Repositories::BookCopyRecord> m_copyRows;
+    std::vector<VLMS::Repositories::LoanRecord> m_loanRows;
 };

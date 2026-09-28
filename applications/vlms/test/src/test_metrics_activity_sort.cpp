@@ -5,8 +5,8 @@
 
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MetricsRepository.h>
-#include <VLMS/Core/MetricsTypes.h>
+#include <VLMS/Repositories/MetricsRepository.h>
+#include <VLMS/Repositories/MetricsTypes.h>
 
 #include <QHeaderView>
 #include <QTableWidget>
@@ -16,22 +16,21 @@
 
 #include <memory>
 
-using VLMS::Date;
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_MetricsActivitySort : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
 
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
         ASSERT_TRUE(rawSetRegisteredAt(*m_db, m_memberId, "2019-01-15"));
@@ -44,7 +43,7 @@ protected:
         ASSERT_EQ(m_copies.size(), 3u);
     }
 
-    bool borrowOn(const int copyIndex, const Date& borrowed)
+    bool borrowOn(const int copyIndex, const Core::Date& borrowed)
     {
         return rawInsertLoan(*m_db, m_memberId, m_copies.at(static_cast<std::size_t>(copyIndex)),
                              borrowed.toIso(), borrowed.addDays(14).toIso())
@@ -58,7 +57,7 @@ protected:
 
     static void expectPeriodMatches(const QTableWidget* table,
                                     const QString& label,
-                                    const MetricsPeriodCounts& expected)
+                                    const Repositories::MetricsPeriodCounts& expected)
     {
         for (int row = 0; row < table->rowCount(); ++row) {
             if (table->item(row, 0)->text() != label) {
@@ -73,19 +72,19 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copies;
 };
 
 TEST_F(test_ui_MetricsActivitySort, RefreshKeepsCountsOnSortedPeriodRows)
 {
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     ASSERT_TRUE(borrowOn(0, today));
     ASSERT_TRUE(borrowOn(1, today.addDays(-6)));
     ASSERT_TRUE(borrowOn(2, today.addDays(-6)));
 
-    const LibraryMetrics expected = VLMS_UNWRAP(m_metrics->fetchMetrics());
+    const Repositories::LibraryMetrics expected = VLMS_UNWRAP(m_metrics->fetchMetrics());
     ASSERT_GT(expected.thisWeek.checkouts, expected.today.checkouts);
 
     MetricsPage page(*m_metrics);

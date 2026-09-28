@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CatalogTypes.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogTypes.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 
 #include "ui/TableHeaderSort.h"
 
@@ -27,8 +27,8 @@ class CatalogPage final : public QWidget {
     Q_OBJECT
 
 public:
-    CatalogPage(CatalogRepository& repository,
-                CirculationRepository& circulation,
+    CatalogPage(VLMS::Repositories::CatalogRepository& repository,
+                VLMS::Repositories::CirculationRepository& circulation,
                 QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -55,16 +55,16 @@ private:
 
     void buildUi();
     void resetPagerAndRefresh();
-    BookQuery currentBookQuery() const;
+    VLMS::Repositories::BookQuery currentBookQuery() const;
     qint64 selectedBookId() const;
     void selectBookId(qint64 id);
-    void updateCoverPreview(const BookRecord& book);
+    void updateCoverPreview(const VLMS::Repositories::BookRecord& book);
     void renderCoverPreview();
     void clearBookDetails();
     void refreshSelectedBookPreview();
 
-    CatalogRepository& m_repository;
-    CirculationRepository& m_circulation;
+    VLMS::Repositories::CatalogRepository& m_repository;
+    VLMS::Repositories::CirculationRepository& m_circulation;
 
     QLineEdit* m_searchEdit = nullptr;
     QPushButton* m_addButton = nullptr;

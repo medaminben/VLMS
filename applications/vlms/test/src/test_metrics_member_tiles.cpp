@@ -4,7 +4,7 @@
 #include "ui/metrics/MetricsPage.h"
 
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 
 #include <QLabel>
 
@@ -12,18 +12,18 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_MetricsMemberTiles : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -33,7 +33,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
 };
 
 TEST_F(test_ui_MetricsMemberTiles, OnlyActiveAndNotActiveAreCounted)

@@ -31,8 +31,8 @@ QStringList codesOf(const FacetList* list)
 
 }  // namespace
 
-MemberFacetFilters::MemberFacetFilters(MemberRepository& repository,
-                                       const ArchiveScope valueScope,
+MemberFacetFilters::MemberFacetFilters(Repositories::MemberRepository& repository,
+                                       const Repositories::ArchiveScope valueScope,
                                        QWidget* parent)
     : QScrollArea(parent),
       m_repository(repository),
@@ -67,19 +67,19 @@ MemberFacetFilters::MemberFacetFilters(MemberRepository& repository,
 void MemberFacetFilters::refresh()
 {
     m_status->setEntries(T("members.allStatuses"),
-                         codedEntries(MemberRepository::statusCodes(),
-                                      Strings::memberStatusLabel));
+                         codedEntries(Repositories::MemberRepository::statusCodes(),
+                                      Core::Strings::memberStatusLabel));
     m_status->fitRows(m_status->count());
     m_sex->setEntries(T("members.allSexes"),
-                      codedEntries(MemberRepository::sexCodes(), Strings::memberSexLabel));
+                      codedEntries(Repositories::MemberRepository::sexCodes(), Core::Strings::memberSexLabel));
     m_sex->fitRows(m_sex->count());
     m_ageGroup->setEntries(T("members.allAgeGroups"),
-                           codedEntries(MemberRepository::ageGroupCodes(),
-                                        Strings::memberAgeGroupLabel));
+                           codedEntries(Repositories::MemberRepository::ageGroupCodes(),
+                                        Core::Strings::memberAgeGroupLabel));
     m_ageGroup->fitRows(m_ageGroup->count());
 
     const auto fillValues = [this](FacetList* list, const QString& allLabel,
-                                   const Result<std::vector<std::string>>& values) {
+                                   const Core::Result<std::vector<std::string>>& values) {
         if (!values) {
             showRepoError(this, values.error());
             return;
@@ -100,9 +100,9 @@ void MemberFacetFilters::refresh()
     fillValues(m_city, T("members.allCities"), m_repository.listCities(m_valueScope));
 }
 
-MemberFacets MemberFacetFilters::facets() const
+Repositories::MemberFacets MemberFacetFilters::facets() const
 {
-    MemberFacets facets;
+    Repositories::MemberFacets facets;
     facets.statuses = svl(codesOf(m_status));
     facets.sexes = svl(codesOf(m_sex));
     if (!m_loanYearSource) {

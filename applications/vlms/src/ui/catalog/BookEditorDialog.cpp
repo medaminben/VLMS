@@ -48,8 +48,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kSideColumnSpacing = 8;
 constexpr int kContentSpacing = 16;
 constexpr int kMinCoverHeight = 180;
@@ -125,7 +123,7 @@ void showCoverPlaceholder(QLabel* label, const QSize& size)
 
 }  // namespace
 
-BookEditorDialog::BookEditorDialog(CatalogRepository& repository, QWidget* parent)
+BookEditorDialog::BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
     : QDialog(parent),
       m_repository(repository) {
     buildUi();
@@ -134,8 +132,8 @@ BookEditorDialog::BookEditorDialog(CatalogRepository& repository, QWidget* paren
     retranslateUi();
 }
 
-BookEditorDialog::BookEditorDialog(CatalogRepository& repository,
-                                   const BookRecord& book,
+BookEditorDialog::BookEditorDialog(VLMS::Repositories::CatalogRepository& repository,
+                                   const VLMS::Repositories::BookRecord& book,
                                    QWidget* parent)
     : QDialog(parent),
       m_repository(repository),
@@ -375,7 +373,7 @@ void BookEditorDialog::buildUi() {
         // the cataloguer sees rather than discovers later in a list. Anything
         // the normaliser does not understand comes back unchanged.
         m_publicationDateEdit->setText(
-            qs(VLMS::DateText::normalizePublicationDate(ss(m_publicationDateEdit->text()))));
+            qs(VLMS::Core::DateText::normalizePublicationDate(ss(m_publicationDateEdit->text()))));
         accept();
     });
     connect(m_buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -467,7 +465,7 @@ void BookEditorDialog::populateCategories() {
         VLMS::showRepoError(this, categories.error());
         return;
     }
-    for (const CategoryRecord& category : categories.value()) {
+    for (const VLMS::Repositories::CategoryRecord& category : categories.value()) {
         const QString label = qs(category.label.empty() ? category.code : category.label);
         m_categoryCombo->addItem(QStringLiteral("%1 (%2)").arg(label, qs(category.code)),
                                  QVariant::fromValue(category.id));
@@ -650,7 +648,7 @@ void BookEditorDialog::populateOcrLanguages()
         const QString isoCode =
             QString::fromStdString(VLMS::Ocr::bookLanguageForTesseractCode(code));
         const QString label =
-            isoCode.isEmpty() ? tesseractCode : qs(Strings::bookLanguageLabel(ss(isoCode)));
+            isoCode.isEmpty() ? tesseractCode : qs(VLMS::Core::Strings::bookLanguageLabel(ss(isoCode)));
 
         QAction* action = menu->addAction(label);
         action->setCheckable(true);
@@ -708,7 +706,7 @@ void BookEditorDialog::updateOcrLanguageMenuState()
             const QString iso =
                 QString::fromStdString(VLMS::Ocr::bookLanguageForTesseractCode(
                     code.toStdString()));
-            labels.append(iso.isEmpty() ? code : qs(Strings::bookLanguageLabel(ss(iso))));
+            labels.append(iso.isEmpty() ? code : qs(VLMS::Core::Strings::bookLanguageLabel(ss(iso))));
         }
         m_ocrButton->setToolTip(
             T("ocr.readFromImageTip")
@@ -738,7 +736,7 @@ void BookEditorDialog::appendRecognizedText(const QString& text)
     }
 }
 
-void BookEditorDialog::loadBook(const BookRecord& book) {
+void BookEditorDialog::loadBook(const VLMS::Repositories::BookRecord& book) {
     m_titleEdit->setText(qs(book.title));
     m_authorEdit->setText(qs(book.authorName));
     m_publisherEdit->setText(qs(book.publisherName));
@@ -767,8 +765,8 @@ void BookEditorDialog::loadBook(const BookRecord& book) {
     }
 }
 
-BookInput BookEditorDialog::bookInput() const {
-    BookInput input;
+VLMS::Repositories::BookInput BookEditorDialog::bookInput() const {
+    VLMS::Repositories::BookInput input;
     input.title = ss(m_titleEdit->text());
     input.authorName = ss(m_authorEdit->text());
     input.publisherName = ss(m_publisherEdit->text());
@@ -787,11 +785,11 @@ BookInput BookEditorDialog::bookInput() const {
     return input;
 }
 
-std::vector<BookCopyInput> BookEditorDialog::copyInputs() const {
+std::vector<VLMS::Repositories::BookCopyInput> BookEditorDialog::copyInputs() const {
     return m_copies->copyInputs();
 }
 
-void BookEditorDialog::reserveCopyNumber(const BookCopyRecord& archivedCopy)
+void BookEditorDialog::reserveCopyNumber(const VLMS::Repositories::BookCopyRecord& archivedCopy)
 {
     m_copies->addReservedRow(qs(archivedCopy.source), qs(archivedCopy.localId),
                              qs(archivedCopy.globalCopyId));

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/ArchiveTypes.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/ArchiveTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QScrollArea>
 #include <QStringList>
@@ -27,19 +27,19 @@ class MemberFacetFilters final : public QScrollArea {
     Q_OBJECT
 
 public:
-    MemberFacetFilters(MemberRepository& repository,
-                       ArchiveScope valueScope,
+    MemberFacetFilters(Repositories::MemberRepository& repository,
+                       Repositories::ArchiveScope valueScope,
                        QWidget* parent = nullptr);
 
     /// Re-reads the labels and the year and city values; keeps the picks.
     void refresh();
-    [[nodiscard]] MemberFacets facets() const;
+    [[nodiscard]] Repositories::MemberFacets facets() const;
     /// Puts every list back on All, without emitting changed().
     void reset();
     /// Which members the year and city lists are read from on the next refresh.
-    void setValueScope(ArchiveScope scope) { m_valueScope = scope; }
+    void setValueScope(Repositories::ArchiveScope scope) { m_valueScope = scope; }
 
-    using YearSource = std::function<Result<std::vector<std::string>>()>;
+    using YearSource = std::function<Core::Result<std::vector<std::string>>()>;
     /// On a loan list the year is the year the loan was made, not the year
     /// the borrower registered. From then on the year list is read from
     /// `source`, and its picks come back from loanYears() instead of facets().
@@ -50,8 +50,8 @@ signals:
     void changed();
 
 private:
-    MemberRepository& m_repository;
-    ArchiveScope m_valueScope;
+    Repositories::MemberRepository& m_repository;
+    Repositories::ArchiveScope m_valueScope;
     YearSource m_loanYearSource;
     FacetList* m_status = nullptr;
     FacetList* m_sex = nullptr;

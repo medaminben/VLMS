@@ -3,9 +3,9 @@
 
 #include "ui/circulation/CirculationPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
 #include <QAbstractButton>
@@ -20,8 +20,8 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -77,17 +77,17 @@ void answerNextBoxYes()
 
 class test_ui_ArchiveCirculation : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_memberRepo =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         const std::int64_t member = seedMember(*m_db, uniqueMemberSeed(1));
         const std::int64_t returnedBook = seedBook(*m_db, uniqueBookSeed(1));
@@ -127,9 +127,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<MemberRepository> m_memberRepo;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<CirculationPage> m_page;
     QTableWidget* m_table = nullptr;
     QPushButton* m_delete = nullptr;

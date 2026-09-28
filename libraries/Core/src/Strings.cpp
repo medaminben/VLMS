@@ -1,13 +1,13 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
-#include "Text.h"
+#include <VLMS/Core/Text.h>
 
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 namespace {
 
@@ -1660,5 +1660,5 @@ std::string Strings::memberAgeGroupLabel(std::string_view code)
     return label != key ? label : trimmed;
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core
 

@@ -8,10 +8,10 @@
 #include "ui/archive/ArchivePage.h"
 #include "ui/archive/ReuseNumberFlow.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Core/Strings.h>
 
 #include <QAbstractButton>
@@ -31,9 +31,8 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -87,16 +86,16 @@ void answerNextBoxYes()
 
 class test_ui_ArchivePage : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_TRUE(m_members->archiveMember(m_memberId));
@@ -150,9 +149,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<ArchivePage> m_page;
     QListWidget* m_typeList = nullptr;
     QTableWidget* m_table = nullptr;
@@ -299,7 +298,7 @@ TEST(test_ui_ArchiveNavigation, TheHeaderHasAnArchiveButtonThatOpensTheArchive)
 {
     // Without an Application instance MainWindow builds placeholder pages,
     // which is enough to check the button and the page it opens.
-    Locale::setCode("en");
+    Core::Locale::setCode("en");
     MainWindow window;
     QPushButton* nav = nullptr;
     for (QPushButton* button : window.findChildren<QPushButton*>()) {
@@ -320,7 +319,7 @@ TEST(test_ui_ArchiveNavigation, TheHeaderHasAnArchiveButtonThatOpensTheArchive)
         }
     }
     EXPECT_TRUE(showsArchive);
-    Locale::setCode(Locale::kDefaultCode);
+    Core::Locale::setCode(Core::Locale::kDefaultCode);
 }
 
 TEST_F(test_ui_ArchivePage, EveryTypeStaysVisibleWhateverTypeIsPicked)
@@ -448,7 +447,7 @@ TEST_F(test_ui_ArchivePage, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
 
     QSignalSpy spy(m_page.get(), &ArchivePage::recordRestored);
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { m_restore->click(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Restore 2 members?"));
@@ -468,10 +467,10 @@ TEST_F(test_ui_ArchivePage, NothingTickedRestoresOnlyTheHighlightedMember)
     m_table->selectRow(rowOf(m_memberId));
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { m_restore->click(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("archive.restoreConfirm")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("archive.restoreConfirm")));
     EXPECT_TRUE(m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(m_memberId))
                     .isNull());
     EXPECT_FALSE(m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(second))
@@ -498,7 +497,7 @@ TEST_F(test_ui_ArchivePage, TwoTickedLoansArePurgedAndTheThirdStays)
     m_table->selectRow(rowOf(third));
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { m_purge->click(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM loans WHERE id = " + std::to_string(m_loanId)).toInt(),
@@ -513,7 +512,7 @@ TEST_F(test_ui_ArchivePage, ATickedBookWithCopiesIsRefusedAndALoanFreeCopyIsPurg
     tickId(m_table, m_bookId);
 
     const ModalOutcome blocked =
-        runAndAnswerModal([this]() { m_purge->click(); }, qs(Strings::t("common.ok")));
+        runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.ok")));
     ASSERT_TRUE(blocked.appeared);
     EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM books WHERE id = " + std::to_string(m_bookId)).toInt(),
               1);
@@ -521,7 +520,7 @@ TEST_F(test_ui_ArchivePage, ATickedBookWithCopiesIsRefusedAndALoanFreeCopyIsPurg
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
     tickId(m_table, m_numberedCopyId);
     const ModalOutcome purged =
-        runAndAnswerModal([this]() { m_purge->click(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.yes")));
     ASSERT_TRUE(purged.appeared);
     EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM book_copies WHERE id = "
                            + std::to_string(m_numberedCopyId))

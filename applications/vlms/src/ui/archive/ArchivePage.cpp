@@ -32,7 +32,6 @@
 using VLMS::T;
 using VLMS::qs;
 using VLMS::ss;
-using VLMS::Strings;
 
 namespace {
 
@@ -60,28 +59,28 @@ std::vector<Column> columnsFor(const ArchivePage::Type type)
 {
     switch (type) {
     case ArchivePage::Type::Members:
-        return {{"archive.col.number", MemberSort::kNumber},
-                {"archive.col.name", MemberSort::kName},
-                {"archive.col.city", MemberSort::kCity},
-                {"archive.col.status", MemberSort::kStatus},
-                {"archive.col.loans", MemberSort::kAllLoans},
-                {"archive.col.archivedAt", MemberSort::kArchivedAt}};
+        return {{"archive.col.number", VLMS::Repositories::MemberSort::kNumber},
+                {"archive.col.name", VLMS::Repositories::MemberSort::kName},
+                {"archive.col.city", VLMS::Repositories::MemberSort::kCity},
+                {"archive.col.status", VLMS::Repositories::MemberSort::kStatus},
+                {"archive.col.loans", VLMS::Repositories::MemberSort::kAllLoans},
+                {"archive.col.archivedAt", VLMS::Repositories::MemberSort::kArchivedAt}};
     case ArchivePage::Type::Books:
-        return {{"archive.col.title", BookSort::kTitle},
-                {"archive.col.author", BookSort::kAuthor},
-                {"archive.col.copies", BookSort::kCopies},
-                {"archive.col.archivedAt", BookSort::kArchivedAt}};
+        return {{"archive.col.title", VLMS::Repositories::BookSort::kTitle},
+                {"archive.col.author", VLMS::Repositories::BookSort::kAuthor},
+                {"archive.col.copies", VLMS::Repositories::BookSort::kCopies},
+                {"archive.col.archivedAt", VLMS::Repositories::BookSort::kArchivedAt}};
     case ArchivePage::Type::Copies:
-        return {{"archive.col.localId", CopySort::kLocalId},
-                {"archive.col.source", CopySort::kSource},
-                {"archive.col.title", CopySort::kTitle},
-                {"archive.col.loans", CopySort::kLoans},
-                {"archive.col.archivedAt", CopySort::kArchivedAt}};
+        return {{"archive.col.localId", VLMS::Repositories::CopySort::kLocalId},
+                {"archive.col.source", VLMS::Repositories::CopySort::kSource},
+                {"archive.col.title", VLMS::Repositories::CopySort::kTitle},
+                {"archive.col.loans", VLMS::Repositories::CopySort::kLoans},
+                {"archive.col.archivedAt", VLMS::Repositories::CopySort::kArchivedAt}};
     case ArchivePage::Type::Loans:
-        return {{"archive.col.member", LoanSort::kMember},
-                {"archive.col.copy", LoanSort::kTitle},
-                {"archive.col.returnedAt", LoanSort::kReturned},
-                {"archive.col.archivedAt", LoanSort::kArchivedAt}};
+        return {{"archive.col.member", VLMS::Repositories::LoanSort::kMember},
+                {"archive.col.copy", VLMS::Repositories::LoanSort::kTitle},
+                {"archive.col.returnedAt", VLMS::Repositories::LoanSort::kReturned},
+                {"archive.col.archivedAt", VLMS::Repositories::LoanSort::kArchivedAt}};
     }
     return {};
 }
@@ -98,16 +97,16 @@ QString sourceLabel(const std::string& source)
     return T(source == "arabic" ? "book.copy.source.arabic" : "book.copy.source.foreign");
 }
 
-QString memberName(const MemberRecord& member)
+QString memberName(const VLMS::Repositories::MemberRecord& member)
 {
     return qs(member.firstName + " " + member.lastName);
 }
 
 }  // namespace
 
-ArchivePage::ArchivePage(MemberRepository& members,
-                         CatalogRepository& catalog,
-                         CirculationRepository& circulation,
+ArchivePage::ArchivePage(VLMS::Repositories::MemberRepository& members,
+                         VLMS::Repositories::CatalogRepository& catalog,
+                         VLMS::Repositories::CirculationRepository& circulation,
                          QWidget* parent)
     : QWidget(parent),
       m_members(members),
@@ -152,12 +151,12 @@ void ArchivePage::buildUi()
     // Members and loans take the Members page's filters, titles and copies the
     // Catalogue's; applyFilters shows the set the current type uses.
     m_memberFilters = new VLMS::MemberFacetFilters(
-        m_members, ArchiveScope::Archived, frame->filterColumn());
+        m_members, VLMS::Repositories::ArchiveScope::Archived, frame->filterColumn());
     connect(m_memberFilters, &VLMS::MemberFacetFilters::changed,
             this, &ArchivePage::onFacetsChanged);
     frame->addFilter(m_memberFilters, 1);
     m_bookFilters = new VLMS::BookFacetFilters(
-        m_catalog, ArchiveScope::Archived, frame->filterColumn());
+        m_catalog, VLMS::Repositories::ArchiveScope::Archived, frame->filterColumn());
     connect(m_bookFilters, &VLMS::BookFacetFilters::changed,
             this, &ArchivePage::onFacetsChanged);
     frame->addFilter(m_bookFilters, 1);
@@ -217,16 +216,16 @@ void ArchivePage::applyFilters()
     m_bookFilters->setVisible(!memberType);
     // A loan's borrower can be live or archived, and an archived copy can
     // belong to a live title, so those two read their values from every row.
-    m_memberFilters->setValueScope(m_type == Type::Loans ? ArchiveScope::Any
-                                                         : ArchiveScope::Archived);
+    m_memberFilters->setValueScope(m_type == Type::Loans ? VLMS::Repositories::ArchiveScope::Any
+                                                         : VLMS::Repositories::ArchiveScope::Archived);
     // For a loan the year is the year it was made, not its borrower's.
     if (m_type == Type::Loans) {
         m_memberFilters->useLoanYears(
-            [this]() { return m_circulation.listLoanYears(ArchiveScope::Archived); });
+            [this]() { return m_circulation.listLoanYears(VLMS::Repositories::ArchiveScope::Archived); });
     } else {
         m_memberFilters->useLoanYears({});
     }
-    m_bookFilters->setScope(m_type == Type::Copies ? ArchiveScope::Any : ArchiveScope::Archived);
+    m_bookFilters->setScope(m_type == Type::Copies ? VLMS::Repositories::ArchiveScope::Any : VLMS::Repositories::ArchiveScope::Archived);
     if (memberType) {
         m_memberFilters->refresh();
     } else {
@@ -359,17 +358,17 @@ bool ArchivePage::fillRows()
     const std::string sortColumn = m_sort->isActive() ? ss(m_sort->columnKey()) : std::string();
     const bool ascending = m_sort->ascending();
 
-    const auto fail = [this](const VLMS::Error& error) {
+    const auto fail = [this](const VLMS::Core::Error& error) {
         VLMS::showRepoError(this, error);
         return false;
     };
 
     switch (m_type) {
     case Type::Members: {
-        MemberQuery query;
-        query.archive = ArchiveScope::Archived;
+        VLMS::Repositories::MemberQuery query;
+        query.archive = VLMS::Repositories::ArchiveScope::Archived;
         query.search = search;
-        const MemberFacets facets = m_memberFilters->facets();
+        const VLMS::Repositories::MemberFacets facets = m_memberFilters->facets();
         query.statuses = facets.statuses;
         query.sexes = facets.sexes;
         query.inscriptionYears = facets.inscriptionYears;
@@ -391,12 +390,12 @@ bool ArchivePage::fillRows()
         m_memberRows = rows.value();
         m_table->setRowCount(static_cast<int>(m_memberRows.size()));
         for (int row = 0; row < m_table->rowCount(); ++row) {
-            const MemberRecord& member = m_memberRows.at(static_cast<std::size_t>(row));
+            const VLMS::Repositories::MemberRecord& member = m_memberRows.at(static_cast<std::size_t>(row));
             m_table->setItem(row, 0, idItem(qs(member.membershipNumber), member.id));
             m_table->setItem(row, 1, new QTableWidgetItem(memberName(member)));
             m_table->setItem(row, 2, new QTableWidgetItem(VLMS::dashIfEmpty(member.city)));
             m_table->setItem(row, 3,
-                             new QTableWidgetItem(qs(Strings::memberStatusLabel(member.status))));
+                             new QTableWidgetItem(qs(VLMS::Core::Strings::memberStatusLabel(member.status))));
             m_table->setItem(row, 4, new QTableWidgetItem(QString::number(member.loanCount)));
             m_table->setItem(row, 5, new QTableWidgetItem(qs(member.archivedAt)));
         }
@@ -404,8 +403,8 @@ bool ArchivePage::fillRows()
         return true;
     }
     case Type::Books: {
-        BookQuery query;
-        query.archive = ArchiveScope::Archived;
+        VLMS::Repositories::BookQuery query;
+        query.archive = VLMS::Repositories::ArchiveScope::Archived;
         query.search = search;
         query.languages = VLMS::svl(m_bookFilters->languages());
         query.categoryCodes = VLMS::svl(m_bookFilters->categoryCodes());
@@ -426,7 +425,7 @@ bool ArchivePage::fillRows()
         m_bookRows = rows.value();
         m_table->setRowCount(static_cast<int>(m_bookRows.size()));
         for (int row = 0; row < m_table->rowCount(); ++row) {
-            const BookRecord& book = m_bookRows.at(static_cast<std::size_t>(row));
+            const VLMS::Repositories::BookRecord& book = m_bookRows.at(static_cast<std::size_t>(row));
             m_table->setItem(row, 0, idItem(qs(book.title), book.id));
             m_table->setItem(row, 1, new QTableWidgetItem(VLMS::dashIfEmpty(book.authorName)));
             m_table->setItem(row, 2, new QTableWidgetItem(QString::number(book.totalCopies)));
@@ -436,8 +435,8 @@ bool ArchivePage::fillRows()
         return true;
     }
     case Type::Copies: {
-        CopyQuery query;
-        query.archive = ArchiveScope::Archived;
+        VLMS::Repositories::CopyQuery query;
+        query.archive = VLMS::Repositories::ArchiveScope::Archived;
         query.search = search;
         query.languages = VLMS::svl(m_bookFilters->languages());
         query.categoryCodes = VLMS::svl(m_bookFilters->categoryCodes());
@@ -458,7 +457,7 @@ bool ArchivePage::fillRows()
         m_copyRows = rows.value();
         m_table->setRowCount(static_cast<int>(m_copyRows.size()));
         for (int row = 0; row < m_table->rowCount(); ++row) {
-            const BookCopyRecord& copy = m_copyRows.at(static_cast<std::size_t>(row));
+            const VLMS::Repositories::BookCopyRecord& copy = m_copyRows.at(static_cast<std::size_t>(row));
             m_table->setItem(row, 0, idItem(VLMS::dashIfEmpty(copy.localId), copy.id));
             m_table->setItem(row, 1, new QTableWidgetItem(sourceLabel(copy.source)));
             m_table->setItem(row, 2, new QTableWidgetItem(qs(copy.bookTitle)));
@@ -469,8 +468,8 @@ bool ArchivePage::fillRows()
         return true;
     }
     case Type::Loans: {
-        LoanQuery query;
-        query.archive = ArchiveScope::Archived;
+        VLMS::Repositories::LoanQuery query;
+        query.archive = VLMS::Repositories::ArchiveScope::Archived;
         query.search = search;
         query.member = m_memberFilters->facets();
         query.loanYears = VLMS::svl(m_memberFilters->loanYears());
@@ -490,7 +489,7 @@ bool ArchivePage::fillRows()
         m_loanRows = rows.value();
         m_table->setRowCount(static_cast<int>(m_loanRows.size()));
         for (int row = 0; row < m_table->rowCount(); ++row) {
-            const LoanRecord& loan = m_loanRows.at(static_cast<std::size_t>(row));
+            const VLMS::Repositories::LoanRecord& loan = m_loanRows.at(static_cast<std::size_t>(row));
             m_table->setItem(row, 0, idItem(qs(loan.memberName), loan.id));
             m_table->setItem(row, 1,
                              new QTableWidgetItem(qs(loan.copyCode) + QStringLiteral(" / ")
@@ -515,13 +514,13 @@ qint64 ArchivePage::selectedId() const
     return first == nullptr ? 0 : first->data(Qt::UserRole).toLongLong();
 }
 
-const BookCopyRecord* ArchivePage::selectedCopy() const
+const VLMS::Repositories::BookCopyRecord* ArchivePage::selectedCopy() const
 {
     if (m_type != Type::Copies) {
         return nullptr;
     }
     const qint64 id = selectedId();
-    for (const BookCopyRecord& copy : m_copyRows) {
+    for (const VLMS::Repositories::BookCopyRecord& copy : m_copyRows) {
         if (copy.id == id) {
             return &copy;
         }
@@ -537,21 +536,21 @@ bool ArchivePage::selectedMayBePurged() const
     }
     switch (m_type) {
     case Type::Members:
-        for (const MemberRecord& member : m_memberRows) {
+        for (const VLMS::Repositories::MemberRecord& member : m_memberRows) {
             if (member.id == id) {
                 return member.loanCount == 0;
             }
         }
         return false;
     case Type::Books:
-        for (const BookRecord& book : m_bookRows) {
+        for (const VLMS::Repositories::BookRecord& book : m_bookRows) {
             if (book.id == id) {
                 return book.totalCopies == 0;
             }
         }
         return false;
     case Type::Copies: {
-        const BookCopyRecord* copy = selectedCopy();
+        const VLMS::Repositories::BookCopyRecord* copy = selectedCopy();
         return copy != nullptr && copy->loanCount == 0;
     }
     case Type::Loans:
@@ -568,21 +567,21 @@ bool ArchivePage::selectedHasLoans() const
     }
     switch (m_type) {
     case Type::Members:
-        for (const MemberRecord& member : m_memberRows) {
+        for (const VLMS::Repositories::MemberRecord& member : m_memberRows) {
             if (member.id == id) {
                 return member.loanCount > 0;
             }
         }
         return false;
     case Type::Books: {
-        LoanQuery query;
+        VLMS::Repositories::LoanQuery query;
         query.bookId = id;
-        query.archive = ArchiveScope::Any;
+        query.archive = VLMS::Repositories::ArchiveScope::Any;
         const auto count = m_circulation.countLoans(query);
         return count && count.value() > 0;
     }
     case Type::Copies: {
-        const BookCopyRecord* copy = selectedCopy();
+        const VLMS::Repositories::BookCopyRecord* copy = selectedCopy();
         return copy != nullptr && copy->loanCount > 0;
     }
     case Type::Loans:
@@ -597,12 +596,12 @@ void ArchivePage::showLoanHistory()
     if (id <= 0) {
         return;
     }
-    LoanQuery query;
+    VLMS::Repositories::LoanQuery query;
     QString name;
     switch (m_type) {
     case Type::Members:
         query.memberId = id;
-        for (const MemberRecord& member : m_memberRows) {
+        for (const VLMS::Repositories::MemberRecord& member : m_memberRows) {
             if (member.id == id) {
                 name = memberName(member);
             }
@@ -610,7 +609,7 @@ void ArchivePage::showLoanHistory()
         break;
     case Type::Books:
         query.bookId = id;
-        for (const BookRecord& book : m_bookRows) {
+        for (const VLMS::Repositories::BookRecord& book : m_bookRows) {
             if (book.id == id) {
                 name = qs(book.title);
             }
@@ -618,7 +617,7 @@ void ArchivePage::showLoanHistory()
         break;
     case Type::Copies:
         query.copyId = id;
-        if (const BookCopyRecord* copy = selectedCopy()) {
+        if (const VLMS::Repositories::BookCopyRecord* copy = selectedCopy()) {
             name = VLMS::dashIfEmpty(copy->localId) + QStringLiteral(" / ")
                 + qs(copy->bookTitle);
         }
@@ -639,7 +638,7 @@ void ArchivePage::onSelectionChanged()
     m_loansButton->setVisible(m_type != Type::Loans);
     m_loansButton->setEnabled(selectedHasLoans());
     m_reuseButton->setVisible(m_type == Type::Copies);
-    const BookCopyRecord* copy = selectedCopy();
+    const VLMS::Repositories::BookCopyRecord* copy = selectedCopy();
     m_reuseButton->setEnabled(copy != nullptr && !copy->localId.empty());
     m_purgeButton->setEnabled(selectedMayBePurged() || anyTicked);
     showDetails(id);
@@ -656,19 +655,19 @@ void ArchivePage::showDetails(const qint64 id)
     }
     switch (m_type) {
     case Type::Members:
-        for (const MemberRecord& member : m_memberRows) {
+        for (const VLMS::Repositories::MemberRecord& member : m_memberRows) {
             if (member.id == id) {
                 m_photoPath = qs(m_members.resolveImagePath(member.photoPath));
                 addDetail("archive.col.number", qs(member.membershipNumber));
                 addDetail("archive.col.name", memberName(member));
                 addDetail("archive.col.city", VLMS::dashIfEmpty(member.city));
-                addDetail("archive.col.status", qs(Strings::memberStatusLabel(member.status)));
+                addDetail("archive.col.status", qs(VLMS::Core::Strings::memberStatusLabel(member.status)));
                 addDetail("archive.col.archivedAt", qs(member.archivedAt));
             }
         }
         break;
     case Type::Books:
-        for (const BookRecord& book : m_bookRows) {
+        for (const VLMS::Repositories::BookRecord& book : m_bookRows) {
             if (book.id == id) {
                 m_coverPath = qs(m_catalog.resolveCoverPath(book.coverImagePath));
                 addDetail("archive.col.title", qs(book.title));
@@ -679,7 +678,7 @@ void ArchivePage::showDetails(const qint64 id)
         }
         break;
     case Type::Copies:
-        for (const BookCopyRecord& copy : m_copyRows) {
+        for (const VLMS::Repositories::BookCopyRecord& copy : m_copyRows) {
             if (copy.id == id) {
                 m_coverPath = qs(m_catalog.resolveCoverPath(copy.coverImagePath));
                 addDetail("archive.col.localId", VLMS::dashIfEmpty(copy.localId));
@@ -691,7 +690,7 @@ void ArchivePage::showDetails(const qint64 id)
         }
         break;
     case Type::Loans:
-        for (const LoanRecord& loan : m_loanRows) {
+        for (const VLMS::Repositories::LoanRecord& loan : m_loanRows) {
             if (loan.id == id) {
                 m_coverPath = qs(m_catalog.resolveCoverPath(loan.coverImagePath));
                 m_photoPath = qs(m_members.resolveImagePath(loan.memberPhotoPath));
@@ -844,7 +843,7 @@ void ArchivePage::restoreSelected()
         texts.noun = T(bulkNounKey(m_type));
         const int done = runBulkAction(
             this, texts, tickedArchiveRows(m_checks, m_table, m_type),
-            [](const BulkRow&) { return VLMS::Status::ok(); },
+            [](const BulkRow&) { return VLMS::Core::Status::ok(); },
             [this](const BulkRow& bulk) {
                 switch (m_type) {
                 case Type::Members:
@@ -856,7 +855,7 @@ void ArchivePage::restoreSelected()
                 case Type::Loans:
                     return m_circulation.restoreLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         if (done > 0) {
             refreshRows();
@@ -872,7 +871,7 @@ void ArchivePage::restoreSelected()
     if (!VLMS::askYesNo(this, T("archive.restore"), T("archive.restoreConfirm"))) {
         return;
     }
-    const auto restored = [&]() -> VLMS::Status {
+    const auto restored = [&]() -> VLMS::Core::Status {
         switch (m_type) {
         case Type::Members:
             return m_members.restoreMember(id);
@@ -883,7 +882,7 @@ void ArchivePage::restoreSelected()
         case Type::Loans:
             return m_circulation.restoreLoan(id);
         }
-        return VLMS::Status::ok();
+        return VLMS::Core::Status::ok();
     }();
     if (!restored) {
         VLMS::showRepoError(this, restored.error());
@@ -895,13 +894,13 @@ void ArchivePage::restoreSelected()
 
 void ArchivePage::reuseSelected()
 {
-    const BookCopyRecord* selected = selectedCopy();
+    const VLMS::Repositories::BookCopyRecord* selected = selectedCopy();
     if (selected == nullptr || selected->localId.empty()) {
         return;
     }
     // Copied: the flow's save refreshes nothing here, but the next refresh
     // would free m_copyRows under a pointer into it.
-    const BookCopyRecord copy = *selected;
+    const VLMS::Repositories::BookCopyRecord copy = *selected;
     emit reuseNumberRequested(copy.id);
     if (VLMS::runReuseNumberFlow(this, m_catalog, copy)) {
         refreshRows();
@@ -930,7 +929,7 @@ void ArchivePage::purgeSelected()
                 case Type::Loans:
                     return m_circulation.canPurgeLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             },
             [this](const BulkRow& bulk) {
                 switch (m_type) {
@@ -943,7 +942,7 @@ void ArchivePage::purgeSelected()
                 case Type::Loans:
                     return m_circulation.purgeLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         if (done > 0) {
             refreshRows();
@@ -974,7 +973,7 @@ void ArchivePage::purgeSelected()
         return;
     }
 
-    const auto removed = [&]() -> VLMS::Status {
+    const auto removed = [&]() -> VLMS::Core::Status {
         switch (m_type) {
         case Type::Members:
             return m_members.purgeMember(id);
@@ -985,7 +984,7 @@ void ArchivePage::purgeSelected()
         case Type::Loans:
             return m_circulation.purgeLoan(id);
         }
-        return VLMS::Status::ok();
+        return VLMS::Core::Status::ok();
     }();
     if (!removed) {
         // The button is disabled when the gate is shut, so this is a race or a

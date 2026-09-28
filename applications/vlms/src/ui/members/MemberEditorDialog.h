@@ -1,7 +1,7 @@
 #pragma once
 
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QDialog>
 #include <QList>
@@ -25,8 +25,8 @@ class MemberEditorDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    MemberEditorDialog(MemberRepository& repository, QWidget* parent = nullptr);
-    MemberEditorDialog(MemberRepository& repository, const MemberRecord& member, QWidget* parent = nullptr);
+    MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, QWidget* parent = nullptr);
+    MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, const VLMS::Repositories::MemberRecord& member, QWidget* parent = nullptr);
 
     /// The first rule the current field values break: the string-table key of
     /// the message to show, and the control to put the cursor back into. Both
@@ -41,7 +41,7 @@ public:
     };
     [[nodiscard]] ValidationFailure firstValidationFailure() const;
 
-    [[nodiscard]] MemberInput memberInput() const;
+    [[nodiscard]] VLMS::Repositories::MemberInput memberInput() const;
     [[nodiscard]] QString photoSourcePath() const { return m_photoSourcePath; }
     [[nodiscard]] QString idImageSourcePath() const { return m_idImageSourcePath; }
     [[nodiscard]] bool photoChanged() const { return m_photoChanged; }
@@ -83,7 +83,7 @@ private:
     void growToLayoutMinimum();
     void populateStatuses();
     void populateSexes();
-    void loadMember(const MemberRecord& member);
+    void loadMember(const VLMS::Repositories::MemberRecord& member);
     void updateActiveUntil();
     void choosePhotoImage();
     void chooseIdImage();
@@ -101,7 +101,7 @@ private:
     void refreshIdImagePreviewPixmap();
     void syncSideGeometry();
 
-    MemberRepository& m_repository;
+    VLMS::Repositories::MemberRepository& m_repository;
     bool m_isEdit = false;
     qint64 m_memberId = 0;
     QString m_photoSourcePath;

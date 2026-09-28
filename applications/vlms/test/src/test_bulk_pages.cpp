@@ -5,9 +5,9 @@
 
 #include "ui/circulation/CirculationPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
@@ -17,9 +17,8 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using VLMS::Strings;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -44,17 +43,17 @@ bool loanArchived(TestDatabase& db, std::int64_t loanId)
 
 class test_ui_BulkPages : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_memberRepo =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -88,12 +87,12 @@ protected:
         FAIL() << "loan " << loanId << " is not on the page";
     }
 
-    void clickDelete() { clickButtonWithText(m_page.get(), qs(Strings::t("circulation.delete"))); }
+    void clickDelete() { clickButtonWithText(m_page.get(), qs(Core::Strings::t("circulation.delete"))); }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<MemberRepository> m_memberRepo;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<CirculationPage> m_page;
     QTableWidget* m_table = nullptr;
 };
@@ -108,7 +107,7 @@ TEST_F(test_ui_BulkPages, TwoTickedReturnedLoansAreArchivedAndTheThirdStays)
     tickLoan(m_table, second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 loans?"));
@@ -124,10 +123,10 @@ TEST_F(test_ui_BulkPages, NothingTickedArchivesOnlyTheHighlightedLoan)
     openAndSelect(highlighted);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("circulation.archiveLoan")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_TRUE(loanArchived(*m_db, highlighted));
     EXPECT_FALSE(loanArchived(*m_db, bystander));
 }
@@ -144,10 +143,10 @@ TEST_F(test_ui_BulkPages, ATickedOpenLoanStaysWhileTheReturnedOneIsArchived)
     tickLoan(m_table, returned);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Strings::t("circulation.archiveLoan")));
+    EXPECT_NE(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_FALSE(loanArchived(*m_db, open));
     EXPECT_TRUE(loanArchived(*m_db, returned));
 }

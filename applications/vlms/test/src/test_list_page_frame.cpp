@@ -10,6 +10,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 TEST(test_ui_ListPageFrame, ListModeExposesControllerModelAndViewer)
 {
     VLMS::ListPageFrame frame;

@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <memory>
 
+using namespace VLMS;
+
 class test_ui_LocalNumberDelegate : public ::testing::Test {
 protected:
     void SetUp() override

@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS::Test {
+namespace Test {
 
 /// True when the process local calendar date differs from UTC today.
 [[nodiscard]] bool localDateDiffersFromUtcDate();
@@ -18,7 +18,7 @@ namespace VLMS::Test {
 [[nodiscard]] std::string timeZoneDescription();
 
 /// UTC calendar date (system_clock), for timezone assertions.
-[[nodiscard]] Date utcToday();
+[[nodiscard]] VLMS::Core::Date utcToday();
 
 /**
  * Sets or restores an environment variable for the lifetime of the object.
@@ -39,7 +39,7 @@ private:
 };
 
 template<typename T>
-[[nodiscard]] T unwrapResult(const Result<T>& result, const char* file, int line)
+[[nodiscard]] T unwrapResult(const VLMS::Core::Result<T>& result, const char* file, int line)
 {
     if (!result) {
         ADD_FAILURE_AT(file, line) << (result.error().key.empty() ? "Result failed"
@@ -50,6 +50,6 @@ template<typename T>
 }
 
 /// Unwrap a repository Result in tests. Fails the test when the call failed.
-#define VLMS_UNWRAP(result) (::VLMS::Test::unwrapResult((result), __FILE__, __LINE__))
+#define VLMS_UNWRAP(result) (::Test::unwrapResult((result), __FILE__, __LINE__))
 
-}  // namespace VLMS::Test
+}  // namespace Test

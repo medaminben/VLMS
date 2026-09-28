@@ -6,9 +6,9 @@
 #include "ui/catalog/CatalogPage.h"
 #include "ui/circulation/CirculationPage.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
 #include <QApplication>
@@ -20,10 +20,10 @@
 
 #include <cstdint>
 
-using VLMS::Locale;
 using VLMS::Theme;
 using VLMS::ThemeMode;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 
@@ -54,7 +54,7 @@ protected:
     void SetUp() override
     {
         m_original = Theme::mode();
-        Locale::setCode("ar");
+        Core::Locale::setCode("ar");
         qApp->setLayoutDirection(Qt::RightToLeft);
         applyMode(ThemeMode::Light);
         ASSERT_TRUE(m_db.isValid()) << m_db.lastError();
@@ -67,14 +67,14 @@ protected:
     {
         applyMode(m_original);
         qApp->setLayoutDirection(Qt::LeftToRight);
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
     }
 
     ThemeMode m_original = ThemeMode::Light;
     TestDatabase m_db;
-    CatalogRepository m_catalog{m_db.session(), m_db.resourcesDirectory()};
-    MemberRepository m_memberRepo{m_db.session(), m_db.resourcesDirectory()};
-    CirculationRepository m_circulation{m_db.session()};
+    Repositories::CatalogRepository m_catalog{m_db.session(), m_db.resourcesDirectory()};
+    Repositories::MemberRepository m_memberRepo{m_db.session(), m_db.resourcesDirectory()};
+    Repositories::CirculationRepository m_circulation{m_db.session()};
 };
 
 }  // namespace
