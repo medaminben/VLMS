@@ -109,7 +109,7 @@ std::string Connection::databasePath() const
 SqliteSession& Connection::session() const
 {
     if (m_session == nullptr) {
-        std::fprintf(stderr, "Connection::session() called before a successful open()\n");
+        std::fprintf(stderr, "Database::session() called before a successful open()\n");
         std::abort();
     }
     return *m_session;
