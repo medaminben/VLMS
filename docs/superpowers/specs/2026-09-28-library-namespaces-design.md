@@ -12,9 +12,11 @@ After the split, each library has its own include folder, but the code does
 not say which library a name comes from:
 
 - Core and Database declare everything in flat `VLMS::`.
-- Repositories declares its classes in `VLMS::`, but its record and query
-  types (`BookRecord`, `LoanQuery`, `ArchiveScope`, …) and its constant
-  groups (`BookSort`, `MemberStatus`, …) are global.
+- The `Database` class, the repository classes, the internal `*Store`
+  classes, the record and query types (`BookRecord`, `LoanQuery`,
+  `ArchiveScope`, …) and the constant groups (`BookSort`, `MemberStatus`, …)
+  are global. Only the Repositories' SQL helpers and `LoanPolicy` sit in
+  `VLMS::`.
 - Only Ocr has its own namespace, `VLMS::Ocr`.
 
 After this change every library follows one template: the namespace mirrors
@@ -45,14 +47,14 @@ library namespace.
 |---|---|---|
 | Core public: `Clock`, `ScopedClock`, `Date`, `DateTime`, `Locale`, `Paths`, `Result`, `Status`, `Error`, `ErrorKind`, `Strings`, the free functions in `Text.h` | `VLMS::` | `VLMS::Core::` |
 | `DateText` | `VLMS::DateText` | `VLMS::Core::DateText` |
-| `Database` class | `VLMS::Database` in `<VLMS/Database/Database.h>` | `VLMS::Database::Connection` in `<VLMS/Database/Connection.h>` |
+| `Database` class | global, in `<VLMS/Database/Database.h>` | `VLMS::Database::Connection` in `<VLMS/Database/Connection.h>` |
 | `SqliteSession`, `SqliteStatement` | `VLMS::` | `VLMS::Database::` |
 | `SqlText` | `VLMS::SqlText` | `VLMS::Database::SqlText` |
-| `CatalogRepository`, `CirculationRepository`, `MemberRepository`, `MetricsRepository` | `VLMS::` | `VLMS::Repositories::` |
+| `CatalogRepository`, `CirculationRepository`, `MemberRepository`, `MetricsRepository` | global | `VLMS::Repositories::` |
 | Record and query types in `*Types.h` | global | `VLMS::Repositories::` |
 | Constant groups (`BookSort`, `CopySort`, `LoanFilter`, `LoanSort`, `MemberStatus`, `MemberSex`, `MemberAgeGroup`, `MemberSort`) | global | `VLMS::Repositories::<Group>` |
 | `LoanPolicy` | `VLMS::LoanPolicy` | `VLMS::Repositories::LoanPolicy` |
-| Internals in `Repositories/src` (`BookSql`, `LoanSql`, `MemberSql`, `RepoSql`, `NamedEntityStore`, `CategoryStore`, `BookCopyStore`) | `VLMS::` | `VLMS::Repositories::`, names unchanged |
+| Internals in `Repositories/src`: `BookSql`, `LoanSql`, `MemberSql`, `RepoSql` (in `VLMS::`) and `NamedEntityStore`, `CategoryStore`, `BookCopyStore` (global) | as listed | `VLMS::Repositories::`, names unchanged |
 | Ocr (`VLMS::Ocr`, `VLMS::Ocr::Detail`) | | unchanged |
 | App UI classes (`Theme`, `ListPageFrame`, dialogs, …) | `VLMS::` | unchanged |
 | Test helpers (`TestEnv`, `TestDatabase`, `TestSeed`, `SqlValue`) | `VLMS::Test` | `Test::`, outside `VLMS` |
@@ -79,14 +81,25 @@ source, so they do not live in the library namespaces. They move from
   `BookRecord`, `BookSql::…`.
 - **Other libraries:** qualified by library name, without aliases:
   `Core::Status`, `Core::Clock::today()`, `Database::SqliteSession`,
-  `Repositories::BookRecord`. This works unchanged from inside any
-  `VLMS::…` namespace, including the app, because the app's code sits in
-  `namespace VLMS`.
-- **Outside any `VLMS` namespace** (for example `main.cpp`, file-scope code):
-  `VLMS::Core::…`.
-- **Tests:** each test `.cpp` may add `using namespace VLMS;` and then spells
-  names as above. `using namespace VLMS::Test;` becomes
-  `using namespace Test;`.
+  `Repositories::BookRecord`. This works from inside any `VLMS::…`
+  namespace: the libraries, and the app's helper classes that sit in
+  `namespace VLMS` (`QtBridge.h`, `Theme`, `ListPageFrame`, `TablePager`, …).
+- **Outside any `VLMS` namespace:** `VLMS::Core::…`. This covers most of the
+  app: the pages, dialogs, `MainWindow.cpp`, `Application` and `main.cpp`
+  are at global scope, and stay there.
+- **Existing using-declarations** (`using VLMS::Status;` at the top of a
+  `.cpp`) that name a library symbol are deleted, and the bodies are
+  qualified instead. Using-declarations of the app's own names
+  (`using VLMS::T;`, `using VLMS::qs;`, … from `QtBridge.h`) are not library
+  code and stay.
+- **Tests:** each test `.cpp` that names library code adds
+  `using namespace VLMS;` and then spells names as above
+  (`Core::Status`, `Repositories::BookRecord`). `using namespace VLMS::Test;`
+  becomes `using namespace Test;`. An explicit qualification of a test helper
+  is always written `::Test::TestDatabase`, with the leading `::`: inside a
+  `TEST`/`TEST_F` body, a bare `Test` names gtest's `testing::Test`. Test
+  support headers are headers, so they spell library names in full
+  (`VLMS::Core::Result`).
 - **Headers** never contain `using namespace` or namespace aliases.
 - **Aliases that become unnecessary are removed:**
   `namespace RepoSql = VLMS::RepoSql;` and similar in the Repositories
@@ -107,10 +120,16 @@ source, so they do not live in the library namespaces. They move from
   on hold until then.
 - One commit per step, each building with 0 warnings and passing all tests on
   its own:
-  1. Core → `VLMS::Core`.
-  2. Database → `VLMS::Database`, with the `Connection` rename.
-  3. Repositories → `VLMS::Repositories`, including the global types.
-  4. Test helpers → `Test::`.
+  1. Test helpers → `Test::`.
+  2. Repositories → `VLMS::Repositories`, including the global types.
+  3. Database → `VLMS::Database`, with the `Connection` rename.
+  4. Core → `VLMS::Core`.
+
+  The order runs from the top of the dependency graph down, so each
+  reference is edited once. While Core is still flat `VLMS::`, code already
+  wrapped in `VLMS::Repositories` still finds `Status` through the enclosing
+  `VLMS`; when Core moves, the compiler flags every such use and it becomes
+  `Core::Status`.
 - Consumers (other libraries, the app, all tests) are updated in the same
   commit as the library they reference.
 
