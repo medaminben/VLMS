@@ -231,7 +231,7 @@ std::vector<HostilePayload> hostilePayloads()
         {"newline", "line1\nDROP TABLE books;"},
         {"longQuotes", std::string(10000, '\'')},
         {"emoji", "📚"},
-        {"rtlOverride", "abc‮def"},
+        {"rtlOverride", "abc\u202Edef"},
     };
 }
 

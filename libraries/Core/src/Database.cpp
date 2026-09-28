@@ -18,7 +18,6 @@
 using VLMS::SqliteSession;
 using VLMS::SqliteStatement;
 using VLMS::Status;
-using VLMS::trim;
 
 namespace {
 
@@ -52,53 +51,43 @@ std::string readFile(const std::string& path)
     return out.str();
 }
 
-// Builds released before the product was renamed to VLMS kept their data in
-// klms_lite.db. Its presence always means live data that has not been carried
-// over yet -- this build never writes that name -- so it wins even when a
-// vlms.db is already there: an installer run that keeps the existing data
-// still writes the bundled vlms.db beside it, because that name did not exist
-// yet. The bundled copy is set aside rather than deleted.
+// Before open() migrates a database it leaves a copy of it beside the file,
+// as vlms.db.bak-v<version>-<local time>. One copy per version: a database
+// whose upgrade stops short of a new version stamp finds its copy already
+// there on the next launch. VACUUM INTO writes a consistent copy through the
+// open connection, whatever the journal holds.
 //
 // Returns an empty string on success, otherwise what went wrong.
-std::string migrateLegacyDatabaseFile(const std::filesystem::path& dataDirectory,
-                                      const std::filesystem::path& targetPath)
+std::string copyAsideBeforeMigrating(SqliteSession& session,
+                                     const std::filesystem::path& databasePath, int version)
 {
     namespace fs = std::filesystem;
-    const fs::path legacyPath = dataDirectory / "klms_lite.db";
+    const std::string prefix =
+        databasePath.filename().string() + ".bak-v" + std::to_string(version) + "-";
     std::error_code error;
-    if (!fs::exists(legacyPath, error)) {
-        return {};
-    }
-
-    const char* const sidecars[] = {"", "-wal", "-shm", "-journal"};
-
-    if (fs::exists(targetPath, error)) {
-        char stamp[32] = {};
-        const std::time_t now = std::time(nullptr);
-        std::strftime(stamp, sizeof stamp, "%Y%m%d-%H%M%S", std::localtime(&now));
-        const std::string asideSuffix = std::string(".superseded-") + stamp;
-        for (const char* sidecar : sidecars) {
-            const fs::path from = targetPath.string() + sidecar;
-            if (!fs::exists(from, error)) {
-                continue;
-            }
-            fs::rename(from, from.string() + asideSuffix, error);
-            if (error) {
-                return "cannot move " + from.string() + " aside: " + error.message();
-            }
+    for (const auto& entry : fs::directory_iterator(databasePath.parent_path(), error)) {
+        if (entry.path().filename().string().rfind(prefix, 0) == 0) {
+            return {};
         }
     }
+    if (error) {
+        return "cannot list " + databasePath.parent_path().string() + ": " + error.message();
+    }
 
-    for (const char* sidecar : sidecars) {
-        const fs::path from = legacyPath.string() + sidecar;
-        if (!fs::exists(from, error)) {
-            continue;
-        }
-        const fs::path to = targetPath.string() + sidecar;
-        fs::rename(from, to, error);
-        if (error) {
-            return "cannot move " + from.string() + " to " + to.string() + ": " + error.message();
-        }
+    char stamp[32] = {};
+    const std::time_t now = std::time(nullptr);
+    std::strftime(stamp, sizeof stamp, "%Y%m%d-%H%M%S", std::localtime(&now));
+    const fs::path target = databasePath.parent_path() / (prefix + stamp);
+
+    auto vacuum = session.prepare("VACUUM INTO :target");
+    if (!vacuum) {
+        return vacuum.error().detail;
+    }
+    if (const Status bound = vacuum->bind(":target", target.string()); !bound) {
+        return bound.error().detail;
+    }
+    if (const Status done = vacuum->exec(); !done) {
+        return "cannot copy the database to " + target.string() + ": " + done.error().detail;
     }
     return {};
 }
@@ -161,9 +150,7 @@ bool Database::tableHasColumn(const std::string& table, const std::string& colum
     if (!info) {
         return false;
     }
-    bool any = false;
     while (info->next()) {
-        any = true;
         if (info->text(1) == column) {
             return true;
         }
@@ -171,17 +158,16 @@ bool Database::tableHasColumn(const std::string& table, const std::string& colum
     return false;
 }
 
+bool Database::hasAnyTable() const
+{
+    auto query = m_session->prepare("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1");
+    return query && query->next();
+}
+
 bool Database::open()
 {
     std::error_code error;
     std::filesystem::create_directories(m_dataDirectory, error);
-
-    if (const std::string failure = migrateLegacyDatabaseFile(m_dataDirectory, databasePath());
-        !failure.empty()) {
-        warn("Failed to migrate the legacy database: " + failure);
-        m_lastError = failure;
-        return false;
-    }
 
     auto opened = SqliteSession::open(databasePath());
     if (!opened) {
@@ -194,6 +180,18 @@ bool Database::open()
     if (!m_session->exec("PRAGMA foreign_keys = ON")) {
         m_lastError = m_session->lastError();
         return false;
+    }
+
+    // Anything below may rewrite an existing database, so it is copied aside
+    // first. A file with no tables is new and has nothing worth keeping.
+    if (const int found = schemaVersion(); found < kSchemaVersion && hasAnyTable()) {
+        if (const std::string failure =
+                copyAsideBeforeMigrating(*m_session, databasePath(), found);
+            !failure.empty()) {
+            warn("Refusing to migrate without a copy of the database: " + failure);
+            m_lastError = failure;
+            return false;
+        }
     }
 
     if (!applySchema()) {
@@ -634,7 +632,6 @@ bool Database::migrateBookLanguageIfNeeded()
     }
 
     const std::string migrationSql = R"SQL(
-        PRAGMA foreign_keys = OFF;
         CREATE TABLE books_new (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -668,9 +665,47 @@ bool Database::migrateBookLanguageIfNeeded()
         CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
         CREATE INDEX IF NOT EXISTS idx_books_category ON books(category_id);
         CREATE INDEX IF NOT EXISTS idx_books_author ON books(author_id);
-        PRAGMA foreign_keys = ON;
     )SQL";
-    return execSqlScript(migrationSql, "Book language migration");
+
+    // One transaction: run statement by statement, a failure after DROP TABLE
+    // books left the catalog only in books_new, and books_new then blocked
+    // every later launch. book_copies points here, so foreign keys are off for
+    // the swap (the pragma is a no-op inside a transaction; left on, the DROP
+    // would cascade into book_copies) and foreign_key_check must come back
+    // empty before the swap commits.
+    if (!m_session->exec("PRAGMA foreign_keys = OFF")) {
+        warn("Book language migration could not disable foreign keys: "
+             + m_session->lastError());
+        return false;
+    }
+    const Status work = m_session->transaction([&] {
+        for (const std::string& statement : VLMS::SqlText::splitStatements(migrationSql)) {
+            if (const Status done = m_session->exec(statement); !done) {
+                return done;
+            }
+        }
+        auto check = m_session->prepare("PRAGMA foreign_key_check");
+        if (!check) {
+            return VLMS::asStatus(check);
+        }
+        if (check->next()) {
+            return Status::fail(VLMS::ErrorKind::Sql, "error.sql",
+                                "foreign_key_check found rows after the books rebuild");
+        }
+        return Status::ok();
+    });
+    const bool keysOn = static_cast<bool>(m_session->exec("PRAGMA foreign_keys = ON"));
+    if (!work) {
+        warn("Book language migration failed: " + work.error().detail + " "
+             + m_session->lastError());
+        return false;
+    }
+    if (!keysOn) {
+        warn("Book language migration could not re-enable foreign keys: "
+             + m_session->lastError());
+        return false;
+    }
+    return true;
 }
 
 bool Database::migrateBookDescriptionIfNeeded()

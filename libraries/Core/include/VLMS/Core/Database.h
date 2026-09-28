@@ -48,6 +48,7 @@ private:
     bool execAll(const std::vector<std::string>& statements, const std::string& context);
     bool execSqlScript(const std::string& script, const std::string& context);
     bool tableHasColumn(const std::string& table, const std::string& column) const;
+    bool hasAnyTable() const;
     void warn(const std::string& message) const;
 
     std::string m_dataDirectory;

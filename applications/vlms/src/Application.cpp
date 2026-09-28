@@ -35,27 +35,6 @@ using VLMS::svl;
 
 namespace {
 
-// Builds released before the rename to VLMS stored their settings under
-// "KLMS"/"KLMS Lite". Copied over once, key by key: the installer writes its
-// own values (InstallPath, Version, SchemaVersion) into the new store before
-// the first launch, so "the new store is empty" is not a usable test, and a
-// key the new store already holds is never overwritten.
-void importLegacySettings()
-{
-    QSettings settings;
-    const QString importedKey = QStringLiteral("migration/legacySettingsImported");
-    if (settings.value(importedKey, false).toBool()) {
-        return;
-    }
-    const QSettings legacy(QStringLiteral("KLMS"), QStringLiteral("KLMS Lite"));
-    for (const QString& key : legacy.allKeys()) {
-        if (!settings.contains(key)) {
-            settings.setValue(key, legacy.value(key));
-        }
-    }
-    settings.setValue(importedKey, true);
-}
-
 void loadLocale()
 {
     QSettings settings;
@@ -97,7 +76,6 @@ Application::Application(int& argc, char** argv)
     setApplicationName(QStringLiteral("VLMS"));
     setOrganizationName(QStringLiteral("VLMS"));
     setApplicationVersion(QStringLiteral(VLMS_VERSION));
-    importLegacySettings();
 
     // Every size the mark was rendered at, in one icon: the window manager
     // picks the title bar one, the task bar and the alt-tab switcher pick a

@@ -32,11 +32,8 @@
 #define MyAppPublisher "VLMS"
 #define MyAppExeName "vlms.exe"
 
-; VLMS's own, never KLMS Lite's: the two are separate products that install
-; side by side, each in its own folder with its own entry in Apps & features.
-; Sharing the AppId made setup treat KLMS Lite as an older VLMS, reuse its
-; folder and offer to delete it. Never change it again: it is what lets this
-; installer recognise every copy of VLMS it has installed.
+; VLMS's own AppId, shared with no other product. Never change it: it is what
+; lets this installer recognise every copy of VLMS it has installed.
 #define MyAppId "{8F295604-21DB-42E6-AF37-063848A8B741}"
 
 [Setup]

@@ -262,7 +262,7 @@ void CatalogPage::refreshBooks() {
     const auto& books = booksResult.value();
     m_booksTable->setRowCount(books.size());
 
-    for (int row = 0; row < books.size(); ++row) {
+    for (int row = 0; row < static_cast<int>(books.size()); ++row) {
         const BookRecord& book = books.at(row);
 
         auto* titleItem = new QTableWidgetItem(qs(book.title));

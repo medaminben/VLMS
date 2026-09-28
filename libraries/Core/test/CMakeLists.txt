@@ -36,7 +36,7 @@ set(TST_SOURCES
     src/test_sql_text.cpp
     src/test_database_schema.cpp
     src/test_database_migrations.cpp
-    src/test_database_legacy_file.cpp
+    src/test_database_file.cpp
     src/test_strings_parity.cpp
     src/test_licence_strings.cpp
     src/test_catalog_repository.cpp

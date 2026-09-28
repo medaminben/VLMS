@@ -262,7 +262,7 @@ void MembersPage::refreshMembers() {
     const auto& members = membersResult.value();
     m_membersTable->setRowCount(members.size());
 
-    for (int row = 0; row < members.size(); ++row) {
+    for (int row = 0; row < static_cast<int>(members.size()); ++row) {
         const MemberRecord& member = members.at(row);
         const QString fullName = member.fullName.empty()
             ? QStringLiteral("%1 %2").arg(qs(member.firstName), qs(member.lastName)).trimmed()
