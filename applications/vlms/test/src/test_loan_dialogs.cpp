@@ -5,9 +5,9 @@
 #include "ui/circulation/LoanExtendDialog.h"
 #include "ui/circulation/LoanReturnDialog.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
-#include <VLMS/Core/LoanTypes.h>
+#include <VLMS/Repositories/LoanTypes.h>
 
 #include <QDate>
 #include <QDateEdit>

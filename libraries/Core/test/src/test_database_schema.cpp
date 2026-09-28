@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "TestEnv.h"
 
-#include <VLMS/Core/Database.h>
+#include <VLMS/Database/Database.h>
 
 #include <gtest/gtest.h>
 

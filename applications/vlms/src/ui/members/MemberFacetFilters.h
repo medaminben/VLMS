@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/ArchiveTypes.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/ArchiveTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <QScrollArea>
 #include <QStringList>

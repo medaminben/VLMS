@@ -1,7 +1,7 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
-#include "Text.h"
+#include <VLMS/Core/Text.h>
 
 #include <algorithm>
 #include <unordered_map>

@@ -4,7 +4,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/members/MemberLoansDialog.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 #include "QtBridge.h"

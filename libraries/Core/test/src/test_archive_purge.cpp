@@ -1,9 +1,9 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 
 #include <gtest/gtest.h>
 

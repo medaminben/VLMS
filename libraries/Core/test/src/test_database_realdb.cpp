@@ -1,9 +1,9 @@
 #include "TestDatabase.h"
 
 #include <VLMS/Core/DateText.h>
-#include <VLMS/Core/Database.h>
+#include <VLMS/Database/Database.h>
 
-#include "SqliteSession.h"
+#include <VLMS/Database/SqliteSession.h>
 
 #include <gtest/gtest.h>
 

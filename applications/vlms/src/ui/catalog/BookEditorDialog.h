@@ -1,7 +1,7 @@
 #pragma once
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CatalogTypes.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QDialog>
 #include <QString>

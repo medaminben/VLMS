@@ -1,4 +1,4 @@
-#include <VLMS/Core/SqlText.h>
+#include <VLMS/Database/SqlText.h>
 
 #include <gtest/gtest.h>
 

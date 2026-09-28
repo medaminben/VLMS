@@ -2,7 +2,7 @@
 #include "TestEnv.h"
 #include "TestSeed.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Date.h>
 
 #include <gtest/gtest.h>

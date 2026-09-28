@@ -3,7 +3,7 @@
 
 #include "ui/catalog/BookEditorDialog.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Ocr/Ocr.h>
 
 #include <QAction>

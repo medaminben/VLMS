@@ -3,12 +3,12 @@
 #include "QtBridge.h"
 #include "ui/Theme.h"
 
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CirculationRepository.h>
-#include <VLMS/Core/Database.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Database/Database.h>
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MetricsRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MetricsRepository.h>
 #include <VLMS/Core/Paths.h>
 
 #include <QGuiApplication>

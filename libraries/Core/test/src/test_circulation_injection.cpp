@@ -2,9 +2,9 @@
 #include "TestEnv.h"
 #include "TestSeed.h"
 
-#include <VLMS/Core/CirculationRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Date.h>
-#include <VLMS/Core/LoanTypes.h>
+#include <VLMS/Repositories/LoanTypes.h>
 
 #include <gtest/gtest.h>
 

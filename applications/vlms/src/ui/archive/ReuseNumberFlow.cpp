@@ -1,6 +1,6 @@
 #include "ui/archive/ReuseNumberFlow.h"
 
-#include <VLMS/Core/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 
 #include "QtBridge.h"
 #include "ui/UiHelpers.h"

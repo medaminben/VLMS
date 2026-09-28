@@ -2,8 +2,8 @@
 #include "TestEnv.h"
 #include "TestSeed.h"
 
-#include <VLMS/Core/MemberRepository.h>
-#include <VLMS/Core/MemberTypes.h>
+#include <VLMS/Repositories/MemberRepository.h>
+#include <VLMS/Repositories/MemberTypes.h>
 
 #include <gtest/gtest.h>
 

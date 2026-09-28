@@ -95,7 +95,7 @@ target_compile_definitions(vlms_ui PRIVATE VLMS_VERSION="${VLMS_VERSION_FULL}")
 
 target_link_libraries(vlms_ui
     PUBLIC
-        ${CMAKE_ROOT_NAME}::Core
+        ${CMAKE_ROOT_NAME}::Repositories
         Qt${QT_VERSION_MAJOR}::Widgets
     PRIVATE
         # PRIVATE: BookEditorDialog is the only thing that reads a book cover,

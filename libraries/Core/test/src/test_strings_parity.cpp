@@ -1,5 +1,5 @@
 #include <VLMS/Core/Locale.h>
-#include <VLMS/Core/MemberRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Core/Strings.h>
 
 #include <gtest/gtest.h>

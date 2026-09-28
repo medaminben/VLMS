@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VLMS/Core/ArchiveTypes.h>
-#include <VLMS/Core/CatalogRepository.h>
-#include <VLMS/Core/CatalogTypes.h>
+#include <VLMS/Repositories/ArchiveTypes.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QStringList>
 #include <QWidget>
