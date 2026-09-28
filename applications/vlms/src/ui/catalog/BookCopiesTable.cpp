@@ -32,8 +32,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 enum CopyColumn {
     kCopyLocalId = 0,
     kCopyGlobalId,
@@ -383,18 +381,18 @@ void BookCopiesTable::removeSelectedRow()
             [this](const BulkRow& bulk) {
                 const QTableWidgetItem* item = m_table->item(bulk.row, kCopyLocalId);
                 if (item != nullptr && item->data(kCopyOnLoanRole).toBool()) {
-                    return VLMS::Status::fail(VLMS::ErrorKind::Validation,
+                    return VLMS::Core::Status::fail(VLMS::Core::ErrorKind::Validation,
                                                     "book.copy.cannotRemoveOnLoan");
                 }
                 if (item != nullptr && item->data(kCopyReservedRole).toBool()) {
-                    return VLMS::Status::fail(VLMS::ErrorKind::Validation,
+                    return VLMS::Core::Status::fail(VLMS::Core::ErrorKind::Validation,
                                                     "book.copy.numberReserved");
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             },
             [this](const BulkRow& bulk) {
                 m_table->removeRow(bulk.row);
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         return;
     }

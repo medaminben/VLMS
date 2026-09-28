@@ -17,8 +17,6 @@
 
 #include <memory>
 
-using VLMS::Locale;
-using VLMS::Strings;
 using namespace VLMS;
 using namespace Test;
 
@@ -45,8 +43,8 @@ bool loanArchived(TestDatabase& db, std::int64_t loanId)
 
 class test_ui_BulkPages : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
@@ -89,7 +87,7 @@ protected:
         FAIL() << "loan " << loanId << " is not on the page";
     }
 
-    void clickDelete() { clickButtonWithText(m_page.get(), qs(Strings::t("circulation.delete"))); }
+    void clickDelete() { clickButtonWithText(m_page.get(), qs(Core::Strings::t("circulation.delete"))); }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
@@ -109,7 +107,7 @@ TEST_F(test_ui_BulkPages, TwoTickedReturnedLoansAreArchivedAndTheThirdStays)
     tickLoan(m_table, second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 loans?"));
@@ -125,10 +123,10 @@ TEST_F(test_ui_BulkPages, NothingTickedArchivesOnlyTheHighlightedLoan)
     openAndSelect(highlighted);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Strings::t("circulation.archiveLoan")));
+    EXPECT_EQ(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_TRUE(loanArchived(*m_db, highlighted));
     EXPECT_FALSE(loanArchived(*m_db, bystander));
 }
@@ -145,10 +143,10 @@ TEST_F(test_ui_BulkPages, ATickedOpenLoanStaysWhileTheReturnedOneIsArchived)
     tickLoan(m_table, returned);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Strings::t("circulation.archiveLoan")));
+    EXPECT_NE(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_FALSE(loanArchived(*m_db, open));
     EXPECT_TRUE(loanArchived(*m_db, returned));
 }

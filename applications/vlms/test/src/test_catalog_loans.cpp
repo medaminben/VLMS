@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <memory>
 
-using VLMS::Locale;
 using VLMS::T;
 using namespace VLMS;
 using namespace Test;
@@ -42,7 +41,7 @@ class test_ui_CatalogLoans : public ::testing::Test {
 protected:
     void SetUp() override
     {
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
@@ -57,7 +56,7 @@ protected:
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
     }
 
     /// Builds the page after the rows are seeded: it queries on construction.

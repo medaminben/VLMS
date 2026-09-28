@@ -18,9 +18,9 @@ public:
 
     explicit NamedEntityStore(Database::SqliteSession& session);
 
-    [[nodiscard]] VLMS::Result<std::int64_t> findOrCreate(Kind kind,
+    [[nodiscard]] Core::Result<std::int64_t> findOrCreate(Kind kind,
                                                                 const std::string& name) const;
-    [[nodiscard]] VLMS::Result<std::vector<std::string>> listNames(Kind kind) const;
+    [[nodiscard]] Core::Result<std::vector<std::string>> listNames(Kind kind) const;
 
 private:
     [[nodiscard]] static const char* tableName(Kind kind);

@@ -12,7 +12,7 @@ namespace {
 
 QString fill(const char* key, const QList<QPair<QString, QString>>& pairs)
 {
-    QString text = VLMS::qs(VLMS::Strings::t(key));
+    QString text = VLMS::qs(VLMS::Core::Strings::t(key));
     for (const auto& pair : pairs) {
         text.replace(QStringLiteral("{%1}").arg(pair.first), pair.second);
     }
@@ -57,17 +57,17 @@ QString blockedText(const BulkActionTexts& texts,
 int runBulkAction(QWidget* parent,
                   const BulkActionTexts& texts,
                   const QList<BulkRow>& rows,
-                  const std::function<VLMS::Status(const BulkRow&)>& check,
-                  const std::function<VLMS::Status(const BulkRow&)>& act)
+                  const std::function<VLMS::Core::Status(const BulkRow&)>& check,
+                  const std::function<VLMS::Core::Status(const BulkRow&)>& act)
 {
     QList<BulkRow> passes;
     QList<BlockedRow> blocked;
     for (const BulkRow& row : rows) {
-        const VLMS::Status gate = check(row);
+        const VLMS::Core::Status gate = check(row);
         if (gate) {
             passes.append(row);
         } else {
-            blocked.append(BlockedRow{row.label, VLMS::qs(VLMS::Strings::t(gate.error().key))});
+            blocked.append(BlockedRow{row.label, VLMS::qs(VLMS::Core::Strings::t(gate.error().key))});
         }
     }
 
@@ -120,13 +120,13 @@ int runBulkAction(QWidget* parent,
         }
         progress.setLabelText(passes.at(i).label);
         progress.setValue(i);
-        const VLMS::Status result = act(passes.at(i));
+        const VLMS::Core::Status result = act(passes.at(i));
         if (result) {
             ++done;
         } else {
             ++failed;
             if (firstReason.isEmpty()) {
-                firstReason = VLMS::qs(VLMS::Strings::t(result.error().key));
+                firstReason = VLMS::qs(VLMS::Core::Strings::t(result.error().key));
             }
         }
     }

@@ -51,15 +51,15 @@ bool opensATrigger(std::string_view text)
 std::string escapeLike(std::string_view value)
 {
     std::string escaped(value);
-    replaceAll(escaped, "\\", "\\\\");
-    replaceAll(escaped, "%", "\\%");
-    replaceAll(escaped, "_", "\\_");
+    Core::replaceAll(escaped, "\\", "\\\\");
+    Core::replaceAll(escaped, "%", "\\%");
+    Core::replaceAll(escaped, "_", "\\_");
     return escaped;
 }
 
 std::optional<std::string> nullableText(std::string_view value)
 {
-    std::string trimmed = trim(value);
+    std::string trimmed = Core::trim(value);
     if (trimmed.empty()) {
         return std::nullopt;
     }
@@ -73,7 +73,7 @@ std::vector<std::string> splitStatements(std::string_view script)
     int blockDepth = 0;
 
     const auto flush = [&] {
-        const std::string trimmed = trim(current);
+        const std::string trimmed = Core::trim(current);
         if (!trimmed.empty()) {
             statements.push_back(trimmed);
         }

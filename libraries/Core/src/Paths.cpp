@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 namespace {
 
@@ -62,4 +62,4 @@ bool Paths::ensureLayout()
     return !error;
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

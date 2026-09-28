@@ -10,8 +10,6 @@
 #include <string_view>
 #include <vector>
 
-using VLMS::trim;
-
 namespace VLMS::Repositories::MemberSql {
 namespace {
 
@@ -103,7 +101,7 @@ std::string filterClause(const MemberQuery& query)
     } else if (query.archive == ArchiveScope::Archived) {
         sql += " AND m.archived_at IS NOT NULL ";
     }
-    if (!trim(query.search).empty()) {
+    if (!Core::trim(query.search).empty()) {
         sql += " AND (m.membership_number LIKE :search ESCAPE '\\' "
                "OR m.first_name LIKE :search ESCAPE '\\' "
                "OR m.last_name LIKE :search ESCAPE '\\' "
@@ -118,7 +116,7 @@ std::string filterClause(const MemberQuery& query)
 
 void bindFilters(Database::SqliteStatement& query, const MemberQuery& queryData)
 {
-    const std::string search = trim(queryData.search);
+    const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
         query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }

@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <memory>
 
-using VLMS::Locale;
 using VLMS::T;
 using namespace VLMS;
 using namespace Test;
@@ -40,7 +39,7 @@ class test_ui_MemberLoansActions : public ::testing::Test {
 protected:
     void SetUp() override
     {
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
@@ -52,7 +51,7 @@ protected:
     {
         m_circulation.reset();
         m_db.reset();
-        Locale::setCode("en");
+        Core::Locale::setCode("en");
     }
 
     std::unique_ptr<TestDatabase> m_db;

@@ -39,7 +39,7 @@ public:
     /// Which members the year and city lists are read from on the next refresh.
     void setValueScope(Repositories::ArchiveScope scope) { m_valueScope = scope; }
 
-    using YearSource = std::function<Result<std::vector<std::string>>()>;
+    using YearSource = std::function<Core::Result<std::vector<std::string>>()>;
     /// On a loan list the year is the year the loan was made, not the year
     /// the borrower registered. From then on the year list is read from
     /// `source`, and its picks come back from loanYears() instead of facets().

@@ -19,7 +19,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::DateText::normalizePublicationDate;
 using namespace VLMS;
 using namespace Test;
 
@@ -390,7 +389,7 @@ TEST_F(test_core_RealDb, EveryPublicationDateAgreesWithItsOriginal)
         // claim: nothing was rewritten by hand, by accident, or twice.
         EXPECT_FALSE(original.empty())
             << "book " << query->text(0) << " lost its original publication date";
-        EXPECT_EQ(stored, normalizePublicationDate(original));
+        EXPECT_EQ(stored, Core::DateText::normalizePublicationDate(original));
     }
     EXPECT_EQ(rows, s_rowCountsBefore["books"]);
 }

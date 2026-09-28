@@ -8,8 +8,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::trim;
-
 namespace VLMS::Repositories::LoanSql {
 
 std::string isOverdue(const std::string_view prefix)
@@ -22,7 +20,7 @@ std::string isOverdue(const std::string_view prefix)
 void bindTodayIfPresent(Database::SqliteStatement& query, const std::string_view sql)
 {
     if (sql.find(todayPlaceholder()) != std::string_view::npos) {
-        query.bind(todayPlaceholder(), Clock::todayIso());
+        query.bind(todayPlaceholder(), Core::Clock::todayIso());
     }
 }
 
@@ -90,7 +88,7 @@ std::string filterClause(const LoanQuery& query)
         sql += ") ";
     }
 
-    if (!trim(query.search).empty()) {
+    if (!Core::trim(query.search).empty()) {
         sql += " AND (m.membership_number LIKE :search ESCAPE '\\' "
                "OR m.first_name LIKE :search ESCAPE '\\' "
                "OR m.last_name LIKE :search ESCAPE '\\' "
@@ -120,7 +118,7 @@ void bindFilters(Database::SqliteStatement& query, const LoanQuery& queryData)
     for (std::size_t i = 0; i < queryData.loanYears.size(); ++i) {
         query.bind(":loan_year_" + std::to_string(i), queryData.loanYears[i]);
     }
-    const std::string search = trim(queryData.search);
+    const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
         query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }

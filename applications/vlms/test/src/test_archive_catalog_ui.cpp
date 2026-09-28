@@ -22,7 +22,6 @@
 
 #include <memory>
 
-using VLMS::Locale;
 using namespace VLMS;
 using namespace Test;
 
@@ -79,8 +78,8 @@ void rejectNextDialog()
 
 class test_ui_ArchiveCatalog : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Locale::setCode("en"); }
-    static void TearDownTestSuite() { Locale::setCode(Locale::kDefaultCode); }
+    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {

@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 [[nodiscard]] inline std::string trim(std::string_view text)
 {
@@ -27,4 +27,4 @@ inline void replaceAll(std::string& text, std::string_view from, std::string_vie
     }
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core

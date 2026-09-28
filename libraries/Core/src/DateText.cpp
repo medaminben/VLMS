@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace VLMS::DateText {
+namespace VLMS::Core::DateText {
 
 namespace {
 
@@ -169,4 +169,4 @@ std::string normalizePublicationDate(std::string_view value)
     return resolved.toIso();
 }
 
-}  // namespace VLMS::DateText
+}  // namespace VLMS::Core::DateText

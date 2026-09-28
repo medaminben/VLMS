@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Core {
 
 namespace {
 
@@ -1660,5 +1660,5 @@ std::string Strings::memberAgeGroupLabel(std::string_view code)
     return label != key ? label : trimmed;
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Core
 

@@ -11,9 +11,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Date;
-using VLMS::DateTime;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -61,7 +58,7 @@ protected:
 TEST_F(test_core_ArchiveCirculation, ArchivingAReturnedLoanMovesItOutOfCirculation)
 {
     const std::int64_t loanId = returnedLoan(1);
-    const ScopedClock pinned(DateTime(Date(2026, 9, 19), 10, 0, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
     ASSERT_TRUE(m_repository->archiveLoan(loanId));
 
     Repositories::LoanQuery live;
@@ -144,7 +141,7 @@ TEST_F(test_core_ArchiveCirculation, CreateLoanRefusesAnArchivedCopy)
 {
     const std::int64_t copyId = firstCopyOfNewBook(10);
     rawArchive("book_copies", copyId);
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
     Repositories::LoanInput input;
     input.memberId = m_memberId;

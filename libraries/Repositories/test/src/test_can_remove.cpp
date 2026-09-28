@@ -12,11 +12,10 @@
 
 using namespace VLMS;
 using namespace Test;
-using VLMS::Status;
 
 namespace {
 
-void expectRefusal(const Status& check, const Status& action, const char* key)
+void expectRefusal(const Core::Status& check, const Core::Status& action, const char* key)
 {
     ASSERT_FALSE(check) << key;
     ASSERT_FALSE(action) << key;

@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 
-using VLMS::Date;
 using namespace VLMS;
 using namespace Test;
 
@@ -58,7 +57,7 @@ protected:
         ASSERT_EQ(static_cast<int>(m_copyIds.size()), 3);
 
         // One open loan, one returned, so every filter has something to select.
-        const Date today = Date::todayLocal();
+        const Core::Date today = Core::Date::todayLocal();
         ASSERT_GT(rawInsertLoan(*m_db, m_memberId, m_copyIds.at(0), today.addDays(-3).toIso(),
                                 today.addDays(11).toIso()),
                   0);
@@ -212,7 +211,7 @@ TEST_F(test_core_CirculationInjection, LoanNotesWithHostilePayloadRoundTrip)
         const auto copies = copyIdsOf(*m_db, bookId);
         ASSERT_EQ(static_cast<int>(copies.size()), 1);
 
-        const Date today = Date::todayLocal();
+        const Core::Date today = Core::Date::todayLocal();
         Repositories::LoanInput input;
         input.memberId = m_memberId;
         input.bookCopyId = copies.front();

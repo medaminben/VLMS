@@ -4,10 +4,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::Result;
-using VLMS::Status;
-using VLMS::trim;
-
 namespace VLMS::Repositories {
 
 namespace {
@@ -29,7 +25,7 @@ CategoryStore::CategoryStore(Database::SqliteSession& session)
 {
 }
 
-Result<std::vector<CategoryRecord>> CategoryStore::listCategories() const
+Core::Result<std::vector<CategoryRecord>> CategoryStore::listCategories() const
 {
     auto q = m_session.prepare(R"SQL(
         SELECT
@@ -54,10 +50,10 @@ Result<std::vector<CategoryRecord>> CategoryStore::listCategories() const
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<CategoryRecord>>(m_session.lastError());
     }
-    return Result<std::vector<CategoryRecord>>::ok(std::move(categories));
+    return Core::Result<std::vector<CategoryRecord>>::ok(std::move(categories));
 }
 
-Result<std::vector<CategoryRecord>> CategoryStore::listAllCategories() const
+Core::Result<std::vector<CategoryRecord>> CategoryStore::listAllCategories() const
 {
     auto q = m_session.prepare(R"SQL(
         SELECT
@@ -80,12 +76,12 @@ Result<std::vector<CategoryRecord>> CategoryStore::listAllCategories() const
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<CategoryRecord>>(m_session.lastError());
     }
-    return Result<std::vector<CategoryRecord>>::ok(std::move(categories));
+    return Core::Result<std::vector<CategoryRecord>>::ok(std::move(categories));
 }
 
-Result<std::int64_t> CategoryStore::createCategory(const std::string& code, const std::string& label)
+Core::Result<std::int64_t> CategoryStore::createCategory(const std::string& code, const std::string& label)
 {
-    const std::string trimmedCode = trim(code);
+    const std::string trimmedCode = Core::trim(code);
     if (trimmedCode.empty()) {
         return RepoSql::validationResult<std::int64_t>("error.category.codeRequired");
     }
@@ -93,18 +89,18 @@ Result<std::int64_t> CategoryStore::createCategory(const std::string& code, cons
     if (!insert) {
         return RepoSql::sqlResult<std::int64_t>(insert.error().detail);
     }
-    if (!insert->bind(":code", trimmedCode) || !insert->bind(":label", trim(label))
+    if (!insert->bind(":code", trimmedCode) || !insert->bind(":label", Core::trim(label))
         || !insert->exec()) {
         return RepoSql::sqlResult<std::int64_t>(m_session.lastError());
     }
-    return Result<std::int64_t>::ok(m_session.lastInsertRowId());
+    return Core::Result<std::int64_t>::ok(m_session.lastInsertRowId());
 }
 
-Status CategoryStore::updateCategory(const std::int64_t id,
+Core::Status CategoryStore::updateCategory(const std::int64_t id,
                                      const std::string& code,
                                      const std::string& label)
 {
-    const std::string trimmedCode = trim(code);
+    const std::string trimmedCode = Core::trim(code);
     if (trimmedCode.empty()) {
         return RepoSql::validation("error.category.codeRequired");
     }
@@ -113,17 +109,17 @@ Status CategoryStore::updateCategory(const std::int64_t id,
     if (!update) {
         return RepoSql::sqlFailure(update.error().detail);
     }
-    if (!update->bind(":code", trimmedCode) || !update->bind(":label", trim(label))
+    if (!update->bind(":code", trimmedCode) || !update->bind(":label", Core::trim(label))
         || !update->bind(":id", id) || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (update->changes() <= 0) {
         return RepoSql::notFound("error.category.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status CategoryStore::deleteCategory(const std::int64_t id)
+Core::Status CategoryStore::deleteCategory(const std::int64_t id)
 {
     auto usage = m_session.prepare("SELECT COUNT(*) FROM books WHERE category_id = :id");
     if (!usage) {
@@ -146,7 +142,7 @@ Status CategoryStore::deleteCategory(const std::int64_t id)
     if (remove->changes() <= 0) {
         return RepoSql::notFound("error.category.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 }  // namespace VLMS::Repositories

@@ -32,7 +32,6 @@
 using VLMS::T;
 using VLMS::qs;
 using VLMS::ss;
-using VLMS::Strings;
 
 namespace {
 
@@ -359,7 +358,7 @@ bool ArchivePage::fillRows()
     const std::string sortColumn = m_sort->isActive() ? ss(m_sort->columnKey()) : std::string();
     const bool ascending = m_sort->ascending();
 
-    const auto fail = [this](const VLMS::Error& error) {
+    const auto fail = [this](const VLMS::Core::Error& error) {
         VLMS::showRepoError(this, error);
         return false;
     };
@@ -396,7 +395,7 @@ bool ArchivePage::fillRows()
             m_table->setItem(row, 1, new QTableWidgetItem(memberName(member)));
             m_table->setItem(row, 2, new QTableWidgetItem(VLMS::dashIfEmpty(member.city)));
             m_table->setItem(row, 3,
-                             new QTableWidgetItem(qs(Strings::memberStatusLabel(member.status))));
+                             new QTableWidgetItem(qs(VLMS::Core::Strings::memberStatusLabel(member.status))));
             m_table->setItem(row, 4, new QTableWidgetItem(QString::number(member.loanCount)));
             m_table->setItem(row, 5, new QTableWidgetItem(qs(member.archivedAt)));
         }
@@ -662,7 +661,7 @@ void ArchivePage::showDetails(const qint64 id)
                 addDetail("archive.col.number", qs(member.membershipNumber));
                 addDetail("archive.col.name", memberName(member));
                 addDetail("archive.col.city", VLMS::dashIfEmpty(member.city));
-                addDetail("archive.col.status", qs(Strings::memberStatusLabel(member.status)));
+                addDetail("archive.col.status", qs(VLMS::Core::Strings::memberStatusLabel(member.status)));
                 addDetail("archive.col.archivedAt", qs(member.archivedAt));
             }
         }
@@ -844,7 +843,7 @@ void ArchivePage::restoreSelected()
         texts.noun = T(bulkNounKey(m_type));
         const int done = runBulkAction(
             this, texts, tickedArchiveRows(m_checks, m_table, m_type),
-            [](const BulkRow&) { return VLMS::Status::ok(); },
+            [](const BulkRow&) { return VLMS::Core::Status::ok(); },
             [this](const BulkRow& bulk) {
                 switch (m_type) {
                 case Type::Members:
@@ -856,7 +855,7 @@ void ArchivePage::restoreSelected()
                 case Type::Loans:
                     return m_circulation.restoreLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         if (done > 0) {
             refreshRows();
@@ -872,7 +871,7 @@ void ArchivePage::restoreSelected()
     if (!VLMS::askYesNo(this, T("archive.restore"), T("archive.restoreConfirm"))) {
         return;
     }
-    const auto restored = [&]() -> VLMS::Status {
+    const auto restored = [&]() -> VLMS::Core::Status {
         switch (m_type) {
         case Type::Members:
             return m_members.restoreMember(id);
@@ -883,7 +882,7 @@ void ArchivePage::restoreSelected()
         case Type::Loans:
             return m_circulation.restoreLoan(id);
         }
-        return VLMS::Status::ok();
+        return VLMS::Core::Status::ok();
     }();
     if (!restored) {
         VLMS::showRepoError(this, restored.error());
@@ -930,7 +929,7 @@ void ArchivePage::purgeSelected()
                 case Type::Loans:
                     return m_circulation.canPurgeLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             },
             [this](const BulkRow& bulk) {
                 switch (m_type) {
@@ -943,7 +942,7 @@ void ArchivePage::purgeSelected()
                 case Type::Loans:
                     return m_circulation.purgeLoan(bulk.id);
                 }
-                return VLMS::Status::ok();
+                return VLMS::Core::Status::ok();
             });
         if (done > 0) {
             refreshRows();
@@ -974,7 +973,7 @@ void ArchivePage::purgeSelected()
         return;
     }
 
-    const auto removed = [&]() -> VLMS::Status {
+    const auto removed = [&]() -> VLMS::Core::Status {
         switch (m_type) {
         case Type::Members:
             return m_members.purgeMember(id);
@@ -985,7 +984,7 @@ void ArchivePage::purgeSelected()
         case Type::Loans:
             return m_circulation.purgeLoan(id);
         }
-        return VLMS::Status::ok();
+        return VLMS::Core::Status::ok();
     }();
     if (!removed) {
         // The button is disabled when the gate is shut, so this is a race or a

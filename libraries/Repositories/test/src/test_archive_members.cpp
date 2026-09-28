@@ -11,9 +11,6 @@
 #include <memory>
 #include <string>
 
-using VLMS::Date;
-using VLMS::DateTime;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -66,7 +63,7 @@ TEST_F(test_core_ArchiveMembers, ArchivedMembersAppearOnlyUnderTheArchivedScope)
 TEST_F(test_core_ArchiveMembers, ArchiveMemberStampsFromTheClock)
 {
     const std::int64_t id = seedMember(*m_db, uniqueMemberSeed(3));
-    const ScopedClock pinned(DateTime(Date(2026, 9, 19), 10, 0, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
     ASSERT_TRUE(m_members->archiveMember(id));
 
     const auto member = m_members->getMember(id);
@@ -97,11 +94,11 @@ TEST_F(test_core_ArchiveMembers, TheArchiveListsNewestFirstByDefault)
     const std::int64_t older = seedMember(*m_db, uniqueMemberSeed(6));
     const std::int64_t newer = seedMember(*m_db, uniqueMemberSeed(7));
     {
-        const ScopedClock first(DateTime(Date(2026, 9, 1), 9, 0, 0));
+        const Core::ScopedClock first(Core::DateTime(Core::Date(2026, 9, 1), 9, 0, 0));
         ASSERT_TRUE(m_members->archiveMember(older));
     }
     {
-        const ScopedClock second(DateTime(Date(2026, 9, 19), 10, 0, 0));
+        const Core::ScopedClock second(Core::DateTime(Core::Date(2026, 9, 19), 10, 0, 0));
         ASSERT_TRUE(m_members->archiveMember(newer));
     }
 

@@ -18,7 +18,7 @@ namespace Test {
 [[nodiscard]] std::string timeZoneDescription();
 
 /// UTC calendar date (system_clock), for timezone assertions.
-[[nodiscard]] VLMS::Date utcToday();
+[[nodiscard]] VLMS::Core::Date utcToday();
 
 /**
  * Sets or restores an environment variable for the lifetime of the object.
@@ -39,7 +39,7 @@ private:
 };
 
 template<typename T>
-[[nodiscard]] T unwrapResult(const VLMS::Result<T>& result, const char* file, int line)
+[[nodiscard]] T unwrapResult(const VLMS::Core::Result<T>& result, const char* file, int line)
 {
     if (!result) {
         ADD_FAILURE_AT(file, line) << (result.error().key.empty() ? "Result failed"

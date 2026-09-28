@@ -16,9 +16,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Clock;
-using VLMS::Date;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -49,7 +46,7 @@ protected:
 
     void TearDown() override
     {
-        EXPECT_FALSE(Clock::isOverridden()) << "a test leaked a clock override";
+        EXPECT_FALSE(Core::Clock::isOverridden()) << "a test leaked a clock override";
         m_circulation.reset();
         m_metrics.reset();
         m_db.reset();
@@ -79,7 +76,7 @@ protected:
 
     [[nodiscard]] Repositories::LibraryMetrics metrics() const { return VLMS_UNWRAP(m_metrics->fetchMetrics()); }
 
-    bool borrowOn(int copyIndex, const Date& borrowed, const Date& returned = {})
+    bool borrowOn(int copyIndex, const Core::Date& borrowed, const Core::Date& returned = {})
     {
         return rawInsertLoan(*m_db, m_memberId, copyAt(copyIndex), borrowed.toIso(),
                              borrowed.addDays(14).toIso(), returned.isValid() ? returned.toIso() : std::string())
@@ -100,7 +97,7 @@ protected:
 TEST_F(test_core_MetricsWindows, TodayWindowCountsALoanBorrowedToday)
 {
     seedMemberAndCopies();
-    ASSERT_TRUE(borrowOn(0, Date::todayLocal()));
+    ASSERT_TRUE(borrowOn(0, Core::Date::todayLocal()));
 
     EXPECT_EQ(metrics().today.checkouts, 1);
 }
@@ -108,7 +105,7 @@ TEST_F(test_core_MetricsWindows, TodayWindowCountsALoanBorrowedToday)
 TEST_F(test_core_MetricsWindows, TodayWindowExcludesALoanBorrowedAWeekAgo)
 {
     seedMemberAndCopies();
-    ASSERT_TRUE(borrowOn(0, Date::todayLocal().addDays(-7)));
+    ASSERT_TRUE(borrowOn(0, Core::Date::todayLocal().addDays(-7)));
 
     EXPECT_EQ(metrics().today.checkouts, 0);
     EXPECT_EQ(metrics().thisWeek.checkouts, 0);
@@ -117,7 +114,7 @@ TEST_F(test_core_MetricsWindows, TodayWindowExcludesALoanBorrowedAWeekAgo)
 TEST_F(test_core_MetricsWindows, WeekWindowIsRollingSevenDaysNotCalendarWeek)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     // Six days back is inside a rolling seven-day window on every day of the
     // week. A calendar week starting Monday would drop it whenever today is
@@ -134,7 +131,7 @@ TEST_F(test_core_MetricsWindows, WeekWindowIsRollingSevenDaysNotCalendarWeek)
 TEST_F(test_core_MetricsWindows, WeekWindowIncludesRowExactlySixDaysAgo)
 {
     seedMemberAndCopies();
-    ASSERT_TRUE(borrowOn(0, Date::todayLocal().addDays(-6)));
+    ASSERT_TRUE(borrowOn(0, Core::Date::todayLocal().addDays(-6)));
 
     // The window is '-6 days', i.e. seven days inclusive of today. Off by one
     // in either direction and this row moves.
@@ -144,8 +141,8 @@ TEST_F(test_core_MetricsWindows, WeekWindowIncludesRowExactlySixDaysAgo)
 TEST_F(test_core_MetricsWindows, MonthWindowIsCalendarMonthNotRollingThirtyDays)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
-    const Date firstOfMonth(today.year(), today.month(), 1);
+    const Core::Date today = Core::Date::todayLocal();
+    const Core::Date firstOfMonth(today.year(), today.month(), 1);
 
     ASSERT_TRUE(borrowOn(0, firstOfMonth));
     ASSERT_TRUE(borrowOn(1, firstOfMonth.addDays(-1)));  // last day of the previous month
@@ -169,7 +166,7 @@ TEST_F(test_core_MetricsWindows, MonthWindowIsCalendarMonthNotRollingThirtyDays)
 TEST_F(test_core_MetricsWindows, ReturnsWindowCountsTheReturnDateNotTheBorrowDate)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     // Borrowed two months ago, returned today.
     ASSERT_TRUE(borrowOn(0, today.addDays(-60), today));
@@ -187,7 +184,7 @@ TEST_F(test_core_MetricsWindows, NewMembersWindowCountsRegisteredAt)
     MemberSeed fresh = uniqueMemberSeed(2);
     const std::int64_t freshId = seedMember(*m_db, fresh);
     ASSERT_GT(freshId, 0);
-    ASSERT_TRUE(rawSetRegisteredAt(*m_db, freshId, Date::todayLocal().toIso()));
+    ASSERT_TRUE(rawSetRegisteredAt(*m_db, freshId, Core::Date::todayLocal().toIso()));
 
     const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.totalMembers, 2);
@@ -197,8 +194,8 @@ TEST_F(test_core_MetricsWindows, NewMembersWindowCountsRegisteredAt)
 TEST_F(test_core_MetricsWindows, WindowsNestSoTodayNeverExceedsTheMonth)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
-    const Date firstOfMonth(today.year(), today.month(), 1);
+    const Core::Date today = Core::Date::todayLocal();
+    const Core::Date firstOfMonth(today.year(), today.month(), 1);
 
     ASSERT_TRUE(borrowOn(0, today));
     ASSERT_TRUE(borrowOn(1, today.addDays(-3)));
@@ -219,7 +216,7 @@ TEST_F(test_core_MetricsWindows, WindowsNestSoTodayNeverExceedsTheMonth)
 TEST_F(test_core_MetricsWindows, OverdueKpiAgreesWithTheOverdueFilter)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     ASSERT_TRUE(borrowOn(0, today.addDays(-44)));                    // due 30 days ago
     ASSERT_TRUE(borrowOn(1, today.addDays(-40)));                    // due 26 days ago
@@ -257,12 +254,12 @@ TEST_F(test_core_MetricsWindows, EveryWindowFollowsThePinnedClock)
 {
     seedMemberAndCopies();
 
-    const ScopedClock pinned(Date(2021, 6, 15));
+    const Core::ScopedClock pinned(Core::Date(2021, 6, 15));
 
-    ASSERT_TRUE(borrowOn(0, Date(2021, 6, 15)));  // the pinned today
-    ASSERT_TRUE(borrowOn(1, Date(2021, 6, 9)));   // six days back: last day of the week window
-    ASSERT_TRUE(borrowOn(2, Date(2021, 6, 8)));   // seven days back: outside it
-    ASSERT_TRUE(borrowOn(3, Date(2021, 6, 1)));   // first of the pinned month
+    ASSERT_TRUE(borrowOn(0, Core::Date(2021, 6, 15)));  // the pinned today
+    ASSERT_TRUE(borrowOn(1, Core::Date(2021, 6, 9)));   // six days back: last day of the week window
+    ASSERT_TRUE(borrowOn(2, Core::Date(2021, 6, 8)));   // seven days back: outside it
+    ASSERT_TRUE(borrowOn(3, Core::Date(2021, 6, 1)));   // first of the pinned month
 
     const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.today.checkouts, 1);
@@ -274,10 +271,10 @@ TEST_F(test_core_MetricsWindows, MonthWindowStartsOnTheFirstOfThePinnedMonth)
 {
     seedMemberAndCopies();
 
-    const ScopedClock pinned(Date(2021, 6, 15));
+    const Core::ScopedClock pinned(Core::Date(2021, 6, 15));
 
-    ASSERT_TRUE(borrowOn(0, Date(2021, 5, 31)));  // May has 31 days; this is the day before
-    ASSERT_TRUE(borrowOn(1, Date(2021, 6, 1)));
+    ASSERT_TRUE(borrowOn(0, Core::Date(2021, 5, 31)));  // May has 31 days; this is the day before
+    ASSERT_TRUE(borrowOn(1, Core::Date(2021, 6, 1)));
 
     // The exclusion, at a real month boundary rather than whichever one the
     // calendar happens to offer. The previous month's last day is not in the
@@ -290,10 +287,10 @@ TEST_F(test_core_MetricsWindows, WindowsAreClosedIntervalsEndingOnThePinnedToday
 {
     seedMemberAndCopies();
 
-    const ScopedClock pinned(Date(2021, 6, 15));
+    const Core::ScopedClock pinned(Core::Date(2021, 6, 15));
 
-    ASSERT_TRUE(borrowOn(0, Date(2021, 6, 15)));  // the last included day
-    ASSERT_TRUE(borrowOn(1, Date(2021, 6, 16)));  // one day past the end
+    ASSERT_TRUE(borrowOn(0, Core::Date(2021, 6, 15)));  // the last included day
+    ASSERT_TRUE(borrowOn(1, Core::Date(2021, 6, 16)));  // one day past the end
 
     const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.today.checkouts, 1);
@@ -308,7 +305,7 @@ TEST_F(test_core_MetricsWindows, WindowsAreClosedIntervalsEndingOnThePinnedToday
 TEST_F(test_core_MetricsWindows, FutureDatedLoanIsNotCountedInAllThreeWindowsSimultaneously)
 {
     seedMemberAndCopies();
-    ASSERT_TRUE(borrowOn(0, Date::todayLocal().addDays(30)));
+    ASSERT_TRUE(borrowOn(0, Core::Date::todayLocal().addDays(30)));
 
     const Repositories::LibraryMetrics m = metrics();
 
@@ -328,7 +325,7 @@ TEST_F(test_core_MetricsWindows, FutureDatedLoanIsNotCountedInAllThreeWindowsSim
 TEST_F(test_core_MetricsWindows, FutureReturnDateIsNotCountedInTodaysReturns)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     ASSERT_TRUE(borrowOn(0, today.addDays(-10), today.addDays(5)));
 
@@ -341,7 +338,7 @@ TEST_F(test_core_MetricsWindows, FutureRegisteredMemberIsNotCountedInTodaysNewMe
 
     const std::int64_t freshId = seedMember(*m_db, uniqueMemberSeed(3));
     ASSERT_GT(freshId, 0);
-    ASSERT_TRUE(rawSetRegisteredAt(*m_db, freshId, Date::todayLocal().addDays(45).toIso()));
+    ASSERT_TRUE(rawSetRegisteredAt(*m_db, freshId, Core::Date::todayLocal().addDays(45).toIso()));
 
     EXPECT_EQ(metrics().today.newMembers, 0);
 }
@@ -353,7 +350,7 @@ TEST_F(test_core_MetricsWindows, FutureRegisteredMemberIsNotCountedInTodaysNewMe
 TEST_F(test_core_MetricsWindows, OverdueKpiCountsLoanWithUnparseableDueDate)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     // Only a database whose constraint migration the pre-flight declined can
     // hold this row -- and that is the database whose KPI has to show it.

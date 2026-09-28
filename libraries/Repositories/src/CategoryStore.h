@@ -17,14 +17,14 @@ class CategoryStore {
 public:
     explicit CategoryStore(Database::SqliteSession& session);
 
-    [[nodiscard]] VLMS::Result<std::vector<CategoryRecord>> listCategories() const;
-    [[nodiscard]] VLMS::Result<std::vector<CategoryRecord>> listAllCategories() const;
-    [[nodiscard]] VLMS::Result<std::int64_t> createCategory(const std::string& code,
+    [[nodiscard]] Core::Result<std::vector<CategoryRecord>> listCategories() const;
+    [[nodiscard]] Core::Result<std::vector<CategoryRecord>> listAllCategories() const;
+    [[nodiscard]] Core::Result<std::int64_t> createCategory(const std::string& code,
                                                                   const std::string& label);
-    [[nodiscard]] VLMS::Status updateCategory(std::int64_t id,
+    [[nodiscard]] Core::Status updateCategory(std::int64_t id,
                                                     const std::string& code,
                                                     const std::string& label);
-    [[nodiscard]] VLMS::Status deleteCategory(std::int64_t id);
+    [[nodiscard]] Core::Status deleteCategory(std::int64_t id);
 
 private:
     Database::SqliteSession& m_session;

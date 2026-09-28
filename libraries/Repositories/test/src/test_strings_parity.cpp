@@ -13,9 +13,6 @@
 
 using namespace VLMS;
 
-using VLMS::Locale;
-using VLMS::Strings;
-
 namespace {
 
 constexpr auto kArabic = "ar";
@@ -62,8 +59,8 @@ std::string describeMissing(const std::vector<std::string>& missing,
 
 std::vector<std::string> keysMissingFrom(const std::string& reference, const std::string& candidate)
 {
-    const std::vector<std::string> referenceKeys = Strings::knownKeys(reference);
-    const std::vector<std::string> candidateList = Strings::knownKeys(candidate);
+    const std::vector<std::string> referenceKeys = Core::Strings::knownKeys(reference);
+    const std::vector<std::string> candidateList = Core::Strings::knownKeys(candidate);
     const std::set<std::string> candidateKeys(candidateList.begin(), candidateList.end());
 
     std::vector<std::string> missing;
@@ -79,14 +76,14 @@ std::vector<std::string> keysMissingFrom(const std::string& reference, const std
 
 class test_core_StringsParity : public ::testing::Test {
 protected:
-    void TearDown() override { Locale::setCode(Locale::kDefaultCode); }
+    void TearDown() override { Core::Locale::setCode(Core::Locale::kDefaultCode); }
 };
 
 TEST_F(test_core_StringsParity, EveryTableIsNonEmpty)
 {
-    EXPECT_GT(Strings::knownKeys(kArabic).size(), 100u);
-    EXPECT_FALSE(Strings::knownKeys(kFrench).empty());
-    EXPECT_FALSE(Strings::knownKeys(kEnglish).empty());
+    EXPECT_GT(Core::Strings::knownKeys(kArabic).size(), 100u);
+    EXPECT_FALSE(Core::Strings::knownKeys(kFrench).empty());
+    EXPECT_FALSE(Core::Strings::knownKeys(kEnglish).empty());
 }
 
 TEST_F(test_core_StringsParity, TablesHaveIdenticalKeySets)
@@ -108,8 +105,8 @@ TEST_F(test_core_StringsParity, NoTableHasAnEmptyValue)
         SCOPED_TRACE(locale);
 
         std::vector<std::string> empties;
-        for (const std::string& key : Strings::knownKeys(locale)) {
-            if (Strings::rawValue(locale, key).empty()) {
+        for (const std::string& key : Core::Strings::knownKeys(locale)) {
+            if (Core::Strings::rawValue(locale, key).empty()) {
                 empties.push_back(key);
             }
         }
@@ -125,11 +122,11 @@ TEST_F(test_core_StringsParity, PlaceholderTokensMatchAcrossLocales)
 {
     std::vector<std::string> problems;
 
-    for (const std::string& key : Strings::knownKeys(kArabic)) {
-        const std::set<std::string> arabic = placeholderTokens(Strings::rawValue(kArabic, key));
+    for (const std::string& key : Core::Strings::knownKeys(kArabic)) {
+        const std::set<std::string> arabic = placeholderTokens(Core::Strings::rawValue(kArabic, key));
 
         for (const char* other : {kFrench, kEnglish}) {
-            const std::string value = Strings::rawValue(other, key);
+            const std::string value = Core::Strings::rawValue(other, key);
             if (value.empty()) {
                 continue;  // reported by tablesHaveIdenticalKeySets
             }
@@ -151,32 +148,32 @@ TEST_F(test_core_StringsParity, PlaceholderTokensMatchAcrossLocales)
 
 TEST_F(test_core_StringsParity, LookupFallsBackToArabicForMissingKey)
 {
-    Locale::setCode("fr");
+    Core::Locale::setCode("fr");
     // Every key exists in every table (asserted above), so pick a real one and
     // confirm the French text is used rather than the Arabic fallback.
     const std::string key = "nav.catalog";
-    EXPECT_EQ(Strings::t(key), Strings::rawValue("fr", key));
+    EXPECT_EQ(Core::Strings::t(key), Core::Strings::rawValue("fr", key));
 }
 
 TEST_F(test_core_StringsParity, LookupReturnsKeyItselfWhenAbsentEverywhere)
 {
     const std::string key = "this.key.does.not.exist";
-    EXPECT_EQ(Strings::t(key), key);
+    EXPECT_EQ(Core::Strings::t(key), key);
 }
 
 TEST_F(test_core_StringsParity, BookLanguageLabelFallsBackToRawCode)
 {
-    EXPECT_EQ(Strings::bookLanguageLabel("zz"), "zz");
-    EXPECT_EQ(Strings::bookLanguageLabel({}), std::string());
-    EXPECT_FALSE(Strings::bookLanguageLabel("ar").empty());
+    EXPECT_EQ(Core::Strings::bookLanguageLabel("zz"), "zz");
+    EXPECT_EQ(Core::Strings::bookLanguageLabel({}), std::string());
+    EXPECT_FALSE(Core::Strings::bookLanguageLabel("ar").empty());
 }
 
 TEST_F(test_core_StringsParity, MemberStatusLabelCoversAllStatusCodes)
 {
     for (const std::string& code : Repositories::MemberRepository::statusCodes()) {
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
-            Locale::setCode(locale);
-            const std::string label = Strings::memberStatusLabel(code);
+            Core::Locale::setCode(locale);
+            const std::string label = Core::Strings::memberStatusLabel(code);
             EXPECT_NE(label, code) << "no " << locale << " label for status '" << code << "'";
         }
     }
@@ -186,8 +183,8 @@ TEST_F(test_core_StringsParity, MemberSexLabelCoversAllSexCodes)
 {
     for (const std::string& code : Repositories::MemberRepository::sexCodes()) {
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
-            Locale::setCode(locale);
-            const std::string label = Strings::memberSexLabel(code);
+            Core::Locale::setCode(locale);
+            const std::string label = Core::Strings::memberSexLabel(code);
             EXPECT_NE(label, code) << "no " << locale << " label for sex '" << code << "'";
         }
     }
@@ -195,11 +192,11 @@ TEST_F(test_core_StringsParity, MemberSexLabelCoversAllSexCodes)
 
 TEST_F(test_core_StringsParity, NoBrowserSentences)
 {
-    EXPECT_EQ(Strings::rawValue(kArabic, "help.noBrowser"),
+    EXPECT_EQ(Core::Strings::rawValue(kArabic, "help.noBrowser"),
               "تعذّر العثور على متصفح لفتح دليل الاستخدام.");
-    EXPECT_EQ(Strings::rawValue(kFrench, "help.noBrowser"),
+    EXPECT_EQ(Core::Strings::rawValue(kFrench, "help.noBrowser"),
               "Aucun navigateur n'a été trouvé pour ouvrir le manuel d'utilisation.");
-    EXPECT_EQ(Strings::rawValue(kEnglish, "help.noBrowser"),
+    EXPECT_EQ(Core::Strings::rawValue(kEnglish, "help.noBrowser"),
               "No browser was found to open the user manual.");
 }
 
@@ -365,7 +362,7 @@ TEST_F(test_core_StringsParity, ArchiveKeysHaveSpecifiedWording)
     };
 
     for (const Case& c : cases) {
-        EXPECT_EQ(Strings::rawValue(c.locale, c.key), c.value)
+        EXPECT_EQ(Core::Strings::rawValue(c.locale, c.key), c.value)
             << c.locale << " " << c.key;
     }
 }

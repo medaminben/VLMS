@@ -16,8 +16,6 @@ using VLMS::T;
 
 namespace {
 
-using VLMS::Locale;
-
 // Not string-table keys. They read the same in all three languages, so a key
 // would be three identical entries -- and identical entries would defeat
 // test_core_LicenceStrings.TheArabicIsNotTheEnglish.
@@ -37,7 +35,7 @@ QString clause(const QString& head, const QString& body)
 
 QString licenceHtml()
 {
-    const QString direction = Locale::isRtl() ? QStringLiteral("rtl") : QStringLiteral("ltr");
+    const QString direction = VLMS::Core::Locale::isRtl() ? QStringLiteral("rtl") : QStringLiteral("ltr");
 
     QString html = QStringLiteral("<div dir=\"%1\">").arg(direction);
     html += QStringLiteral("<h2>") + T("licence.title").toHtmlEscaped() + QStringLiteral("</h2>");
@@ -77,7 +75,7 @@ void LicenceDialog::buildUi()
     m_body->setObjectName(QStringLiteral("licenceBody"));
     m_body->setFrameShape(QFrame::NoFrame);
     m_body->setOpenExternalLinks(false);
-    m_body->setLayoutDirection(Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight);
+    m_body->setLayoutDirection(VLMS::Core::Locale::isRtl() ? Qt::RightToLeft : Qt::LeftToRight);
     m_body->setHtml(licenceHtml());
     layout->addWidget(m_body);
 

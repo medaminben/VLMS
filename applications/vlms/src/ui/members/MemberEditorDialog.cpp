@@ -36,8 +36,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 constexpr int kSideColumnSpacing = 8;
 constexpr int kContentSpacing = 16;
 constexpr int kPreviewWidth = 220;
@@ -387,7 +385,7 @@ void MemberEditorDialog::populateStatuses() {
     m_statusCombo->clear();
 
     for (const std::string& code : VLMS::Repositories::MemberRepository::statusCodes()) {
-        m_statusCombo->addItem(qs(Strings::memberStatusLabel(code)), qs(code));
+        m_statusCombo->addItem(qs(VLMS::Core::Strings::memberStatusLabel(code)), qs(code));
     }
 
     const QString target =
@@ -405,7 +403,7 @@ void MemberEditorDialog::populateSexes() {
     m_sexCombo->clear();
 
     for (const std::string& code : VLMS::Repositories::MemberRepository::sexCodes()) {
-        m_sexCombo->addItem(qs(Strings::memberSexLabel(code)), qs(code));
+        m_sexCombo->addItem(qs(VLMS::Core::Strings::memberSexLabel(code)), qs(code));
     }
 
     const int index = m_sexCombo->findData(currentSex);
@@ -628,7 +626,7 @@ void MemberEditorDialog::updateActiveUntil() {
     // The date the save will store, so the librarian sees what Active buys.
     const std::string chosen = ss(m_statusCombo->currentData().toString());
     m_activeUntilLabel->setText(qs(VLMS::Repositories::MemberRepository::activeUntilFor(
-        ss(m_loadedActiveUntil), chosen, VLMS::Clock::today())));
+        ss(m_loadedActiveUntil), chosen, VLMS::Core::Clock::today())));
 }
 
 void MemberEditorDialog::loadMember(const VLMS::Repositories::MemberRecord& member) {

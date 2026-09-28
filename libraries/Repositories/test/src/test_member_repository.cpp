@@ -18,9 +18,6 @@
 #include <utility>
 #include <vector>
 
-using VLMS::Date;
-using VLMS::DateTime;
-using VLMS::ScopedClock;
 using namespace VLMS;
 using namespace Test;
 
@@ -381,7 +378,7 @@ TEST_F(test_core_MemberRepository, DeleteMemberRefusesWithActiveLoans)
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(13));
     ASSERT_GT(bookId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
                             today.toIso(),
                             today.addDays(14).toIso()),
@@ -426,7 +423,7 @@ TEST_F(test_core_MemberRepository, PurgeRefusesWithReturnedLoanHistory)
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(15));
     ASSERT_GT(bookId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
                             today.addDays(-30).toIso(),
                             today.addDays(-16).toIso(),
@@ -456,7 +453,7 @@ TEST_F(test_core_MemberRepository, ArchiveHidesMemberButKeepsLoanHistory)
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(16));
     ASSERT_GT(bookId, 0);
 
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
                             today.addDays(-30).toIso(),
                             today.addDays(-16).toIso(),
@@ -604,7 +601,7 @@ TEST_F(test_core_MemberRepository, CreateMemberRejectsABirthDateAfterToday)
 {
     // A future birth date gives a negative age, which the age-group rule
     // would silently file as youth. Today itself is a real (if early) birth.
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
     MemberSeed future = uniqueMemberSeed(43);
     future.dateOfBirth = "2026-09-20";
@@ -621,7 +618,7 @@ TEST_F(test_core_MemberRepository, CreateMemberRejectsABirthDateAfterToday)
 
 TEST_F(test_core_MemberRepository, UpdateMemberRejectsABirthDateAfterToday)
 {
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
     MemberSeed seed = uniqueMemberSeed(45);
     const auto created = m_repository->createMember(seed.toInput());
@@ -704,7 +701,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberStampsUpdatedAtFromTheClock)
     // value bound from Clock::nowIso(). The space separator matters: rows
     // written before the Clock existed carry 'YYYY-MM-DD HH:MM:SS', and
     // Qt::ISODate's 'T' sorts after every one of them.
-    const ScopedClock pinned(DateTime(Date(2021, 6, 15), 9, 30, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2021, 6, 15), 9, 30, 0));
     const auto mutated = m_repository->updateMember(id, input);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
@@ -721,7 +718,7 @@ TEST_F(test_core_MemberRepository, SetPhotoImageStampsUpdatedAtFromTheClock)
     const std::string source = writeSampleImage("stamp.png");
     ASSERT_FALSE(source.empty());
 
-    const ScopedClock pinned(DateTime(Date(2021, 6, 15), 9, 30, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2021, 6, 15), 9, 30, 0));
     const auto mutated = m_repository->setPhotoImage(id, source);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
@@ -778,7 +775,7 @@ TEST_F(test_core_MemberRepository, ListMembersAndCountMembersAgree)
 TEST_F(test_core_MemberRepository, ListMembersFiltersBySexYearAgeGroupAndCity)
 {
     // Pinned so the 2010-born seed is youth on create whatever year this runs.
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
     MemberSeed adultMale = uniqueMemberSeed(300);
     adultMale.sex = Repositories::MemberSex::kMale;
@@ -920,7 +917,7 @@ TEST_F(test_core_MemberRepository, ActiveLoanCountMatchesOpenLoans)
     ASSERT_GT(bookId, 0);
 
     const auto copies = copyIdsOf(*m_db, bookId);
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     EXPECT_GT(rawInsertLoan(*m_db, memberId, copies.at(0), today.toIso(),
                             today.addDays(14).toIso()),
@@ -944,7 +941,7 @@ TEST_F(test_core_MemberRepository, GetMemberMissingIdIsNotFoundNotSql)
 {
     const auto missing = m_repository->getMember(999999);
     EXPECT_FALSE(missing);
-    EXPECT_EQ(missing.kind(), VLMS::ErrorKind::NotFound);
+    EXPECT_EQ(missing.kind(), Core::ErrorKind::NotFound);
     EXPECT_EQ(missing.error().key, "error.member.notFound");
 }
 
@@ -953,7 +950,7 @@ TEST_F(test_core_MemberRepository, GetMemberExecFailureIsSql)
     ASSERT_TRUE(m_db->exec("DROP TABLE members"));
     const auto failed = m_repository->getMember(1);
     EXPECT_FALSE(failed);
-    EXPECT_EQ(failed.kind(), VLMS::ErrorKind::Sql);
+    EXPECT_EQ(failed.kind(), Core::ErrorKind::Sql);
     EXPECT_EQ(failed.error().key, "error.sql");
 }
 
@@ -965,7 +962,7 @@ TEST_F(test_core_MemberRepository, SaveNewMemberRollsBackWhenPhotoFails)
 
     const auto created = m_repository->saveNewMember(write);
     EXPECT_FALSE(created);
-    EXPECT_EQ(created.kind(), VLMS::ErrorKind::Validation);
+    EXPECT_EQ(created.kind(), Core::ErrorKind::Validation);
     EXPECT_EQ(m_db->count("members"), 0);
 }
 
@@ -1300,18 +1297,18 @@ TEST_F(test_core_MemberRepository, AgeGroupFallsBackToTodayWhenRegisteredAtIsUnr
     // Born 1996-09-20: 29 on the 19th, 30 on the 20th. Which answer comes back
     // shows which date was used.
     {
-        const ScopedClock pinned(Date(2026, 9, 19));
+        const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
         EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", ""),
                   Repositories::MemberAgeGroup::kYouth);
     }
     {
-        const ScopedClock pinned(Date(2026, 9, 20));
+        const Core::ScopedClock pinned(Core::Date(2026, 9, 20));
         EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-13-45 10:00:00"),
                   Repositories::MemberAgeGroup::kAdult);
     }
 
     // Same fallback through an edit that changes the birth date.
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
     MemberSeed seed = uniqueMemberSeed(210);
     const auto created = m_repository->createMember(seed.toInput());
     ASSERT_TRUE(created) << created.error().key;
@@ -1325,7 +1322,7 @@ TEST_F(test_core_MemberRepository, AgeGroupFallsBackToTodayWhenRegisteredAtIsUnr
 
 TEST_F(test_core_MemberRepository, CreateMemberDerivesAgeGroupFromBirthDate)
 {
-    const ScopedClock pinned(Date(2026, 9, 19));
+    const Core::ScopedClock pinned(Core::Date(2026, 9, 19));
 
     MemberSeed adultSeed = uniqueMemberSeed(205);
     adultSeed.dateOfBirth = "1990-05-12";
@@ -1344,7 +1341,7 @@ TEST_F(test_core_MemberRepository, CreateMemberStampsRegisteredAtAndAgeGroupFrom
 {
     // Pinned far from the real date: born 1980, this member is 20 on the
     // pinned day but well past 30 on the wall clock. Only one stamp is right.
-    const ScopedClock pinned(DateTime(Date(2000, 3, 1), 9, 30, 0));
+    const Core::ScopedClock pinned(Core::DateTime(Core::Date(2000, 3, 1), 9, 30, 0));
 
     MemberSeed seed = uniqueMemberSeed(209);
     seed.dateOfBirth = "1980-01-01";
@@ -1458,5 +1455,5 @@ TEST_F(test_core_MemberRepository, RankOfMemberFollowsNumberSort)
 
     const auto missing = m_repository->rankOfMember(999999, query);
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.kind(), VLMS::ErrorKind::NotFound);
+    EXPECT_EQ(missing.kind(), Core::ErrorKind::NotFound);
 }

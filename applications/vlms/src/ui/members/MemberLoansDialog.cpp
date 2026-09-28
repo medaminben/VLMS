@@ -26,8 +26,6 @@ using VLMS::svl;
 
 namespace {
 
-using VLMS::Strings;
-
 }  // namespace
 
 MemberLoansDialog::MemberLoansDialog(VLMS::Repositories::CirculationRepository& repository,

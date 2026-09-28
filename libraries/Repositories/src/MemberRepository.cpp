@@ -15,12 +15,6 @@
 #include <filesystem>
 #include <regex>
 
-using VLMS::Clock;
-using VLMS::Date;
-using VLMS::Result;
-using VLMS::Status;
-using VLMS::trim;
-
 namespace VLMS::Repositories {
 
 namespace {
@@ -139,13 +133,13 @@ bool MemberRepository::isValidStatus(const std::string& status) const
 
 bool MemberRepository::isValidSex(const std::string& sex) const
 {
-    const std::string trimmed = trim(sex);
+    const std::string trimmed = Core::trim(sex);
     return trimmed.empty() || codesContain(sexCodes(), trimmed);
 }
 
 bool MemberRepository::isValidEmail(const std::string& email)
 {
-    const std::string trimmed = trim(email);
+    const std::string trimmed = Core::trim(email);
     if (trimmed.empty()) {
         return true;
     }
@@ -172,7 +166,7 @@ bool MemberRepository::isValidEmail(const std::string& email)
 
 bool MemberRepository::isValidDateOfBirth(const std::string& dateOfBirth)
 {
-    const std::string trimmed = trim(dateOfBirth);
+    const std::string trimmed = Core::trim(dateOfBirth);
     if (trimmed.empty()) {
         return false;
     }
@@ -181,25 +175,25 @@ bool MemberRepository::isValidDateOfBirth(const std::string& dateOfBirth)
 
 bool MemberRepository::isDateOfBirthInFuture(const std::string& dateOfBirth)
 {
-    const Date born = Date::fromIso(trim(dateOfBirth));
-    return born.isValid() && Clock::today() < born;
+    const Core::Date born = Core::Date::fromIso(Core::trim(dateOfBirth));
+    return born.isValid() && Core::Clock::today() < born;
 }
 
 std::string MemberRepository::ageGroupFromBirthDate(const std::string& dateOfBirth,
                                                     const std::string& registeredAt)
 {
-    const Date born = Date::fromIso(trim(dateOfBirth));
+    const Core::Date born = Core::Date::fromIso(Core::trim(dateOfBirth));
     if (!born.isValid()) {
         return {};
     }
 
-    Date on;
-    const std::string stamp = trim(registeredAt);
+    Core::Date on;
+    const std::string stamp = Core::trim(registeredAt);
     if (stamp.size() >= 10) {
-        on = Date::fromIso(stamp.substr(0, 10));
+        on = Core::Date::fromIso(stamp.substr(0, 10));
     }
     if (!on.isValid()) {
-        on = Clock::today();
+        on = Core::Clock::today();
     }
 
     int age = on.year() - born.year();
@@ -209,19 +203,19 @@ std::string MemberRepository::ageGroupFromBirthDate(const std::string& dateOfBir
     return age < 30 ? MemberAgeGroup::kYouth : MemberAgeGroup::kAdult;
 }
 
-std::string MemberRepository::statusOn(const std::string& activeUntil, const Date& today)
+std::string MemberRepository::statusOn(const std::string& activeUntil, const Core::Date& today)
 {
-    const Date lastDay = Date::fromIso(trim(activeUntil));
+    const Core::Date lastDay = Core::Date::fromIso(Core::trim(activeUntil));
     return lastDay.isValid() && lastDay >= today ? MemberStatus::kActive : MemberStatus::kNonActive;
 }
 
 std::string MemberRepository::activeUntilFor(const std::string& currentActiveUntil,
                                              const std::string& chosenStatus,
-                                             const Date& today)
+                                             const Core::Date& today)
 {
-    const std::string current = trim(currentActiveUntil);
+    const std::string current = Core::trim(currentActiveUntil);
     const std::string chosen =
-        trim(chosenStatus).empty() ? std::string(MemberStatus::kActive) : trim(chosenStatus);
+        Core::trim(chosenStatus).empty() ? std::string(MemberStatus::kActive) : Core::trim(chosenStatus);
     if (!current.empty() && statusOn(current, today) == chosen) {
         return current;
     }
@@ -231,7 +225,7 @@ std::string MemberRepository::activeUntilFor(const std::string& currentActiveUnt
     return today.addDays(-1).toIso();
 }
 
-Result<std::vector<MemberRecord>> MemberRepository::listMembers(const MemberQuery& query) const
+Core::Result<std::vector<MemberRecord>> MemberRepository::listMembers(const MemberQuery& query) const
 {
     std::string sql = memberSelectSql() + "        WHERE 1 = 1\n";
     sql += MemberSql::filterClause(query);
@@ -258,10 +252,10 @@ Result<std::vector<MemberRecord>> MemberRepository::listMembers(const MemberQuer
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<MemberRecord>>(m_session.lastError());
     }
-    return Result<std::vector<MemberRecord>>::ok(std::move(members));
+    return Core::Result<std::vector<MemberRecord>>::ok(std::move(members));
 }
 
-Result<int> MemberRepository::rankOfMember(const std::int64_t id, const MemberQuery& query) const
+Core::Result<int> MemberRepository::rankOfMember(const std::int64_t id, const MemberQuery& query) const
 {
     std::string sql =
         "SELECT ranked.rank FROM (\n"
@@ -287,10 +281,10 @@ Result<int> MemberRepository::rankOfMember(const std::int64_t id, const MemberQu
         }
         return RepoSql::notFoundResult<int>("error.member.notFound");
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
-Result<int> MemberRepository::countMembers(const MemberQuery& query) const
+Core::Result<int> MemberRepository::countMembers(const MemberQuery& query) const
 {
     std::string sql = R"SQL(
         SELECT COUNT(*)
@@ -309,14 +303,14 @@ Result<int> MemberRepository::countMembers(const MemberQuery& query) const
         if (!q->ok()) {
             return RepoSql::sqlResult<int>(m_session.lastError());
         }
-        return Result<int>::ok(0);
+        return Core::Result<int>::ok(0);
     }
-    return Result<int>::ok(q->integer(0));
+    return Core::Result<int>::ok(q->integer(0));
 }
 
 namespace {
 
-Result<std::vector<std::string>> listDistinctTexts(Database::SqliteSession& session,
+Core::Result<std::vector<std::string>> listDistinctTexts(Database::SqliteSession& session,
                                                    const char* sql)
 {
     auto q = session.prepare(sql);
@@ -331,7 +325,7 @@ Result<std::vector<std::string>> listDistinctTexts(Database::SqliteSession& sess
     if (!q->ok()) {
         return RepoSql::sqlResult<std::vector<std::string>>(session.lastError());
     }
-    return Result<std::vector<std::string>>::ok(std::move(values));
+    return Core::Result<std::vector<std::string>>::ok(std::move(values));
 }
 
 }  // namespace
@@ -354,7 +348,7 @@ std::string memberScopeCondition(const ArchiveScope scope)
 
 }  // namespace
 
-Result<std::vector<std::string>> MemberRepository::listCities(const ArchiveScope scope) const
+Core::Result<std::vector<std::string>> MemberRepository::listCities(const ArchiveScope scope) const
 {
     const std::string sql = "SELECT MIN(trim(city)) FROM members WHERE "
         + memberScopeCondition(scope)
@@ -364,7 +358,7 @@ Result<std::vector<std::string>> MemberRepository::listCities(const ArchiveScope
     return listDistinctTexts(m_session, sql.c_str());
 }
 
-Result<std::vector<std::string>> MemberRepository::listInscriptionYears(const ArchiveScope scope) const
+Core::Result<std::vector<std::string>> MemberRepository::listInscriptionYears(const ArchiveScope scope) const
 {
     const std::string sql = "SELECT DISTINCT substr(registered_at, 1, 4) FROM members WHERE "
         + memberScopeCondition(scope)
@@ -373,14 +367,14 @@ Result<std::vector<std::string>> MemberRepository::listInscriptionYears(const Ar
     return listDistinctTexts(m_session, sql.c_str());
 }
 
-Result<MemberRecord> MemberRepository::getMember(const std::int64_t id) const
+Core::Result<MemberRecord> MemberRepository::getMember(const std::int64_t id) const
 {
     const std::string sql = memberSelectSql() + "        WHERE m.id = :id\n";
     auto q = m_session.prepare(sql);
     if (!q) {
         return RepoSql::sqlResult<MemberRecord>(q.error().detail);
     }
-    if (!q->bind(":id", id) || !q->bind(LoanSql::todayPlaceholder(), Clock::todayIso())) {
+    if (!q->bind(":id", id) || !q->bind(LoanSql::todayPlaceholder(), Core::Clock::todayIso())) {
         return RepoSql::sqlResult<MemberRecord>(m_session.lastError());
     }
     if (!q->next()) {
@@ -389,7 +383,7 @@ Result<MemberRecord> MemberRepository::getMember(const std::int64_t id) const
         }
         return RepoSql::notFoundResult<MemberRecord>("error.member.notFound");
     }
-    return Result<MemberRecord>::ok(readMemberRow(*q));
+    return Core::Result<MemberRecord>::ok(readMemberRow(*q));
 }
 
 std::string MemberRepository::suggestMembershipNumber() const
@@ -402,9 +396,9 @@ std::string MemberRepository::suggestMembershipNumber() const
     return std::to_string(q->int64(0));
 }
 
-Status MemberRepository::validateInput(const MemberInput& input) const
+Core::Status MemberRepository::validateInput(const MemberInput& input) const
 {
-    if (trim(input.firstName).empty() || trim(input.lastName).empty()) {
+    if (Core::trim(input.firstName).empty() || Core::trim(input.lastName).empty()) {
         return RepoSql::validation("error.member.namesRequired");
     }
     if (!isValidSex(input.sex)) {
@@ -419,17 +413,17 @@ Status MemberRepository::validateInput(const MemberInput& input) const
     if (!isValidEmail(input.email)) {
         return RepoSql::validation("error.member.invalidEmail");
     }
-    std::string status = trim(input.status);
+    std::string status = Core::trim(input.status);
     if (status.empty()) {
         status = MemberStatus::kActive;
     }
     if (!isValidStatus(status)) {
         return RepoSql::validation("error.member.invalidStatus");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::recordStatusChange(const std::int64_t memberId,
+Core::Status MemberRepository::recordStatusChange(const std::int64_t memberId,
                                             const std::string& oldStatus,
                                             const std::string& newStatus,
                                             const std::string& note)
@@ -450,17 +444,17 @@ Status MemberRepository::recordStatusChange(const std::int64_t memberId,
         || !insert->bindOptional(":note", Database::SqlText::nullableText(note)) || !insert->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
+Core::Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
 {
     if (const auto valid = validateInput(input); !valid) {
-        return Result<std::int64_t>::fail(valid.error().kind, valid.error().key,
+        return Core::Result<std::int64_t>::fail(valid.error().kind, valid.error().key,
                                           valid.error().detail);
     }
 
-    std::string status = trim(input.status);
+    std::string status = Core::trim(input.status);
     if (status.empty()) {
         status = MemberStatus::kActive;
     }
@@ -469,10 +463,10 @@ Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
     // One stamp for both: the age group is judged on the inscription date, so
     // it must be the same instant that lands in registered_at. Leaving the
     // column to SQLite's default would read the wall clock, not Clock.
-    const std::string registeredAt = Clock::nowIso();
+    const std::string registeredAt = Core::Clock::nowIso();
     const std::string ageGroup = ageGroupFromBirthDate(input.dateOfBirth, registeredAt);
     // Registered today, so the year starts today: registration + 1 year - 1 day.
-    const std::string activeUntil = activeUntilFor({}, status, Clock::today());
+    const std::string activeUntil = activeUntilFor({}, status, Core::Clock::today());
 
     auto insert = m_session.prepare(R"SQL(
         INSERT INTO members (
@@ -489,8 +483,8 @@ Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
         return RepoSql::sqlResult<std::int64_t>(insert.error().detail);
     }
     if (!insert->bind(":membership_number", membershipNumber)
-        || !insert->bind(":first_name", trim(input.firstName))
-        || !insert->bind(":last_name", trim(input.lastName))
+        || !insert->bind(":first_name", Core::trim(input.firstName))
+        || !insert->bind(":last_name", Core::trim(input.lastName))
         || !insert->bindOptional(":sex", Database::SqlText::nullableText(input.sex))
         || !insert->bindOptional(":date_of_birth", Database::SqlText::nullableText(input.dateOfBirth))
         || !insert->bindOptional(":email", Database::SqlText::nullableText(input.email))
@@ -511,30 +505,30 @@ Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
     if (const auto history =
             recordStatusChange(memberId, {}, status, "Registered, active until " + activeUntil);
         !history) {
-        return Result<std::int64_t>::fail(history.error().kind, history.error().key,
+        return Core::Result<std::int64_t>::fail(history.error().kind, history.error().key,
                                           history.error().detail);
     }
-    return Result<std::int64_t>::ok(memberId);
+    return Core::Result<std::int64_t>::ok(memberId);
 }
 
-Result<std::int64_t> MemberRepository::createMember(const MemberInput& input)
+Core::Result<std::int64_t> MemberRepository::createMember(const MemberInput& input)
 {
     std::int64_t memberId = 0;
-    const Status work = m_session.transaction([&] {
+    const Core::Status work = m_session.transaction([&] {
         const auto inserted = insertMemberRow(input);
         if (!inserted) {
-            return asStatus(inserted);
+            return Core::asStatus(inserted);
         }
         memberId = inserted.value();
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
-        return Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
+        return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
-    return Result<std::int64_t>::ok(memberId);
+    return Core::Result<std::int64_t>::ok(memberId);
 }
 
-Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberInput& input)
+Core::Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberInput& input)
 {
     if (const auto valid = validateInput(input); !valid) {
         return valid;
@@ -542,15 +536,15 @@ Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberIn
 
     const auto existing = getMember(id);
     if (!existing) {
-        return asStatus(existing);
+        return Core::asStatus(existing);
     }
 
     // existing->status is derived on read, so this is what the librarian saw.
     const std::string oldStatus = existing->status;
-    const std::string status = trim(input.status).empty() ? oldStatus : trim(input.status);
-    const std::string activeUntil = activeUntilFor(existing->activeUntil, status, Clock::today());
+    const std::string status = Core::trim(input.status).empty() ? oldStatus : Core::trim(input.status);
+    const std::string activeUntil = activeUntilFor(existing->activeUntil, status, Core::Clock::today());
     const std::string ageGroup =
-        trim(input.dateOfBirth) == trim(existing->dateOfBirth)
+        Core::trim(input.dateOfBirth) == Core::trim(existing->dateOfBirth)
             ? existing->ageGroup
             : ageGroupFromBirthDate(input.dateOfBirth, existing->registeredAt);
     auto update = m_session.prepare(R"SQL(
@@ -574,8 +568,8 @@ Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberIn
     if (!update) {
         return RepoSql::sqlFailure(update.error().detail);
     }
-    if (!update->bind(":first_name", trim(input.firstName))
-        || !update->bind(":last_name", trim(input.lastName))
+    if (!update->bind(":first_name", Core::trim(input.firstName))
+        || !update->bind(":last_name", Core::trim(input.lastName))
         || !update->bindOptional(":sex", Database::SqlText::nullableText(input.sex))
         || !update->bindOptional(":date_of_birth", Database::SqlText::nullableText(input.dateOfBirth))
         || !update->bindOptional(":email", Database::SqlText::nullableText(input.email))
@@ -587,7 +581,7 @@ Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberIn
         || !update->bindOptional(":occupation", Database::SqlText::nullableText(input.occupation))
         || !update->bindOptional(":age_group", Database::SqlText::nullableText(ageGroup))
         || !update->bindOptional(":full_name", Database::SqlText::nullableText(input.fullName))
-        || !update->bind(":updated_at", Clock::nowIso()) || !update->bind(":id", id)
+        || !update->bind(":updated_at", Core::Clock::nowIso()) || !update->bind(":id", id)
         || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
@@ -600,21 +594,21 @@ Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberIn
             return history;
         }
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::updateMember(const std::int64_t id, const MemberInput& input)
+Core::Status MemberRepository::updateMember(const std::int64_t id, const MemberInput& input)
 {
     return m_session.transaction([&] { return applyMemberFields(id, input); });
 }
 
-Result<std::int64_t> MemberRepository::saveNewMember(const MemberWrite& write)
+Core::Result<std::int64_t> MemberRepository::saveNewMember(const MemberWrite& write)
 {
     std::int64_t memberId = 0;
-    const Status work = m_session.transaction([&] {
+    const Core::Status work = m_session.transaction([&] {
         const auto inserted = insertMemberRow(write.member);
         if (!inserted) {
-            return asStatus(inserted);
+            return Core::asStatus(inserted);
         }
         memberId = inserted.value();
 
@@ -631,12 +625,12 @@ Result<std::int64_t> MemberRepository::saveNewMember(const MemberWrite& write)
                 return idImage;
             }
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
     if (!work) {
-        return Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
+        return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
-    return Result<std::int64_t>::ok(memberId);
+    return Core::Result<std::int64_t>::ok(memberId);
 }
 
 namespace {
@@ -673,10 +667,10 @@ bool isOwnMemberImage(const std::filesystem::path& stored, const std::int64_t me
 
 }  // namespace
 
-Status MemberRepository::saveExistingMember(const std::int64_t id, const MemberWrite& write)
+Core::Status MemberRepository::saveExistingMember(const std::int64_t id, const MemberWrite& write)
 {
     std::vector<std::string> clearedPaths;
-    const Status saved = m_session.transaction([&] {
+    const Core::Status saved = m_session.transaction([&] {
         if (const auto updated = applyMemberFields(id, write.member); !updated) {
             return updated;
         }
@@ -702,7 +696,7 @@ Status MemberRepository::saveExistingMember(const std::int64_t id, const MemberW
                 return cleared;
             }
         }
-        return Status::ok();
+        return Core::Status::ok();
     });
 
     // Only after the commit: a save that failed must not have lost the file.
@@ -723,7 +717,7 @@ Status MemberRepository::saveExistingMember(const std::int64_t id, const MemberW
     return saved;
 }
 
-Result<MemberRepository::MemberRemovalBlock> MemberRepository::removalBlock(
+Core::Result<MemberRepository::MemberRemovalBlock> MemberRepository::removalBlock(
     const std::int64_t id) const
 {
     auto loanCheck = m_session.prepare(
@@ -737,19 +731,19 @@ Result<MemberRepository::MemberRemovalBlock> MemberRepository::removalBlock(
     }
 
     if (loanCheck->integer(1) > 0) {
-        return Result<MemberRemovalBlock>::ok(MemberRemovalBlock::OpenLoans);
+        return Core::Result<MemberRemovalBlock>::ok(MemberRemovalBlock::OpenLoans);
     }
     if (loanCheck->integer(0) > 0) {
-        return Result<MemberRemovalBlock>::ok(MemberRemovalBlock::LoanHistory);
+        return Core::Result<MemberRemovalBlock>::ok(MemberRemovalBlock::LoanHistory);
     }
-    return Result<MemberRemovalBlock>::ok(MemberRemovalBlock::None);
+    return Core::Result<MemberRemovalBlock>::ok(MemberRemovalBlock::None);
 }
 
-Status MemberRepository::canArchiveMember(const std::int64_t id) const
+Core::Status MemberRepository::canArchiveMember(const std::int64_t id) const
 {
     const auto block = removalBlock(id);
     if (!block) {
-        return asStatus(block);
+        return Core::asStatus(block);
     }
     if (block.value() == MemberRemovalBlock::OpenLoans) {
         return RepoSql::validation("error.member.archiveHasLoans");
@@ -769,13 +763,13 @@ Status MemberRepository::canArchiveMember(const std::int64_t id) const
         }
         return RepoSql::notFound("error.member.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::archiveMember(const std::int64_t id)
+Core::Status MemberRepository::archiveMember(const std::int64_t id)
 {
     return m_session.transaction([&] {
-    if (const Status gate = canArchiveMember(id); !gate) {
+    if (const Core::Status gate = canArchiveMember(id); !gate) {
         return gate;
     }
 
@@ -785,18 +779,18 @@ Status MemberRepository::archiveMember(const std::int64_t id)
     if (!archive) {
         return RepoSql::sqlFailure(archive.error().detail);
     }
-    if (!archive->bind(":stamp", Clock::nowIso()) || !archive->bind(":id", id)
+    if (!archive->bind(":stamp", Core::Clock::nowIso()) || !archive->bind(":id", id)
         || !archive->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (archive->changes() <= 0) {
         return RepoSql::notFound("error.member.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
     });
 }
 
-Status MemberRepository::restoreMember(const std::int64_t id)
+Core::Status MemberRepository::restoreMember(const std::int64_t id)
 {
     auto restore = m_session.prepare(
         "UPDATE members SET archived_at = NULL, updated_at = :stamp "
@@ -804,12 +798,12 @@ Status MemberRepository::restoreMember(const std::int64_t id)
     if (!restore) {
         return RepoSql::sqlFailure(restore.error().detail);
     }
-    if (!restore->bind(":stamp", Clock::nowIso()) || !restore->bind(":id", id)
+    if (!restore->bind(":stamp", Core::Clock::nowIso()) || !restore->bind(":id", id)
         || !restore->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     if (restore->changes() > 0) {
-        return Status::ok();
+        return Core::Status::ok();
     }
 
     auto exists = m_session.prepare("SELECT 1 FROM members WHERE id = :id");
@@ -825,7 +819,7 @@ Status MemberRepository::restoreMember(const std::int64_t id)
     return RepoSql::notFound("error.member.notFound");
 }
 
-Status MemberRepository::canPurgeMember(const std::int64_t id) const
+Core::Status MemberRepository::canPurgeMember(const std::int64_t id) const
 {
     auto read = m_session.prepare("SELECT archived_at IS NOT NULL FROM members WHERE id = :id");
     if (!read) {
@@ -848,7 +842,7 @@ Status MemberRepository::canPurgeMember(const std::int64_t id) const
 
     const auto block = removalBlock(id);
     if (!block) {
-        return asStatus(block);
+        return Core::asStatus(block);
     }
     switch (block.value()) {
     case MemberRemovalBlock::OpenLoans:
@@ -858,13 +852,13 @@ Status MemberRepository::canPurgeMember(const std::int64_t id) const
     case MemberRemovalBlock::None:
         break;
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::purgeMember(const std::int64_t id)
+Core::Status MemberRepository::purgeMember(const std::int64_t id)
 {
-    const Status removed = m_session.transaction([&] {
-        if (const Status gate = canPurgeMember(id); !gate) {
+    const Core::Status removed = m_session.transaction([&] {
+        if (const Core::Status gate = canPurgeMember(id); !gate) {
             return gate;
         }
 
@@ -878,7 +872,7 @@ Status MemberRepository::purgeMember(const std::int64_t id)
     if (remove->changes() <= 0) {
         return RepoSql::notFound("error.member.notFound");
     }
-    return Status::ok();
+    return Core::Status::ok();
     });
     if (!removed) {
         return removed;
@@ -890,7 +884,7 @@ Status MemberRepository::purgeMember(const std::int64_t id)
         std::error_code error;
         std::filesystem::remove_all(memberDir, error);
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
 std::string MemberRepository::resolveImagePath(const std::string& storedPath) const
@@ -905,7 +899,7 @@ std::string MemberRepository::resolveImagePath(const std::string& storedPath) co
     return (std::filesystem::path(m_resourcesDirectory) / storedPath).string();
 }
 
-Status MemberRepository::storeMemberImage(const std::int64_t memberId,
+Core::Status MemberRepository::storeMemberImage(const std::int64_t memberId,
                                           const std::string& sourceFilePath,
                                           const ImageSlot slot)
 {
@@ -954,14 +948,14 @@ Status MemberRepository::storeMemberImage(const std::int64_t memberId,
     if (!update) {
         return RepoSql::sqlFailure(update.error().detail);
     }
-    if (!update->bind(":path", relativePath) || !update->bind(":updated_at", Clock::nowIso())
+    if (!update->bind(":path", relativePath) || !update->bind(":updated_at", Core::Clock::nowIso())
         || !update->bind(":id", memberId) || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::clearMemberImage(const std::int64_t memberId,
+Core::Status MemberRepository::clearMemberImage(const std::int64_t memberId,
                                           const ImageSlot slot,
                                           std::vector<std::string>& clearedPaths)
 {
@@ -981,7 +975,7 @@ Status MemberRepository::clearMemberImage(const std::int64_t memberId,
         }
     }
     if (stored.empty()) {
-        return Status::ok();
+        return Core::Status::ok();
     }
 
     const char* sql = slot == ImageSlot::Photo
@@ -991,21 +985,21 @@ Status MemberRepository::clearMemberImage(const std::int64_t memberId,
     if (!update) {
         return RepoSql::sqlFailure(update.error().detail);
     }
-    if (!update->bind(":updated_at", Clock::nowIso()) || !update->bind(":id", memberId)
+    if (!update->bind(":updated_at", Core::Clock::nowIso()) || !update->bind(":id", memberId)
         || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     clearedPaths.push_back(stored);
-    return Status::ok();
+    return Core::Status::ok();
 }
 
-Status MemberRepository::setPhotoImage(const std::int64_t memberId,
+Core::Status MemberRepository::setPhotoImage(const std::int64_t memberId,
                                        const std::string& sourceFilePath)
 {
     return storeMemberImage(memberId, sourceFilePath, ImageSlot::Photo);
 }
 
-Status MemberRepository::setIdImage(const std::int64_t memberId, const std::string& sourceFilePath)
+Core::Status MemberRepository::setIdImage(const std::int64_t memberId, const std::string& sourceFilePath)
 {
     return storeMemberImage(memberId, sourceFilePath, ImageSlot::IdCard);
 }

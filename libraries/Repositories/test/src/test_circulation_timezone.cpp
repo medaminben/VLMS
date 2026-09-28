@@ -19,8 +19,6 @@
 #include <string>
 #include <vector>
 
-using VLMS::Clock;
-using VLMS::Date;
 using namespace VLMS;
 using namespace Test;
 
@@ -76,12 +74,12 @@ int localOffsetSecondsAtMonthsOffset(int months)
     return offsetSecondsAt(std::mktime(&local));
 }
 
-Date dateAtFixedUtcOffset(const std::chrono::system_clock::time_point& utc, int offsetHours)
+Core::Date dateAtFixedUtcOffset(const std::chrono::system_clock::time_point& utc, int offsetHours)
 {
     const auto shifted = utc + std::chrono::hours(offsetHours);
     const auto days = std::chrono::floor<std::chrono::days>(shifted);
     const std::chrono::year_month_day ymd{days};
-    return Date(static_cast<int>(ymd.year()),
+    return Core::Date(static_cast<int>(ymd.year()),
                 static_cast<int>(static_cast<unsigned>(ymd.month())),
                 static_cast<int>(static_cast<unsigned>(ymd.day())));
 }
@@ -89,7 +87,7 @@ Date dateAtFixedUtcOffset(const std::chrono::system_clock::time_point& utc, int 
 std::string suiteContext()
 {
     std::ostringstream out;
-    out << timeZoneDescription() << " | local date " << Date::todayLocal().toIso() << " | UTC date "
+    out << timeZoneDescription() << " | local date " << Core::Date::todayLocal().toIso() << " | UTC date "
         << utcToday().toIso() << " | "
         << (localDateDiffersFromUtcDate()
                 ? "DATES DIFFER -- this entry is the one carrying the proof right now"
@@ -150,7 +148,7 @@ protected:
 
     void TearDown() override
     {
-        EXPECT_FALSE(Clock::isOverridden())
+        EXPECT_FALSE(Core::Clock::isOverridden())
             << "this suite must never pin the clock: the bug IS a clock disagreement";
         m_metrics.reset();
         m_repository.reset();
@@ -193,8 +191,8 @@ protected:
     // failure. Naming the direction is also the clearest statement of what
     // each defect actually does to a librarian in Ksour Essef (UTC+1, so
     // always the utcIsBehindLocal case, for one hour every night).
-    [[nodiscard]] [[maybe_unused]] static Date localToday() { return Date::todayLocal(); }
-    [[nodiscard]] [[maybe_unused]] static Date sqliteToday() { return utcToday(); }
+    [[nodiscard]] [[maybe_unused]] static Core::Date localToday() { return Core::Date::todayLocal(); }
+    [[nodiscard]] [[maybe_unused]] static Core::Date sqliteToday() { return utcToday(); }
     [[nodiscard]] [[maybe_unused]] static bool utcIsBehindLocal() { return sqliteToday() < localToday(); }
     [[nodiscard]] [[maybe_unused]] static bool utcIsAheadOfLocal() { return sqliteToday() > localToday(); }
 
@@ -237,9 +235,9 @@ TEST_F(test_core_Timezone, AtLeastOneRegisteredZoneDiffersFromUtcRightNow)
     // swaps a zone for one only two hours from UTC, this fails immediately
     // instead of the suite going green for the wrong reason.
     const auto instant = std::chrono::system_clock::now();
-    const Date utcDate = utcToday();
-    const Date kiritimati = dateAtFixedUtcOffset(instant, 14);
-    const Date midway = dateAtFixedUtcOffset(instant, -11);
+    const Core::Date utcDate = utcToday();
+    const Core::Date kiritimati = dateAtFixedUtcOffset(instant, 14);
+    const Core::Date midway = dateAtFixedUtcOffset(instant, -11);
 
     ASSERT_TRUE(kiritimati != utcDate || midway != utcDate)
         << "both registered zones agree with UTC (" << utcDate.toIso()
@@ -259,7 +257,7 @@ TEST_F(test_core_Timezone, SqliteDateNowFollowsUtcNotTheProcessTimeZone)
     EXPECT_EQ(sqliteNow, utcToday().toIso());
 
     if (localDateDiffersFromUtcDate()) {
-        EXPECT_NE(sqliteNow, Date::todayLocal().toIso()) << context();
+        EXPECT_NE(sqliteNow, Core::Date::todayLocal().toIso()) << context();
     }
 }
 
@@ -270,7 +268,7 @@ TEST_F(test_core_Timezone, SqliteDateNowFollowsUtcNotTheProcessTimeZone)
 TEST_F(test_core_Timezone, LoanDueYesterdayIsOverdueAtEveryHour)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     // Due yesterday, local. A librarian looking at the overdue list this
     // morning expects to see it, in every time zone, at every hour.
@@ -289,7 +287,7 @@ TEST_F(test_core_Timezone, LoanDueYesterdayIsOverdueAtEveryHour)
 TEST_F(test_core_Timezone, LoanDueTodayIsNotOverdueAtEveryHour)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-14).toIso(), today.toIso()), 0);
 
@@ -326,7 +324,7 @@ TEST_F(test_core_Timezone, LoanBorrowedTodayIsCountedInTodaysCheckouts)
 TEST_F(test_core_Timezone, LoanReturnedTodayIsAcceptedAtEveryHour)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     const std::int64_t loanId =
         rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-3).toIso(), today.addDays(11).toIso());
@@ -344,7 +342,7 @@ TEST_F(test_core_Timezone, LoanReturnedTodayIsAcceptedAtEveryHour)
 TEST_F(test_core_Timezone, LoanReturnedTodayIsCountedInTodaysReturns)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     const std::int64_t loanId =
         rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-3).toIso(), today.addDays(11).toIso());
@@ -363,7 +361,7 @@ TEST_F(test_core_Timezone, LoanReturnedTodayIsCountedInTodaysReturns)
 TEST_F(test_core_Timezone, OverdueKpiAndOverdueFilterAgreeAtEveryHour)
 {
     seedMemberAndCopies();
-    const Date today = Date::todayLocal();
+    const Core::Date today = Core::Date::todayLocal();
 
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-15).toIso(), today.addDays(-1).toIso()),
               0);
