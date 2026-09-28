@@ -43,10 +43,10 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -82,7 +82,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copyIds;
     int m_loanCountAtStart = 0;
@@ -93,7 +93,7 @@ TEST_F(test_core_CirculationInjection, SearchWithHostilePayloadIsTreatedAsLitera
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.search = entry.value;
 
         EXPECT_TRUE(VLMS_UNWRAP(m_repository->listLoans(query)).empty());
@@ -105,7 +105,7 @@ TEST_F(test_core_CirculationInjection, CountLoansAgreesWithListLoansForHostileSe
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.search = entry.value;
 
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(query)),
@@ -128,10 +128,10 @@ TEST_F(test_core_CirculationInjection, FilterWithHostileSqlFragmentIsSilentlyDro
     for (const auto& [id, payload] : cases) {
         SCOPED_TRACE(id);
 
-        LoanQuery hostile;
+        Repositories::LoanQuery hostile;
         hostile.filters = {payload};
 
-        LoanQuery unfiltered;
+        Repositories::LoanQuery unfiltered;
 
         // An unrecognised filter falls through the whitelist and contributes no
         // clause, so the result must equal the no-filter case. Critically it must
@@ -145,10 +145,10 @@ TEST_F(test_core_CirculationInjection, FilterWithHostileSqlFragmentIsSilentlyDro
 
 TEST_F(test_core_CirculationInjection, FilterListWithMixOfValidAndHostileCodes)
 {
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.filters = {
         "'; DROP TABLE loans;--",
-        LoanFilter::kReturned,
+        Repositories::LoanFilter::kReturned,
     };
 
     // The one recognised code still applies; the hostile entry adds nothing.
@@ -159,7 +159,7 @@ TEST_F(test_core_CirculationInjection, FilterListWithMixOfValidAndHostileCodes)
 
 TEST_F(test_core_CirculationInjection, UnknownFilterCodeBehavesAsNoFilter)
 {
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.filters = {"definitely-not-a-filter"};
 
     EXPECT_EQ(static_cast<int>(VLMS_UNWRAP(m_repository->listLoans(query)).size()), 2);
@@ -184,12 +184,12 @@ TEST_F(test_core_CirculationInjection, AvailableCopySearchWithHostilePayload)
 
 TEST_F(test_core_CirculationInjection, HostileSortColumnUsesDefaultOrder)
 {
-    LoanQuery safe;
+    Repositories::LoanQuery safe;
     const auto expected = VLMS_UNWRAP(m_repository->listLoans(safe));
     ASSERT_FALSE(expected.empty());
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.sortColumn = entry.value;
         const auto rows = VLMS_UNWRAP(m_repository->listLoans(query));
         ASSERT_EQ(rows.size(), expected.size());
@@ -213,7 +213,7 @@ TEST_F(test_core_CirculationInjection, LoanNotesWithHostilePayloadRoundTrip)
         ASSERT_EQ(static_cast<int>(copies.size()), 1);
 
         const Date today = Date::todayLocal();
-        LoanInput input;
+        Repositories::LoanInput input;
         input.memberId = m_memberId;
         input.bookCopyId = copies.front();
         input.borrowedAt = today.toIso();

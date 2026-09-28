@@ -26,17 +26,16 @@ namespace {
 
 using VLMS::Clock;
 using VLMS::Strings;
-namespace LoanPolicy = VLMS::LoanPolicy;
 
 }  // namespace
 
-LoanExtendDialog::LoanExtendDialog(const LoanRecord& loan, QWidget* parent)
+LoanExtendDialog::LoanExtendDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
     : QDialog(parent) {
     buildUi(loan);
     retranslateUi(loan);
 }
 
-void LoanExtendDialog::buildUi(const LoanRecord& loan) {
+void LoanExtendDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     resize(480, 240);
 
     auto* layout = new QVBoxLayout(this);
@@ -58,8 +57,8 @@ void LoanExtendDialog::buildUi(const LoanRecord& loan) {
 
     const QDate currentDue = QDate::fromString(qs(loan.dueAt), Qt::ISODate);
     const auto today = Clock::today();
-    m_dueDateEdit->setMinimumDate(qd(LoanPolicy::minimumExtensionDate(cd(currentDue), today)));
-    m_dueDateEdit->setDate(qd(LoanPolicy::suggestedExtensionDate(cd(currentDue), today)));
+    m_dueDateEdit->setMinimumDate(qd(VLMS::Repositories::LoanPolicy::minimumExtensionDate(cd(currentDue), today)));
+    m_dueDateEdit->setDate(qd(VLMS::Repositories::LoanPolicy::suggestedExtensionDate(cd(currentDue), today)));
     form->addRow(new QLabel(this), m_dueDateEdit);
 
     layout->addLayout(form);
@@ -81,7 +80,7 @@ void LoanExtendDialog::buildUi(const LoanRecord& loan) {
     layout->addWidget(buttons);
 }
 
-void LoanExtendDialog::retranslateUi(const LoanRecord& loan) {
+void LoanExtendDialog::retranslateUi(const VLMS::Repositories::LoanRecord& loan) {
     setWindowTitle(T("loan.extendTitle"));
 
     VLMS::retranslateStandardButtons(findChild<QDialogButtonBox*>());

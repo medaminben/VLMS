@@ -50,9 +50,9 @@ BirthDateEdit* birthDate(MemberEditorDialog& dialog)
     return dialog.findChild<BirthDateEdit*>();
 }
 
-MemberRecord validMember()
+Repositories::MemberRecord validMember()
 {
-    MemberRecord member;
+    Repositories::MemberRecord member;
     member.id = 1;
     member.membershipNumber = "M-0001";
     member.firstName = "Amina";
@@ -73,7 +73,7 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -83,14 +83,14 @@ protected:
         m_db.reset();
     }
 
-    [[nodiscard]] MemberEditorDialog::ValidationFailure failureFor(const MemberRecord& member) const
+    [[nodiscard]] MemberEditorDialog::ValidationFailure failureFor(const Repositories::MemberRecord& member) const
     {
         MemberEditorDialog dialog(*m_repository, member);
         return dialog.firstValidationFailure();
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_repository;
+    std::unique_ptr<Repositories::MemberRepository> m_repository;
 };
 
 TEST_F(test_ui_DialogTranslations, ButtonBoxUsesTheApplicationTableInEveryLocale)
@@ -292,7 +292,7 @@ TEST_F(test_ui_DialogTranslations, ThirtyFirstOfFebruaryFocusesTheDay)
 
 TEST_F(test_ui_DialogTranslations, AChosenBirthDateIsReturnedAsIso)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1990-05-12";
     MemberEditorDialog dialog(*m_repository, member);
     EXPECT_TRUE(dialog.firstValidationFailure().messageKey.isEmpty());
@@ -301,7 +301,7 @@ TEST_F(test_ui_DialogTranslations, AChosenBirthDateIsReturnedAsIso)
 
 TEST_F(test_ui_DialogTranslations, AnOutOfRangeStoredYearStaysSelected)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1890-05-12";
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -313,14 +313,14 @@ TEST_F(test_ui_DialogTranslations, AnOutOfRangeStoredYearStaysSelected)
 
 TEST_F(test_ui_DialogTranslations, ABareYearOfBirthIsRefusedBeforeTheDialogCloses)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1987";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthRequired"));
 }
 
 TEST_F(test_ui_DialogTranslations, AnImpossibleDateOfBirthIsRefused)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1987-02-31";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthInvalid"));
 }
@@ -328,7 +328,7 @@ TEST_F(test_ui_DialogTranslations, AnImpossibleDateOfBirthIsRefused)
 TEST_F(test_ui_DialogTranslations, ABirthDateAfterTodayIsRefused)
 {
     const ScopedClock pinned(Date(2026, 9, 19));
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "2026-09-20";
     EXPECT_EQ(failureFor(member).messageKey, QStringLiteral("member.dateOfBirthInFuture"));
 
@@ -338,7 +338,7 @@ TEST_F(test_ui_DialogTranslations, ABirthDateAfterTodayIsRefused)
 
 TEST_F(test_ui_DialogTranslations, AnEmptyDateOfBirthIsRefused)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth.clear();
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -362,7 +362,7 @@ TEST_F(test_ui_DialogTranslations, EditorHasNoAgeGroupCombo)
 
 TEST_F(test_ui_DialogTranslations, ARefusedDateOfBirthPointsAtItsOwnField)
 {
-    MemberRecord member = validMember();
+    Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "not a date";
     MemberEditorDialog dialog(*m_repository, member);
     auto* birth = birthDate(dialog);
@@ -377,17 +377,17 @@ TEST_F(test_ui_DialogTranslations, ARefusedDateOfBirthPointsAtItsOwnField)
 
 TEST_F(test_ui_DialogTranslations, EveryFailureMessageIsTranslatedInEveryLocale)
 {
-    MemberRecord blankName = validMember();
+    Repositories::MemberRecord blankName = validMember();
     blankName.firstName.clear();
-    MemberRecord emptyDate = validMember();
+    Repositories::MemberRecord emptyDate = validMember();
     emptyDate.dateOfBirth.clear();
-    MemberRecord badDate = validMember();
+    Repositories::MemberRecord badDate = validMember();
     badDate.dateOfBirth = "1987";
-    MemberRecord futureDate = validMember();
+    Repositories::MemberRecord futureDate = validMember();
     futureDate.dateOfBirth = "2999-01-01";
-    MemberRecord badEmail = validMember();
+    Repositories::MemberRecord badEmail = validMember();
     badEmail.email = "not-an-address";
-    for (const MemberRecord& member : {blankName, emptyDate, badDate, futureDate, badEmail}) {
+    for (const Repositories::MemberRecord& member : {blankName, emptyDate, badDate, futureDate, badEmail}) {
         const QString key = failureFor(member).messageKey;
         ASSERT_FALSE(key.isEmpty());
         for (const char* locale : {kArabic, kFrench, kEnglish}) {

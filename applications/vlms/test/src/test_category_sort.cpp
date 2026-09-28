@@ -12,7 +12,7 @@ TEST(test_ui_CategorySort, HeaderClickSortsByCode)
 {
     ::Test::TestDatabase db;
     ASSERT_TRUE(db.isValid()) << db.lastError();
-    CatalogRepository repository(db.session(), db.resourcesDirectory());
+    Repositories::CatalogRepository repository(db.session(), db.resourcesDirectory());
     ASSERT_GT(::Test::seedCategory(db, "Z9", "Zebra"), 0);
     ASSERT_GT(::Test::seedCategory(db, "A1", "Apple"), 0);
 

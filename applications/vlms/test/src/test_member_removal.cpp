@@ -59,8 +59,8 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -75,7 +75,7 @@ protected:
     {
         MemberSeed member;
         member.membershipNumber = "M-2024-777";
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -94,8 +94,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MembersPage> m_page;
     qint64 m_memberId = 0;
 };

@@ -85,10 +85,10 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_memberRepo =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         const std::int64_t member = seedMember(*m_db, uniqueMemberSeed(1));
         const std::int64_t returnedBook = seedBook(*m_db, uniqueBookSeed(1));
@@ -128,9 +128,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<MemberRepository> m_memberRepo;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<CirculationPage> m_page;
     QTableWidget* m_table = nullptr;
     QPushButton* m_delete = nullptr;

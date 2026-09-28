@@ -6,7 +6,8 @@
 
 using VLMS::Result;
 using VLMS::trim;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 NamedEntityStore::NamedEntityStore(VLMS::SqliteSession& session)
     : m_session(session)
@@ -69,3 +70,5 @@ Result<std::vector<std::string>> NamedEntityStore::listNames(const Kind kind) co
     }
     return Result<std::vector<std::string>>::ok(std::move(names));
 }
+
+}  // namespace VLMS::Repositories

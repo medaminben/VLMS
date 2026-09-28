@@ -19,8 +19,8 @@ using VLMS::T;
 using VLMS::qs;
 using VLMS::ss;
 
-ReuseBookChooser::ReuseBookChooser(CatalogRepository& catalog,
-                                   const BookCopyRecord& archivedCopy,
+ReuseBookChooser::ReuseBookChooser(VLMS::Repositories::CatalogRepository& catalog,
+                                   const VLMS::Repositories::BookCopyRecord& archivedCopy,
                                    QWidget* parent)
     : QDialog(parent),
       m_catalog(catalog),
@@ -55,7 +55,7 @@ void ReuseBookChooser::refreshBooks()
     auto* fresh = new QListWidgetItem(T("archive.reuse.newBook"), m_books);
     fresh->setData(Qt::UserRole, QVariant::fromValue<qint64>(0));
 
-    BookQuery query;
+    VLMS::Repositories::BookQuery query;
     query.search = ss(m_search->text());
     query.limit = 200;
     const auto books = m_catalog.listBooks(query);
@@ -63,8 +63,8 @@ void ReuseBookChooser::refreshBooks()
         VLMS::showRepoError(this, books.error());
         return;
     }
-    for (const BookRecord& book : books.value()) {
-        if (CatalogRepository::copySourceForLanguage(book.language) != m_source) {
+    for (const VLMS::Repositories::BookRecord& book : books.value()) {
+        if (VLMS::Repositories::CatalogRepository::copySourceForLanguage(book.language) != m_source) {
             continue;
         }
         const QString author =
@@ -84,8 +84,8 @@ qint64 ReuseBookChooser::chosenBookId() const
 namespace VLMS {
 
 bool runReuseNumberFlow(QWidget* parent,
-                        CatalogRepository& catalog,
-                        const BookCopyRecord& archivedCopy)
+                        Repositories::CatalogRepository& catalog,
+                        const Repositories::BookCopyRecord& archivedCopy)
 {
     ReuseBookChooser chooser(catalog, archivedCopy, parent);
     if (chooser.exec() != QDialog::Accepted || chooser.chosenBookId() < 0) {
@@ -109,7 +109,7 @@ bool runReuseNumberFlow(QWidget* parent,
         return false;
     }
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = editor->bookInput();
     write.copies = editor->copyInputs();
     if (editor->coverChanged()) {
@@ -118,7 +118,7 @@ bool runReuseNumberFlow(QWidget* parent,
     const bool stillHoldsNumber = std::any_of(
         write.copies.begin(),
         write.copies.end(),
-        [&archivedCopy](const BookCopyInput& copy) {
+        [&archivedCopy](const Repositories::BookCopyInput& copy) {
             return copy.localId == archivedCopy.localId
                 && copy.globalCopyId == archivedCopy.globalCopyId;
         });

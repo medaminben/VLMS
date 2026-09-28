@@ -23,7 +23,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<MetricsRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::MetricsRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -33,12 +33,12 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MetricsRepository> m_repository;
+    std::unique_ptr<Repositories::MetricsRepository> m_repository;
 };
 
 TEST_F(test_core_MetricsRepository, EmptyDatabaseYieldsAllZeroMetrics)
 {
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
 
     EXPECT_EQ(metrics.bookTitles, 0);
     EXPECT_EQ(metrics.totalCopies, 0);
@@ -64,7 +64,7 @@ TEST_F(test_core_MetricsRepository, TotalCopiesCountsEveryCopy)
     seed.initialCopyCount = 5;
     EXPECT_GT(seedBook(*m_db, seed), 0);
 
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
     EXPECT_EQ(metrics.bookTitles, 1);
     EXPECT_EQ(metrics.totalCopies, 5);
 }
@@ -72,7 +72,7 @@ TEST_F(test_core_MetricsRepository, TotalCopiesCountsEveryCopy)
 TEST_F(test_core_MetricsRepository, AvailableCopiesExcludesOpenLoans)
 {
     MemberSeed member = uniqueMemberSeed(1);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -87,7 +87,7 @@ TEST_F(test_core_MetricsRepository, AvailableCopiesExcludesOpenLoans)
                             today.addDays(14).toIso()),
               0);
 
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
     EXPECT_EQ(metrics.totalCopies, 4);
     EXPECT_EQ(metrics.availableCopies, 3);
     EXPECT_EQ(metrics.totalCopies - metrics.availableCopies, 1);
@@ -96,9 +96,9 @@ TEST_F(test_core_MetricsRepository, AvailableCopiesExcludesOpenLoans)
 TEST_F(test_core_MetricsRepository, MemberStatusCountsSumToTotalMembers)
 {
     const std::vector<std::string> statuses = {
-        MemberStatus::kActive,
-        MemberStatus::kActive,
-        MemberStatus::kNonActive,
+        Repositories::MemberStatus::kActive,
+        Repositories::MemberStatus::kActive,
+        Repositories::MemberStatus::kNonActive,
     };
 
     for (int i = 0; i < static_cast<int>(statuses.size()); ++i) {
@@ -107,7 +107,7 @@ TEST_F(test_core_MetricsRepository, MemberStatusCountsSumToTotalMembers)
         EXPECT_GT(seedMember(*m_db, seed), 0);
     }
 
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
     EXPECT_EQ(metrics.totalMembers, static_cast<int>(statuses.size()));
     EXPECT_EQ(metrics.membersActive + metrics.membersNonActive, metrics.totalMembers);
     EXPECT_EQ(metrics.membersActive, 2);
@@ -116,7 +116,7 @@ TEST_F(test_core_MetricsRepository, MemberStatusCountsSumToTotalMembers)
 TEST_F(test_core_MetricsRepository, OpenPlusReturnedEqualsTotalLoans)
 {
     MemberSeed member = uniqueMemberSeed(2);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -137,7 +137,7 @@ TEST_F(test_core_MetricsRepository, OpenPlusReturnedEqualsTotalLoans)
                             today.addDays(-20).toIso()),
               0);
 
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
     EXPECT_EQ(metrics.openLoans + metrics.returnedLoans, m_db->count("loans"));
     EXPECT_EQ(metrics.openLoans, 1);
     EXPECT_EQ(metrics.returnedLoans, 1);
@@ -161,7 +161,7 @@ TEST_F(test_core_MetricsRepository, OpenLoansAreTheOnesStillWithinTheirDueDate)
                             today.addDays(-16).toIso()),
               0);
 
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_repository->fetchMetrics());
     EXPECT_EQ(metrics.openLoans, 2);     // due later today or after
     EXPECT_EQ(metrics.overdueLoans, 1);  // past its due date: overdue, not open
     EXPECT_EQ(metrics.openLoans + metrics.overdueLoans + metrics.returnedLoans,
@@ -171,7 +171,7 @@ TEST_F(test_core_MetricsRepository, OpenLoansAreTheOnesStillWithinTheirDueDate)
 TEST_F(test_core_MetricsRepository, OverdueCountMatchesOverdueLoans)
 {
     MemberSeed member = uniqueMemberSeed(3);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 

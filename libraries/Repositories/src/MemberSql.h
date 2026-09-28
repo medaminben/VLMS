@@ -9,7 +9,7 @@ namespace VLMS {
 class SqliteStatement;
 }
 
-namespace VLMS::MemberSql {
+namespace VLMS::Repositories::MemberSql {
 
 /// True while a member's year is running: active_until is today or later.
 /// Never NULL, so NOT works on it. Uses :today -- bind it with
@@ -29,4 +29,4 @@ void bindFilters(SqliteStatement& query, const MemberQuery& queryData);
 [[nodiscard]] std::string orderExpressions(const MemberQuery& query);
 [[nodiscard]] std::string orderClause(const MemberQuery& query);
 
-}  // namespace VLMS::MemberSql
+}  // namespace VLMS::Repositories::MemberSql

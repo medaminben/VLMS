@@ -40,7 +40,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_repository = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         for (int i = 0; i < 3; ++i) {
             ASSERT_GT(seedMember(*m_db, uniqueMemberSeed(i)), 0);
         }
@@ -59,7 +59,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_repository;
+    std::unique_ptr<Repositories::MemberRepository> m_repository;
     int m_memberCountAtStart = 0;
 };
 
@@ -68,7 +68,7 @@ TEST_F(test_core_MemberInjection, SearchWithHostilePayloadIsTreatedAsLiteral)
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        MemberQuery query;
+        Repositories::MemberQuery query;
         query.search = entry.value;
 
         EXPECT_TRUE(VLMS_UNWRAP(m_repository->listMembers(query)).empty())
@@ -81,7 +81,7 @@ TEST_F(test_core_MemberInjection, CountMembersAgreesWithListMembersForHostileSea
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        MemberQuery query;
+        Repositories::MemberQuery query;
         query.search = entry.value;
 
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(query)),
@@ -96,7 +96,7 @@ TEST_F(test_core_MemberInjection, StatusFilterWithHostilePayloadMatchesNothing)
 
         // listMembers does NOT validate statuses against statusCodes(); it binds
         // them. So a hostile status must simply match zero rows.
-        MemberQuery query;
+        Repositories::MemberQuery query;
         query.statuses = {entry.value};
 
         EXPECT_EQ(static_cast<int>(VLMS_UNWRAP(m_repository->listMembers(query)).size()), 0);
@@ -106,18 +106,18 @@ TEST_F(test_core_MemberInjection, StatusFilterWithHostilePayloadMatchesNothing)
 
 TEST_F(test_core_MemberInjection, StatusFilterWithMixOfValidAndHostileCodes)
 {
-    MemberQuery query;
+    Repositories::MemberQuery query;
     query.statuses = {
         "'; DROP TABLE members;--",
-        MemberStatus::kActive,
+        Repositories::MemberStatus::kActive,
         "' OR '1'='1",
     };
 
     // The seeds are all 'active', so exactly the real code must select them.
     const auto results = VLMS_UNWRAP(m_repository->listMembers(query));
     ASSERT_EQ(static_cast<int>(results.size()), m_memberCountAtStart);
-    for (const MemberRecord& member : results) {
-        EXPECT_EQ(member.status, MemberStatus::kActive);
+    for (const Repositories::MemberRecord& member : results) {
+        EXPECT_EQ(member.status, Repositories::MemberStatus::kActive);
     }
 }
 
@@ -126,19 +126,19 @@ TEST_F(test_core_MemberInjection, NewFiltersWithHostilePayloadMatchNothing)
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        MemberQuery bySex;
+        Repositories::MemberQuery bySex;
         bySex.sexes = {entry.value};
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(bySex)), 0);
 
-        MemberQuery byYear;
+        Repositories::MemberQuery byYear;
         byYear.inscriptionYears = {entry.value};
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byYear)), 0);
 
-        MemberQuery byAge;
+        Repositories::MemberQuery byAge;
         byAge.ageGroups = {entry.value};
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byAge)), 0);
 
-        MemberQuery byCity;
+        Repositories::MemberQuery byCity;
         byCity.cities = {entry.value};
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byCity)), 0);
     }
@@ -273,7 +273,7 @@ TEST_F(test_core_MemberInjection, SearchWithPercentDoesNotMatchEverything)
     ASSERT_GT(seedMember(*m_db, literal), 0);
     m_memberCountAtStart = m_db->count("members");
 
-    MemberQuery query;
+    Repositories::MemberQuery query;
     query.search = "%";
 
     const auto results = VLMS_UNWRAP(m_repository->listMembers(query));
@@ -283,13 +283,13 @@ TEST_F(test_core_MemberInjection, SearchWithPercentDoesNotMatchEverything)
 
 TEST_F(test_core_MemberInjection, HostileSortColumnUsesDefaultOrder)
 {
-    MemberQuery safe;
+    Repositories::MemberQuery safe;
     const auto expected = VLMS_UNWRAP(m_repository->listMembers(safe));
     ASSERT_FALSE(expected.empty());
 
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
-        MemberQuery query;
+        Repositories::MemberQuery query;
         query.sortColumn = entry.value;
         const auto rows = VLMS_UNWRAP(m_repository->listMembers(query));
         ASSERT_EQ(rows.size(), expected.size());

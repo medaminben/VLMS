@@ -39,7 +39,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_repository = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         seedBaseline();
         m_bookCountAtStart = m_db->count("books");
     }
@@ -63,7 +63,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_repository;
+    std::unique_ptr<Repositories::CatalogRepository> m_repository;
     int m_bookCountAtStart = 0;
 };
 
@@ -72,7 +72,7 @@ TEST_F(test_core_CatalogInjection, SearchWithHostilePayloadIsTreatedAsLiteral)
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        BookQuery query;
+        Repositories::BookQuery query;
         query.search = entry.value;
 
         const auto results = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -90,7 +90,7 @@ TEST_F(test_core_CatalogInjection, CountBooksAgreesWithListBooksForHostileSearch
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        BookQuery query;
+        Repositories::BookQuery query;
         query.search = entry.value;
 
         // listBooks and countBooks build their WHERE clauses separately; a payload
@@ -105,7 +105,7 @@ TEST_F(test_core_CatalogInjection, CategoryCodeWithHostilePayloadMatchesNothing)
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        BookQuery query;
+        Repositories::BookQuery query;
         query.categoryCodes = {entry.value};
 
         EXPECT_EQ(static_cast<int>(VLMS_UNWRAP(m_repository->listBooks(query)).size()), 0);
@@ -118,7 +118,7 @@ TEST_F(test_core_CatalogInjection, LanguageWithHostilePayloadMatchesNothing)
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
 
-        BookQuery query;
+        Repositories::BookQuery query;
         query.languages = {entry.value};
 
         EXPECT_EQ(static_cast<int>(VLMS_UNWRAP(m_repository->listBooks(query)).size()), 0);
@@ -138,7 +138,7 @@ TEST_F(test_core_CatalogInjection, MultipleCategoryCodesWithMixedPayloads)
 
     // Three entries, two hostile, one real. Proves the placeholder loop in
     // listBooks indexes and binds each element independently.
-    BookQuery query;
+    Repositories::BookQuery query;
     query.categoryCodes = {
         "'; DROP TABLE books;--",
         "HIST",
@@ -158,7 +158,7 @@ TEST_F(test_core_CatalogInjection, MultipleLanguagesWithMixedPayloads)
     ASSERT_GT(seedBook(*m_db, french), 0);
     m_bookCountAtStart = m_db->count("books");
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.languages = {
         "' UNION SELECT 1,2,3--",
         "fr",
@@ -182,7 +182,7 @@ TEST_F(test_core_CatalogInjection, CategoryCodeWithLegitimateApostropheMatchesEx
     ASSERT_GT(seedBook(*m_db, seed), 0);
     m_bookCountAtStart = m_db->count("books");
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.categoryCodes = {code};
 
     const auto results = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -199,7 +199,7 @@ TEST_F(test_core_CatalogInjection, SearchWithPercentDoesNotMatchEverything)
     ASSERT_GT(seedBook(*m_db, literal), 0);
     m_bookCountAtStart = m_db->count("books");
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "%";
 
     const auto results = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -216,7 +216,7 @@ TEST_F(test_core_CatalogInjection, SearchWithUnderscoreDoesNotMatchSingleCharact
     ASSERT_GT(seedBook(*m_db, literal), 0);
     m_bookCountAtStart = m_db->count("books");
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "_";
 
     const auto results = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -232,7 +232,7 @@ TEST_F(test_core_CatalogInjection, SearchWithBackslashMatchesLiteralBackslash)
     ASSERT_GT(seedBook(*m_db, literal), 0);
     m_bookCountAtStart = m_db->count("books");
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "\\";
 
     const auto results = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -249,7 +249,7 @@ TEST_F(test_core_CatalogInjection, BookTitleWithHostilePayloadRoundTrips)
         BookSeed seed = uniqueBookSeed(index++);
         seed.title = entry.value;
 
-        CatalogRepository repository(m_db->session(), m_db->resourcesDirectory());
+        Repositories::CatalogRepository repository(m_db->session(), m_db->resourcesDirectory());
         std::int64_t id = 0;
         const auto created = repository.createBook(seed.toInput());
         ASSERT_TRUE(created) << created.error().key;
@@ -294,7 +294,7 @@ TEST_F(test_core_CatalogInjection, CategoryCodeWithHostilePayloadRoundTrips)
 
         const auto categories = VLMS_UNWRAP(m_repository->listAllCategories());
         bool found = false;
-        for (const CategoryRecord& category : categories) {
+        for (const Repositories::CategoryRecord& category : categories) {
             if (category.id == id) {
                 EXPECT_EQ(category.code, entry.value);
                 found = true;
@@ -320,10 +320,10 @@ TEST_F(test_core_CatalogInjection, CopyFieldsWithHostilePayloadRoundTrip)
         // Seeding a book of our own moves the baseline cleanup() checks against.
         m_bookCountAtStart = m_db->count("books");
 
-        const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+        const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
         ASSERT_EQ(static_cast<int>(before.size()), 1);
 
-        BookCopyInput copy;
+        Repositories::BookCopyInput copy;
         copy.id = before.front().id;
         copy.source = before.front().source;
         copy.localId = entry.value;
@@ -340,10 +340,10 @@ TEST_F(test_core_CatalogInjection, CopyFieldsWithHostilePayloadRoundTrip)
         const auto mutated = m_repository->saveCopies(bookId, {copy});
         ASSERT_TRUE(mutated) << mutated.error().key;
 
-        const std::vector<BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
+        const std::vector<Repositories::BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
         ASSERT_EQ(static_cast<int>(after.size()), 1);
 
-        const BookCopyRecord& stored = after.front();
+        const Repositories::BookCopyRecord& stored = after.front();
         EXPECT_EQ(stored.localId, entry.value);
         EXPECT_EQ(stored.globalCopyId, entry.value + "-g");
         EXPECT_EQ(stored.centralId, entry.value);
@@ -363,13 +363,13 @@ TEST_F(test_core_CatalogInjection, CopyFieldsWithHostilePayloadRoundTrip)
 
 TEST_F(test_core_CatalogInjection, HostileSortColumnUsesDefaultOrder)
 {
-    BookQuery safe;
+    Repositories::BookQuery safe;
     const auto expected = VLMS_UNWRAP(m_repository->listBooks(safe));
     ASSERT_FALSE(expected.empty());
 
     for (const HostilePayload& entry : hostilePayloads()) {
         SCOPED_TRACE(entry.id);
-        BookQuery query;
+        Repositories::BookQuery query;
         query.sortColumn = entry.value;
         const auto rows = VLMS_UNWRAP(m_repository->listBooks(query));
         ASSERT_EQ(rows.size(), expected.size());

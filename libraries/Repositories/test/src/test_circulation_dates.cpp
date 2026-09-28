@@ -40,7 +40,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_memberId = 0;
         m_copies.clear();
     }
@@ -56,7 +56,7 @@ protected:
     void seedMemberAndCopies(int copyCount = 3)
     {
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -73,13 +73,13 @@ protected:
 
     [[nodiscard]] int countWithFilter(const std::string& filter) const
     {
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.filters = {filter};
         return VLMS_UNWRAP(m_repository->countLoans(query));
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copies;
 };
@@ -103,7 +103,7 @@ TEST_F(test_core_CirculationDates, CreateLoanDefaultsFollowThePinnedClock)
 
     const ScopedClock pinned(Date(2021, 6, 7));
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     // Both dates blank: createLoan fills them from the clock.
@@ -123,7 +123,7 @@ TEST_F(test_core_CirculationDates, ReturnLoanDefaultsToThePinnedClocksToday)
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "2021-06-07";
@@ -147,7 +147,7 @@ TEST_F(test_core_CirculationDates, ReturnLoanMeasuresTheFutureAgainstThePinnedCl
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "2021-06-07";
@@ -195,14 +195,14 @@ TEST_F(test_core_CirculationDates, OverdueFlagFollowsThePinnedClock)
         // assertion the UTC-ahead direction used to break.
         const ScopedClock onTheDueDate(Date(2021, 6, 15));
         EXPECT_EQ(m_repository->getLoan(dueOn15th)->isOverdue, false);
-        EXPECT_EQ(VLMS_UNWRAP(m_repository->listLoans(LoanQuery{})).at(0).isOverdue, false);
+        EXPECT_EQ(VLMS_UNWRAP(m_repository->listLoans(Repositories::LoanQuery{})).at(0).isOverdue, false);
     }
     {
         // One day later it is. This is the assertion the UTC-behind direction
         // used to break -- opposite direction, opposite failure.
         const ScopedClock theDayAfter(Date(2021, 6, 16));
         EXPECT_EQ(m_repository->getLoan(dueOn15th)->isOverdue, true);
-        EXPECT_EQ(VLMS_UNWRAP(m_repository->listLoans(LoanQuery{})).at(0).isOverdue, true);
+        EXPECT_EQ(VLMS_UNWRAP(m_repository->listLoans(Repositories::LoanQuery{})).at(0).isOverdue, true);
     }
 }
 
@@ -213,8 +213,8 @@ TEST_F(test_core_CirculationDates, OverdueFilterCountFollowsThePinnedClock)
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), "2021-06-01", "2021-06-14"), 0);
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(1), "2021-06-01", "2021-06-15"), 0);
 
-    LoanQuery overdueOnly;
-    overdueOnly.filters = {LoanFilter::kOverdue};
+    Repositories::LoanQuery overdueOnly;
+    overdueOnly.filters = {Repositories::LoanFilter::kOverdue};
 
     const ScopedClock pinned(Date(2021, 6, 15));
 
@@ -235,16 +235,16 @@ TEST_F(test_core_CirculationDates, AnUnreturnedLoanIsOpenUntilItsDueDateThenOver
     // Open, Overdue, and Returned are three states, not nested ones: a loan
     // past its due date is Overdue and no longer Open. Only the unfiltered
     // count mentions no :today and must not care what day it is.
-    LoanQuery openOnly;
-    openOnly.filters = {LoanFilter::kOpen};
-    LoanQuery overdueOnly;
-    overdueOnly.filters = {LoanFilter::kOverdue};
+    Repositories::LoanQuery openOnly;
+    openOnly.filters = {Repositories::LoanFilter::kOpen};
+    Repositories::LoanQuery overdueOnly;
+    overdueOnly.filters = {Repositories::LoanFilter::kOverdue};
 
     {
         const ScopedClock before(Date(2021, 6, 1));
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(openOnly)), 1);
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(overdueOnly)), 0);
-        EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(LoanQuery{})), 1);
+        EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(Repositories::LoanQuery{})), 1);
     }
     {
         const ScopedClock dueDay(Date(2021, 6, 14));
@@ -255,7 +255,7 @@ TEST_F(test_core_CirculationDates, AnUnreturnedLoanIsOpenUntilItsDueDateThenOver
         const ScopedClock longAfter(Date(2031, 1, 1));
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(openOnly)), 0);
         EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(overdueOnly)), 1);
-        EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(LoanQuery{})), 1);
+        EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(Repositories::LoanQuery{})), 1);
     }
 }
 
@@ -267,7 +267,7 @@ TEST_F(test_core_CirculationDates, CreateLoanDefaultsToTodayPlusFourteenDays)
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     // borrowedAt and dueAt left blank on purpose: this pins the default policy.
@@ -287,7 +287,7 @@ TEST_F(test_core_CirculationDates, CreateLoanRejectsDueBeforeBorrowed)
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "2026-03-10";
@@ -303,12 +303,12 @@ TEST_F(test_core_CirculationDates, CreateLoanRejectsACopyAlreadyOnLoan)
 {
     seedMemberAndCopies();
 
-    LoanInput first;
+    Repositories::LoanInput first;
     first.memberId = m_memberId;
     first.bookCopyId = copyAt(0);
     ASSERT_TRUE(m_repository->createLoan(first));
 
-    LoanInput second = first;
+    Repositories::LoanInput second = first;
     EXPECT_FALSE(m_repository->createLoan(second)) << "a second open loan on the same copy was accepted";
     EXPECT_EQ(m_db->count("loans"), 1);
 }
@@ -320,8 +320,8 @@ TEST_F(test_core_CirculationDates, LoanDueTodayIsNotOverdue)
 
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-3).toIso(), today.toIso()), 0);
 
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 0);
-    EXPECT_EQ(countWithFilter(LoanFilter::kOpen), 1);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 0);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOpen), 1);
 }
 
 TEST_F(test_core_CirculationDates, LoanDueThirtyDaysAgoIsOverdue)
@@ -333,8 +333,8 @@ TEST_F(test_core_CirculationDates, LoanDueThirtyDaysAgoIsOverdue)
                             today.addDays(-30).toIso()),
               0);
 
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 1);
-    EXPECT_EQ(countWithFilter(LoanFilter::kOpen), 0);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 1);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOpen), 0);
 }
 
 TEST_F(test_core_CirculationDates, ReturnedLoanIsNeverOverdue)
@@ -346,8 +346,8 @@ TEST_F(test_core_CirculationDates, ReturnedLoanIsNeverOverdue)
                             today.addDays(-46).toIso(), today.addDays(-40).toIso()),
               0);
 
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 0);
-    EXPECT_EQ(countWithFilter(LoanFilter::kReturned), 1);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 0);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kReturned), 1);
 }
 
 TEST_F(test_core_CirculationDates, IsOverdueFlagIsCorrectWithNoFiltersApplied)
@@ -366,12 +366,12 @@ TEST_F(test_core_CirculationDates, IsOverdueFlagIsCorrectWithNoFiltersApplied)
               0);
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(1), today.toIso(), today.addDays(14).toIso()), 0);
 
-    const LoanQuery unfiltered;  // no filters at all
+    const Repositories::LoanQuery unfiltered;  // no filters at all
     const auto loans = VLMS_UNWRAP(m_repository->listLoans(unfiltered));
     ASSERT_EQ(static_cast<int>(loans.size()), 2);
 
     int overdue = 0;
-    for (const LoanRecord& loan : loans) {
+    for (const Repositories::LoanRecord& loan : loans) {
         if (loan.isOverdue) {
             ++overdue;
         }
@@ -565,7 +565,7 @@ TEST_F(test_core_CirculationDates, CreateLoanRejectsUnparseableBorrowedAt)
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "14/08/2026";  // dd/MM/yyyy, not ISO
@@ -584,7 +584,7 @@ TEST_F(test_core_CirculationDates, CreateLoanReportsUnparseableDueAtAsAParseErro
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "2026-08-14";
@@ -603,7 +603,7 @@ TEST_F(test_core_CirculationDates, CreateLoanRejectsDueEqualToBorrowed)
 {
     seedMemberAndCopies();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = "2026-03-10";
@@ -621,7 +621,7 @@ TEST_F(test_core_CirculationDates, CreateLoanRejectsFutureBorrowDate)
     seedMemberAndCopies();
     const Date today = Date::todayLocal();
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     input.borrowedAt = today.addDays(30).toIso();
@@ -677,7 +677,7 @@ TEST_F(test_core_CirculationDates, ExtendLoanRejectsWhenStoredDueAtIsUnparseable
     // fix has to reject an unreadable stored due date explicitly.
     //
     // The new date here is deliberately in the FUTURE. C5 gave extendLoan a
-    // floor at LoanPolicy::minimumExtensionDate, which rejects a past date
+    // floor at Repositories::LoanPolicy::minimumExtensionDate, which rejects a past date
     // whatever is stored -- so the past-date version of this test would now
     // pass without finding 5b being fixed at all. Extending forward is the
     // case the floor cannot see: the repository has no idea what it is
@@ -725,14 +725,14 @@ TEST_F(test_core_CirculationDates, LoanWithUnparseableDueDateIsNotSilentlyExclud
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-60).toIso(), "14/08/2020"), 0);
 
     // It is not Open -- nobody can say it is still within its due date...
-    EXPECT_EQ(countWithFilter(LoanFilter::kOpen), 0);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOpen), 0);
 
     // ...and it used to stop there: date('14/08/2020') is NULL, NULL < :today
     // is NULL, and the WHERE clause dropped it, so the loan was invisible to
     // the overdue filter for ever -- strictly worse than an error, because
     // nobody found out. The predicate now counts an unreadable due date as
     // overdue rather than as fine.
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 1);
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 1);
 }
 
 TEST_F(test_core_CirculationDates, LoanWithUnparseableDueDateIsFlaggedForAttention)
@@ -743,7 +743,7 @@ TEST_F(test_core_CirculationDates, LoanWithUnparseableDueDateIsFlaggedForAttenti
     ASSERT_TRUE(degradeLoansToPreV1Shape(*m_db));
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(0), today.addDays(-60).toIso(), "14/08/2020"), 0);
 
-    const LoanQuery unfiltered;
+    const Repositories::LoanQuery unfiltered;
     const auto loans = VLMS_UNWRAP(m_repository->listLoans(unfiltered));
     ASSERT_EQ(static_cast<int>(loans.size()), 1);
 
@@ -768,7 +768,7 @@ TEST_F(test_core_CirculationDates, ExtendLoanRejectsNewDueBeforeToday)
     // checked that the new date was after the current one, so Core accepted an
     // "extension" still years in the past -- a loan overdue the instant it was
     // granted. The two rules disagreed and only one of them was enforced
-    // anywhere but the UI. Both now call LoanPolicy::minimumExtensionDate.
+    // anywhere but the UI. Both now call Repositories::LoanPolicy::minimumExtensionDate.
     EXPECT_FALSE(m_repository->extendLoan(loanId, "2020-01-02"));
 
     EXPECT_EQ(m_repository->getLoan(loanId)->dueAt, "2020-01-01");

@@ -21,7 +21,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -45,7 +45,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
 };
 
 TEST_F(test_core_FreeLocalNumbers, TheGapsBetweenTheNumbersInUseAreFree)

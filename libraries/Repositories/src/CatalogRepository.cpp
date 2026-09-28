@@ -23,8 +23,8 @@ using VLMS::Status;
 using VLMS::SqliteStatement;
 using VLMS::trim;
 using VLMS::SqlText::nullableText;
-namespace BookSql = VLMS::BookSql;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 namespace {
 
@@ -953,3 +953,5 @@ Result<std::vector<LanguageRecord>> CatalogRepository::listBookLanguages(
     }
     return Result<std::vector<LanguageRecord>>::ok(std::move(languages));
 }
+
+}  // namespace VLMS::Repositories

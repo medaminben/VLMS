@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <string>
 
-namespace VLMS::RepoSql {
+namespace VLMS::Repositories::RepoSql {
 
 inline Status sqlFailure(const std::string& message)
 {
@@ -42,4 +42,4 @@ inline Result<T> validationResult(std::string key, std::string detail = {})
     return Result<T>::fail(ErrorKind::Validation, std::move(key), std::move(detail));
 }
 
-}  // namespace VLMS::RepoSql
+}  // namespace VLMS::Repositories::RepoSql

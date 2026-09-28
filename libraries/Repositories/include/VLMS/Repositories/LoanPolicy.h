@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-namespace VLMS::LoanPolicy {
+namespace VLMS::Repositories::LoanPolicy {
 
 [[nodiscard]] constexpr int defaultLoanDays() { return 14; }
 
@@ -38,4 +38,4 @@ struct Validation {
                                            std::string_view storedDueAt,
                                            const Date& today);
 
-}  // namespace VLMS::LoanPolicy
+}  // namespace VLMS::Repositories::LoanPolicy

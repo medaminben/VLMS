@@ -12,6 +12,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class MemberRepository {
 public:
     MemberRepository(VLMS::SqliteSession& session, std::string resourcesDirectory);
@@ -99,3 +101,5 @@ private:
     VLMS::SqliteSession& m_session;
     std::string m_resourcesDirectory;
 };
+
+}  // namespace VLMS::Repositories

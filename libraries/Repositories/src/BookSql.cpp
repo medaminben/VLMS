@@ -8,7 +8,7 @@
 using VLMS::SqlText::escapeLike;
 using VLMS::trim;
 
-namespace VLMS::BookSql {
+namespace VLMS::Repositories::BookSql {
 namespace {
 
 const char* direction(const bool ascending)
@@ -187,4 +187,4 @@ std::string orderClause(const BookQuery& query)
     return " ORDER BY " + orderExpressions(query);
 }
 
-}  // namespace VLMS::BookSql
+}  // namespace VLMS::Repositories::BookSql

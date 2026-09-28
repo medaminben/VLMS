@@ -22,9 +22,8 @@ using VLMS::Status;
 using VLMS::SqliteStatement;
 using VLMS::trim;
 using VLMS::SqlText::nullableText;
-namespace LoanSql = VLMS::LoanSql;
-namespace MemberSql = VLMS::MemberSql;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 namespace {
 
@@ -179,7 +178,7 @@ bool MemberRepository::isValidDateOfBirth(const std::string& dateOfBirth)
     if (trimmed.empty()) {
         return false;
     }
-    return VLMS::LoanPolicy::parseIsoDate(trimmed).isValid();
+    return LoanPolicy::parseIsoDate(trimmed).isValid();
 }
 
 bool MemberRepository::isDateOfBirthInFuture(const std::string& dateOfBirth)
@@ -1012,3 +1011,5 @@ Status MemberRepository::setIdImage(const std::int64_t memberId, const std::stri
 {
     return storeMemberImage(memberId, sourceFilePath, ImageSlot::IdCard);
 }
+
+}  // namespace VLMS::Repositories

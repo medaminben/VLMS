@@ -16,9 +16,9 @@ using namespace Test;
 
 namespace {
 
-BookInput inputOf(const BookRecord& book)
+Repositories::BookInput inputOf(const Repositories::BookRecord& book)
 {
-    BookInput input;
+    Repositories::BookInput input;
     input.title = book.title;
     input.authorName = book.authorName;
     input.publisherName = book.publisherName;
@@ -33,9 +33,9 @@ BookInput inputOf(const BookRecord& book)
     return input;
 }
 
-BookCopyInput inputOf(const BookCopyRecord& copy)
+Repositories::BookCopyInput inputOf(const Repositories::BookCopyRecord& copy)
 {
-    BookCopyInput input;
+    Repositories::BookCopyInput input;
     input.id = copy.id;
     input.globalCopyId = copy.globalCopyId;
     input.source = copy.source;
@@ -44,9 +44,9 @@ BookCopyInput inputOf(const BookCopyRecord& copy)
     return input;
 }
 
-BookCopyInput reservedCopy(const std::string& localId)
+Repositories::BookCopyInput reservedCopy(const std::string& localId)
 {
-    BookCopyInput copy;
+    Repositories::BookCopyInput copy;
     copy.source = "arabic";
     copy.localId = localId;
     copy.globalCopyId = "AR-" + localId;
@@ -63,7 +63,7 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
-            std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -92,7 +92,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_repository;
+    std::unique_ptr<Repositories::CatalogRepository> m_repository;
 };
 
 TEST_F(test_core_ArchiveReuse, RestoreCopyAlsoRestoresItsArchivedBookButNotItsSiblings)
@@ -144,7 +144,7 @@ TEST_F(test_core_ArchiveReuse, ReuseMovesTheNumberOntoANewBook)
     std::string number;
     const std::int64_t archived = archivedCopyOfNewBook(5, &number);
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = uniqueBookSeed(6).toInput();
     write.copies = {reservedCopy(number)};
     write.releaseFromCopyId = archived;
@@ -166,10 +166,10 @@ TEST_F(test_core_ArchiveReuse, ReuseOntoAnExistingBookKeepsItsOtherCopies)
     const std::int64_t archived = archivedCopyOfNewBook(7, &number);
     const std::int64_t target = seedBook(*m_db, uniqueBookSeed(8));
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = inputOf(m_repository->getBook(target).value());
     const auto existing = m_repository->listCopies(target);
-    for (const BookCopyRecord& copy : existing.value()) {
+    for (const Repositories::BookCopyRecord& copy : existing.value()) {
         write.copies.push_back(inputOf(copy));
     }
     write.copies.push_back(reservedCopy(number));
@@ -188,7 +188,7 @@ TEST_F(test_core_ArchiveReuse, AFailedReuseSaveLeavesTheArchivedNumberInPlace)
     const std::string takenNumber = column(copyIdsOf(*m_db, otherBook).front(), "local_id");
     const int booksBefore = m_db->count("books");
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = uniqueBookSeed(11).toInput();
     write.copies = {reservedCopy(number), reservedCopy(takenNumber)};
     write.releaseFromCopyId = archived;
@@ -212,7 +212,7 @@ TEST_F(test_core_ArchiveReuse, ReuseIsRefusedWhenTheArchivedCopyLostItsNumber)
                            "WHERE id = " + std::to_string(archived)));
     const int booksBefore = m_db->count("books");
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = uniqueBookSeed(13).toInput();
     write.copies = {reservedCopy(number)};
     write.releaseFromCopyId = archived;
@@ -227,7 +227,7 @@ TEST_F(test_core_ArchiveReuse, ReuseOntoABookOfTheOtherSourceIsRefused)
     std::string number;
     const std::int64_t archived = archivedCopyOfNewBook(14, &number);
 
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = uniqueBookSeed(15).toInput();
     write.book.language = "fr";
     write.copies = {reservedCopy(number)};
@@ -240,7 +240,7 @@ TEST_F(test_core_ArchiveReuse, ReuseOntoABookOfTheOtherSourceIsRefused)
 
 TEST_F(test_core_ArchiveReuse, CopySourceFollowsTheLanguage)
 {
-    EXPECT_EQ(CatalogRepository::copySourceForLanguage("ar"), "arabic");
-    EXPECT_EQ(CatalogRepository::copySourceForLanguage("fr"), "foreign");
-    EXPECT_EQ(CatalogRepository::copySourceForLanguage("en"), "foreign");
+    EXPECT_EQ(Repositories::CatalogRepository::copySourceForLanguage("ar"), "arabic");
+    EXPECT_EQ(Repositories::CatalogRepository::copySourceForLanguage("fr"), "foreign");
+    EXPECT_EQ(Repositories::CatalogRepository::copySourceForLanguage("en"), "foreign");
 }

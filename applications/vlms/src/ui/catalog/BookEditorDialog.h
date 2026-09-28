@@ -26,20 +26,20 @@ class BookEditorDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    BookEditorDialog(CatalogRepository& repository, QWidget* parent = nullptr);
-    BookEditorDialog(CatalogRepository& repository, const BookRecord& book, QWidget* parent = nullptr);
+    BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent = nullptr);
+    BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, const VLMS::Repositories::BookRecord& book, QWidget* parent = nullptr);
     ~BookEditorDialog() override;
 
-    [[nodiscard]] BookInput bookInput() const;
+    [[nodiscard]] VLMS::Repositories::BookInput bookInput() const;
 
     /// The copies exactly as the table now shows them, for
-    /// CatalogRepository::saveCopies. Rows the librarian deleted are simply
+    /// VLMS::Repositories::CatalogRepository::saveCopies. Rows the librarian deleted are simply
     /// absent -- that is what makes the list the whole truth.
-    [[nodiscard]] std::vector<BookCopyInput> copyInputs() const;
+    [[nodiscard]] std::vector<VLMS::Repositories::BookCopyInput> copyInputs() const;
 
     /// Archive -> Reuse: adds a locked copy row carrying the archived copy's
     /// number. The archived copy keeps it until the save commits.
-    void reserveCopyNumber(const BookCopyRecord& archivedCopy);
+    void reserveCopyNumber(const VLMS::Repositories::BookCopyRecord& archivedCopy);
 
     [[nodiscard]] QString coverSourcePath() const { return m_coverSourcePath; }
     [[nodiscard]] bool coverChanged() const { return m_coverChanged; }
@@ -54,7 +54,7 @@ private:
     void populateCategories();
     void manageCategories();
     void populateLanguages();
-    void loadBook(const BookRecord& book);
+    void loadBook(const VLMS::Repositories::BookRecord& book);
 
     void loadCopies(qint64 bookId);
     [[nodiscard]] bool validateCopies();
@@ -79,7 +79,7 @@ private:
     [[nodiscard]] QString selectedLanguageCode() const;
     [[nodiscard]] QSize currentCoverSize() const;
 
-    CatalogRepository& m_repository;
+    VLMS::Repositories::CatalogRepository& m_repository;
     bool m_isEdit = false;
     qint64 m_bookId = 0;
     QString m_coverSourcePath;

@@ -24,7 +24,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -34,9 +34,9 @@ protected:
         m_db.reset();
     }
 
-    [[nodiscard]] LoanRecord loanDueOn(const QString& dueAt, const QString& borrowedAt = {}) const
+    [[nodiscard]] Repositories::LoanRecord loanDueOn(const QString& dueAt, const QString& borrowedAt = {}) const
     {
-        LoanRecord loan;
+        Repositories::LoanRecord loan;
         loan.id = 1;
         loan.memberName = "Amina Ben Salah";
         loan.membershipNumber = "M-0001";
@@ -50,7 +50,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
 };
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultsToTodayAndFourteenDays)
@@ -75,7 +75,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDueFollowsAChangedBorrowDate)
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForABlankInput)
 {
     MemberSeed member = uniqueMemberSeed(1);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const qint64 memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -88,7 +88,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForAB
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
 
-    LoanInput blank;
+    Repositories::LoanInput blank;
     blank.memberId = memberId;
     blank.bookCopyId = copies.front();
     const auto created = m_repository->createLoan(blank);
@@ -110,7 +110,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogRefusesAFutureBorrowDate)
 
 TEST_F(test_ui_LoanDialogs, ReturnDialogClampsTheReturnDateToToday)
 {
-    const LoanRecord loan = loanDueOn(QDate::currentDate().addDays(11).toString(Qt::ISODate));
+    const Repositories::LoanRecord loan = loanDueOn(QDate::currentDate().addDays(11).toString(Qt::ISODate));
     LoanReturnDialog dialog(loan);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 1);
@@ -121,7 +121,7 @@ TEST_F(test_ui_LoanDialogs, ReturnDialogClampsTheReturnDateToToday)
 TEST_F(test_ui_LoanDialogs, ReturnDialogFloorsTheReturnDateAtTheBorrowDate)
 {
     const QString borrowed = QDate::currentDate().addDays(-9).toString(Qt::ISODate);
-    const LoanRecord loan =
+    const Repositories::LoanRecord loan =
         loanDueOn(QDate::currentDate().addDays(5).toString(Qt::ISODate), borrowed);
     LoanReturnDialog dialog(loan);
     const auto edits = dialog.findChildren<QDateEdit*>();
@@ -131,7 +131,7 @@ TEST_F(test_ui_LoanDialogs, ReturnDialogFloorsTheReturnDateAtTheBorrowDate)
 
 TEST_F(test_ui_LoanDialogs, ReturnDialogToleratesAnUnreadableBorrowDate)
 {
-    const LoanRecord loan =
+    const Repositories::LoanRecord loan =
         loanDueOn(QDate::currentDate().addDays(5).toString(Qt::ISODate), QStringLiteral("14/08/2020"));
     LoanReturnDialog dialog(loan);
     const auto edits = dialog.findChildren<QDateEdit*>();
@@ -189,7 +189,7 @@ TEST_F(test_ui_LoanDialogs, ExtendDialogToleratesAnUnreadableStoredDueDate)
 TEST_F(test_ui_LoanDialogs, ExtendDialogMinimumIsAcceptedByCore)
 {
     MemberSeed member = uniqueMemberSeed(2);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const qint64 memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 

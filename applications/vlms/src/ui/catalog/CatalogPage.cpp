@@ -81,8 +81,8 @@ QStringList bookDetailLabelKeys() {
 
 }  // namespace
 
-CatalogPage::CatalogPage(CatalogRepository& repository,
-                         CirculationRepository& circulation,
+CatalogPage::CatalogPage(VLMS::Repositories::CatalogRepository& repository,
+                         VLMS::Repositories::CirculationRepository& circulation,
                          QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
@@ -110,7 +110,7 @@ void CatalogPage::buildUi() {
     rootLayout->addWidget(frame);
 
     m_filters = new VLMS::BookFacetFilters(
-        m_repository, ArchiveScope::Live, frame->filterColumn());
+        m_repository, VLMS::Repositories::ArchiveScope::Live, frame->filterColumn());
     connect(m_filters, &VLMS::BookFacetFilters::changed,
             this, &CatalogPage::resetPagerAndRefresh);
     frame->addFilter(m_filters, 1);
@@ -141,12 +141,12 @@ void CatalogPage::buildUi() {
 
     m_sort = new VLMS::TableHeaderSort(m_booksTable, this);
     m_sort->setColumnKeys({
-        QString::fromLatin1(BookSort::kTitle),
-        QString::fromLatin1(BookSort::kAuthor),
-        QString::fromLatin1(BookSort::kCategory),
-        QString::fromLatin1(BookSort::kLocalNumber),
-        QString::fromLatin1(BookSort::kCopies),
-        QString::fromLatin1(BookSort::kAvailable),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kTitle),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kAuthor),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kCategory),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kLocalNumber),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kCopies),
+        QString::fromLatin1(VLMS::Repositories::BookSort::kAvailable),
     });
     connect(m_sort, &VLMS::TableHeaderSort::sortChanged,
             this, &CatalogPage::onSortChanged);
@@ -228,8 +228,8 @@ void CatalogPage::resetPagerAndRefresh() {
     refreshBooks();
 }
 
-BookQuery CatalogPage::currentBookQuery() const {
-    BookQuery query;
+VLMS::Repositories::BookQuery CatalogPage::currentBookQuery() const {
+    VLMS::Repositories::BookQuery query;
     query.search = ss(m_searchEdit->text());
     query.categoryCodes = svl(m_filters->categoryCodes());
     query.languages = svl(m_filters->languages());
@@ -244,7 +244,7 @@ BookQuery CatalogPage::currentBookQuery() const {
 }
 
 void CatalogPage::refreshBooks() {
-    BookQuery query = currentBookQuery();
+    VLMS::Repositories::BookQuery query = currentBookQuery();
     const auto totalCount = m_repository.countBooks(query);
     if (!totalCount) {
         VLMS::showRepoError(this, totalCount.error());
@@ -263,7 +263,7 @@ void CatalogPage::refreshBooks() {
     m_booksTable->setRowCount(books.size());
 
     for (int row = 0; row < static_cast<int>(books.size()); ++row) {
-        const BookRecord& book = books.at(row);
+        const VLMS::Repositories::BookRecord& book = books.at(row);
 
         auto* titleItem = new QTableWidgetItem(qs(book.title));
         titleItem->setData(Qt::UserRole, QVariant::fromValue(book.id));
@@ -344,7 +344,7 @@ void CatalogPage::onSortChanged(int, bool)
     if (id <= 0) {
         m_pager->setCurrentPage(1);
     } else {
-        BookQuery query = currentBookQuery();
+        VLMS::Repositories::BookQuery query = currentBookQuery();
         const auto rank = m_repository.rankOfBook(id, query);
         if (rank) {
             m_pager->setCurrentPage(rank.value() / m_pager->pageSize() + 1);
@@ -437,7 +437,7 @@ bool CatalogPage::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void CatalogPage::updateCoverPreview(const BookRecord& book) {
+void CatalogPage::updateCoverPreview(const VLMS::Repositories::BookRecord& book) {
     if (book.coverImagePath.empty()) {
         m_previewCoverPath.clear();
     } else {
@@ -473,7 +473,7 @@ void CatalogPage::addBook() {
         return;
     }
 
-    BookWrite write;
+    VLMS::Repositories::BookWrite write;
     write.book = dialog.bookInput();
     write.copies = dialog.copyInputs();
     if (dialog.coverChanged()) {
@@ -509,7 +509,7 @@ void CatalogPage::editBook() {
         return;
     }
 
-    BookWrite write;
+    VLMS::Repositories::BookWrite write;
     write.book = dialog.bookInput();
     write.copies = dialog.copyInputs();
     if (dialog.coverChanged()) {

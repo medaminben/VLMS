@@ -18,8 +18,8 @@ class ArchiveLoansDialog final : public QDialog {
 public:
     /// `query` says whose loans (memberId, bookId, or copyId); its scope,
     /// limit and offset are overridden. `name` goes in the window title.
-    ArchiveLoansDialog(CirculationRepository& repository,
-                       const LoanQuery& query,
+    ArchiveLoansDialog(VLMS::Repositories::CirculationRepository& repository,
+                       const VLMS::Repositories::LoanQuery& query,
                        const QString& name,
                        QWidget* parent = nullptr);
 
@@ -27,8 +27,8 @@ private:
     void buildUi(const QString& name);
     void refresh();
 
-    CirculationRepository& m_repository;
-    LoanQuery m_query;
+    VLMS::Repositories::CirculationRepository& m_repository;
+    VLMS::Repositories::LoanQuery m_query;
     QTableWidget* m_table = nullptr;
     QLabel* m_emptyLabel = nullptr;
 };

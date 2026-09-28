@@ -23,8 +23,8 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -40,8 +40,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
 };
 
 TEST_F(test_core_ArchiveMembers, ArchivedMembersAppearOnlyUnderTheArchivedScope)
@@ -53,8 +53,8 @@ TEST_F(test_core_ArchiveMembers, ArchivedMembersAppearOnlyUnderTheArchivedScope)
     EXPECT_EQ(VLMS_UNWRAP(m_members->countMembers({})), 1);
     EXPECT_EQ(VLMS_UNWRAP(m_members->listMembers({})).front().id, kept);
 
-    MemberQuery archive;
-    archive.archive = ArchiveScope::Archived;
+    Repositories::MemberQuery archive;
+    archive.archive = Repositories::ArchiveScope::Archived;
     const auto rows = VLMS_UNWRAP(m_members->listMembers(archive));
     ASSERT_EQ(rows.size(), 1u);
     EXPECT_EQ(rows.front().id, archived);
@@ -105,8 +105,8 @@ TEST_F(test_core_ArchiveMembers, TheArchiveListsNewestFirstByDefault)
         ASSERT_TRUE(m_members->archiveMember(newer));
     }
 
-    MemberQuery archive;
-    archive.archive = ArchiveScope::Archived;
+    Repositories::MemberQuery archive;
+    archive.archive = Repositories::ArchiveScope::Archived;
     const auto rows = VLMS_UNWRAP(m_members->listMembers(archive));
     ASSERT_EQ(rows.size(), 2u);
     EXPECT_EQ(rows.at(0).id, newer);

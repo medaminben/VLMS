@@ -88,7 +88,7 @@ MemberEditorDialog::ImageFilePicker& imageFilePicker()
 
 }  // namespace
 
-MemberEditorDialog::MemberEditorDialog(MemberRepository& repository, QWidget* parent)
+MemberEditorDialog::MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, QWidget* parent)
     : QDialog(parent),
       m_repository(repository) {
     buildUi();
@@ -101,8 +101,8 @@ MemberEditorDialog::MemberEditorDialog(MemberRepository& repository, QWidget* pa
     updateActiveUntil();
 }
 
-MemberEditorDialog::MemberEditorDialog(MemberRepository& repository,
-                                       const MemberRecord& member,
+MemberEditorDialog::MemberEditorDialog(VLMS::Repositories::MemberRepository& repository,
+                                       const VLMS::Repositories::MemberRecord& member,
                                        QWidget* parent)
     : QDialog(parent),
       m_repository(repository),
@@ -331,13 +331,13 @@ MemberEditorDialog::ValidationFailure MemberEditorDialog::firstValidationFailure
         return {QStringLiteral("member.dateOfBirthRequired"), year};
     }
     const QString iso = m_dateOfBirthEdit->isoDate();
-    if (!MemberRepository::isValidDateOfBirth(ss(iso))) {
+    if (!VLMS::Repositories::MemberRepository::isValidDateOfBirth(ss(iso))) {
         return {QStringLiteral("member.dateOfBirthInvalid"), day};
     }
-    if (MemberRepository::isDateOfBirthInFuture(ss(iso))) {
+    if (VLMS::Repositories::MemberRepository::isDateOfBirthInFuture(ss(iso))) {
         return {QStringLiteral("member.dateOfBirthInFuture"), year};
     }
-    if (!MemberRepository::isValidEmail(ss(m_emailEdit->text()))) {
+    if (!VLMS::Repositories::MemberRepository::isValidEmail(ss(m_emailEdit->text()))) {
         return {QStringLiteral("member.emailInvalid"), m_emailEdit};
     }
     return {};
@@ -386,12 +386,12 @@ void MemberEditorDialog::populateStatuses() {
     const QString currentStatus = m_statusCombo->currentData().toString();
     m_statusCombo->clear();
 
-    for (const std::string& code : MemberRepository::statusCodes()) {
+    for (const std::string& code : VLMS::Repositories::MemberRepository::statusCodes()) {
         m_statusCombo->addItem(qs(Strings::memberStatusLabel(code)), qs(code));
     }
 
     const QString target =
-        currentStatus.isEmpty() ? QString::fromLatin1(MemberStatus::kActive) : currentStatus;
+        currentStatus.isEmpty() ? QString::fromLatin1(VLMS::Repositories::MemberStatus::kActive) : currentStatus;
     const int index = m_statusCombo->findData(target);
     if (index >= 0) {
         m_statusCombo->setCurrentIndex(index);
@@ -404,7 +404,7 @@ void MemberEditorDialog::populateSexes() {
     const QString currentSex = m_sexCombo->currentData().toString();
     m_sexCombo->clear();
 
-    for (const std::string& code : MemberRepository::sexCodes()) {
+    for (const std::string& code : VLMS::Repositories::MemberRepository::sexCodes()) {
         m_sexCombo->addItem(qs(Strings::memberSexLabel(code)), qs(code));
     }
 
@@ -627,11 +627,11 @@ bool MemberEditorDialog::eventFilter(QObject* watched, QEvent* event)
 void MemberEditorDialog::updateActiveUntil() {
     // The date the save will store, so the librarian sees what Active buys.
     const std::string chosen = ss(m_statusCombo->currentData().toString());
-    m_activeUntilLabel->setText(qs(MemberRepository::activeUntilFor(
+    m_activeUntilLabel->setText(qs(VLMS::Repositories::MemberRepository::activeUntilFor(
         ss(m_loadedActiveUntil), chosen, VLMS::Clock::today())));
 }
 
-void MemberEditorDialog::loadMember(const MemberRecord& member) {
+void MemberEditorDialog::loadMember(const VLMS::Repositories::MemberRecord& member) {
     m_numberLabel->setText(qs(member.membershipNumber));
     m_firstNameEdit->setText(qs(member.firstName));
     m_lastNameEdit->setText(qs(member.lastName));
@@ -674,8 +674,8 @@ void MemberEditorDialog::loadMember(const MemberRecord& member) {
     }
 }
 
-MemberInput MemberEditorDialog::memberInput() const {
-    MemberInput input;
+VLMS::Repositories::MemberInput MemberEditorDialog::memberInput() const {
+    VLMS::Repositories::MemberInput input;
     input.firstName = ss(m_firstNameEdit->text());
     input.lastName = ss(m_lastNameEdit->text());
     input.sex = ss(m_sexCombo->currentData().toString());

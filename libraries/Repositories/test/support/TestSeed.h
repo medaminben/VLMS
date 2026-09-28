@@ -29,7 +29,7 @@ struct MemberSeed {
     std::string occupation;
     std::string fullName;
 
-    [[nodiscard]] MemberInput toInput() const;
+    [[nodiscard]] VLMS::Repositories::MemberInput toInput() const;
 };
 
 struct BookSeed {
@@ -46,7 +46,7 @@ struct BookSeed {
     std::string description;
     int initialCopyCount = 1;
 
-    [[nodiscard]] BookInput toInput() const;
+    [[nodiscard]] VLMS::Repositories::BookInput toInput() const;
 };
 
 [[nodiscard]] MemberSeed uniqueMemberSeed(int index);

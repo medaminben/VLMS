@@ -142,8 +142,8 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
         m_memberId = 0;
         m_copies.clear();
     }
@@ -160,7 +160,7 @@ protected:
     void seedMemberAndCopies(int copyCount = 4)
     {
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
         ASSERT_TRUE(rawSetRegisteredAt(*m_db, m_memberId, "2019-01-15"));
@@ -178,7 +178,7 @@ protected:
 
     [[nodiscard]] int countWithFilter(const std::string& filter) const
     {
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.filters = {filter};
         return VLMS_UNWRAP(m_repository->countLoans(query));
     }
@@ -199,8 +199,8 @@ protected:
     [[nodiscard]] [[maybe_unused]] static bool utcIsAheadOfLocal() { return sqliteToday() > localToday(); }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copies;
 };
@@ -283,7 +283,7 @@ TEST_F(test_core_Timezone, LoanDueYesterdayIsOverdueAtEveryHour)
     // yesterday, yesterday < yesterday is false and the book was quietly not
     // yet overdue. C4 binds :today from Clock::todayIso(), so both sides of
     // the comparison are now local and this holds in both zones at every hour.
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 1) << context();
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 1) << context();
 }
 
 TEST_F(test_core_Timezone, LoanDueTodayIsNotOverdueAtEveryHour)
@@ -298,7 +298,7 @@ TEST_F(test_core_Timezone, LoanDueTodayIsNotOverdueAtEveryHour)
     // tomorrow, so a loan due today was reported overdue before the borrower's
     // day was out. Same C4 fix; note the two directions broke opposite
     // assertions, which is why both zones are registered.
-    EXPECT_EQ(countWithFilter(LoanFilter::kOverdue), 0) << context();
+    EXPECT_EQ(countWithFilter(Repositories::LoanFilter::kOverdue), 0) << context();
 }
 
 TEST_F(test_core_Timezone, LoanBorrowedTodayIsCountedInTodaysCheckouts)
@@ -308,7 +308,7 @@ TEST_F(test_core_Timezone, LoanBorrowedTodayIsCountedInTodaysCheckouts)
     // A loan created right now, through the repository, exactly as the
     // checkout dialog does it. It should appear in today's checkouts
     // immediately -- the librarian is standing at the desk.
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyAt(0);
     ASSERT_TRUE(m_repository->createLoan(input)) << "repository call failed";
@@ -369,8 +369,8 @@ TEST_F(test_core_Timezone, OverdueKpiAndOverdueFilterAgreeAtEveryHour)
               0);
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copyAt(1), today.addDays(-14).toIso(), today.toIso()), 0);
 
-    LoanQuery overdueOnly;
-    overdueOnly.filters = {LoanFilter::kOverdue};
+    Repositories::LoanQuery overdueOnly;
+    overdueOnly.filters = {Repositories::LoanFilter::kOverdue};
 
     // Both sides share the same wrong clock, so they agree today and will
     // still agree after the fix. This is the invariant that must survive C3

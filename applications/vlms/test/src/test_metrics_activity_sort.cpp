@@ -29,10 +29,10 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
 
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
         ASSERT_TRUE(rawSetRegisteredAt(*m_db, m_memberId, "2019-01-15"));
@@ -59,7 +59,7 @@ protected:
 
     static void expectPeriodMatches(const QTableWidget* table,
                                     const QString& label,
-                                    const MetricsPeriodCounts& expected)
+                                    const Repositories::MetricsPeriodCounts& expected)
     {
         for (int row = 0; row < table->rowCount(); ++row) {
             if (table->item(row, 0)->text() != label) {
@@ -74,7 +74,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copies;
 };
@@ -86,7 +86,7 @@ TEST_F(test_ui_MetricsActivitySort, RefreshKeepsCountsOnSortedPeriodRows)
     ASSERT_TRUE(borrowOn(1, today.addDays(-6)));
     ASSERT_TRUE(borrowOn(2, today.addDays(-6)));
 
-    const LibraryMetrics expected = VLMS_UNWRAP(m_metrics->fetchMetrics());
+    const Repositories::LibraryMetrics expected = VLMS_UNWRAP(m_metrics->fetchMetrics());
     ASSERT_GT(expected.thisWeek.checkouts, expected.today.checkouts);
 
     MetricsPage page(*m_metrics);

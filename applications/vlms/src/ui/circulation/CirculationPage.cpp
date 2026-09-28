@@ -46,7 +46,7 @@ constexpr int kTitleColumnWidth = 300;
 constexpr int kMemberColumnWidth = 200;
 
 bool isAllFilter(const QString& code) {
-    return code.isEmpty() || code == QLatin1String(LoanFilter::kAll);
+    return code.isEmpty() || code == QLatin1String(VLMS::Repositories::LoanFilter::kAll);
 }
 
 QStringList loanDetailLabelKeys() {
@@ -66,9 +66,9 @@ QStringList loanDetailLabelKeys() {
 
 }  // namespace
 
-CirculationPage::CirculationPage(CirculationRepository& repository,
-                                 CatalogRepository& catalogRepository,
-                                 MemberRepository& memberRepository,
+CirculationPage::CirculationPage(VLMS::Repositories::CirculationRepository& repository,
+                                 VLMS::Repositories::CatalogRepository& catalogRepository,
+                                 VLMS::Repositories::MemberRepository& memberRepository,
                                  QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
@@ -107,11 +107,11 @@ void CirculationPage::buildUi() {
     // The borrower's filters, as on the Members page. Loans of members since
     // archived are still listed here, so the years and cities include them.
     m_memberFilters = new VLMS::MemberFacetFilters(
-        m_memberRepository, ArchiveScope::Any, frame->filterColumn());
+        m_memberRepository, VLMS::Repositories::ArchiveScope::Any, frame->filterColumn());
     // The year here is the year of the loan: a borrower's registration year
     // says nothing about the loans on this list.
     m_memberFilters->useLoanYears(
-        [this]() { return m_repository.listLoanYears(ArchiveScope::Live); });
+        [this]() { return m_repository.listLoanYears(VLMS::Repositories::ArchiveScope::Live); });
     connect(m_memberFilters, &VLMS::MemberFacetFilters::changed,
             this, &CirculationPage::resetPagerAndRefresh);
     frame->addFilter(m_memberFilters, 1);
@@ -144,12 +144,12 @@ void CirculationPage::buildUi() {
 
     m_sort = new VLMS::TableHeaderSort(m_loansTable, this);
     m_sort->setColumnKeys({
-        QString::fromLatin1(LoanSort::kMember),
-        QString::fromLatin1(LoanSort::kNumber),
-        QString::fromLatin1(LoanSort::kTitle),
-        QString::fromLatin1(LoanSort::kBorrowed),
-        QString::fromLatin1(LoanSort::kDue),
-        QString::fromLatin1(LoanSort::kStatus),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kMember),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kNumber),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kTitle),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kBorrowed),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kDue),
+        QString::fromLatin1(VLMS::Repositories::LoanSort::kStatus),
     });
     connect(m_sort, &VLMS::TableHeaderSort::sortChanged,
             this, &CirculationPage::onSortChanged);
@@ -225,7 +225,7 @@ void CirculationPage::retranslateUi() {
 }
 
 
-QString CirculationPage::loanStatusLabel(const LoanRecord& loan) const {
+QString CirculationPage::loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const {
     if (!loan.returnedAt.empty()) {
         return T("circulation.status.returned");
     }
@@ -276,8 +276,8 @@ void CirculationPage::refreshFilter() {
     allItem->setData(Qt::UserRole, QString());
     m_filterList->addItem(allItem);
 
-    for (const std::string& code : CirculationRepository::filterCodes()) {
-        if (code == LoanFilter::kAll) {
+    for (const std::string& code : VLMS::Repositories::CirculationRepository::filterCodes()) {
+        if (code == VLMS::Repositories::LoanFilter::kAll) {
             continue;
         }
         auto* item = new QListWidgetItem(T("circulation.filter." + code));
@@ -315,8 +315,8 @@ void CirculationPage::resetPagerAndRefresh() {
     refreshLoans();
 }
 
-LoanQuery CirculationPage::currentLoanQuery() const {
-    LoanQuery query;
+VLMS::Repositories::LoanQuery CirculationPage::currentLoanQuery() const {
+    VLMS::Repositories::LoanQuery query;
     query.search = ss(m_searchEdit->text());
     query.filters = svl(selectedFilters());
     query.member = m_memberFilters->facets();
@@ -331,7 +331,7 @@ LoanQuery CirculationPage::currentLoanQuery() const {
 }
 
 void CirculationPage::refreshLoans() {
-    LoanQuery query = currentLoanQuery();
+    VLMS::Repositories::LoanQuery query = currentLoanQuery();
     const auto totalCount = m_repository.countLoans(query);
     if (!totalCount) {
         VLMS::showRepoError(this, totalCount.error());
@@ -350,7 +350,7 @@ void CirculationPage::refreshLoans() {
     m_loansTable->setRowCount(loans.size());
 
     for (int row = 0; row < static_cast<int>(loans.size()); ++row) {
-        const LoanRecord& loan = loans.at(row);
+        const VLMS::Repositories::LoanRecord& loan = loans.at(row);
 
         auto* memberItem = new QTableWidgetItem(qs(loan.memberName));
         memberItem->setData(Qt::UserRole, QVariant::fromValue(loan.id));
@@ -457,7 +457,7 @@ void CirculationPage::onSortChanged(int, bool)
     if (id <= 0) {
         m_pager->setCurrentPage(1);
     } else {
-        LoanQuery query = currentLoanQuery();
+        VLMS::Repositories::LoanQuery query = currentLoanQuery();
         const auto rank = m_repository.rankOfLoan(id, query);
         if (rank) {
             m_pager->setCurrentPage(rank.value() / m_pager->pageSize() + 1);
@@ -551,7 +551,7 @@ bool CirculationPage::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void CirculationPage::updatePreview(const LoanRecord& loan) {
+void CirculationPage::updatePreview(const VLMS::Repositories::LoanRecord& loan) {
     if (loan.coverImagePath.empty()) {
         m_previewCoverPath.clear();
     } else {

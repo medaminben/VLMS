@@ -21,9 +21,9 @@ using namespace Test;
 
 namespace {
 
-BookInput inputOf(const BookRecord& book)
+Repositories::BookInput inputOf(const Repositories::BookRecord& book)
 {
-    BookInput input;
+    Repositories::BookInput input;
     input.title = book.title;
     input.authorName = book.authorName;
     input.publisherName = book.publisherName;
@@ -38,9 +38,9 @@ BookInput inputOf(const BookRecord& book)
     return input;
 }
 
-BookCopyInput inputOf(const BookCopyRecord& copy)
+Repositories::BookCopyInput inputOf(const Repositories::BookCopyRecord& copy)
 {
-    BookCopyInput input;
+    Repositories::BookCopyInput input;
     input.id = copy.id;
     input.globalCopyId = copy.globalCopyId;
     input.source = copy.source;
@@ -65,7 +65,7 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
-            std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -85,18 +85,18 @@ protected:
     /// way the editor does after the librarian removed that row.
     VLMS::Status saveWithout(std::int64_t bookId,
                                    std::int64_t dropped,
-                                   const std::vector<BookCopyInput>& extra = {})
+                                   const std::vector<Repositories::BookCopyInput>& extra = {})
     {
         const auto book = m_repository->getBook(bookId);
         const auto copies = m_repository->listCopies(bookId);
-        BookWrite write;
+        Repositories::BookWrite write;
         write.book = inputOf(book.value());
-        for (const BookCopyRecord& copy : copies.value()) {
+        for (const Repositories::BookCopyRecord& copy : copies.value()) {
             if (copy.id != dropped) {
                 write.copies.push_back(inputOf(copy));
             }
         }
-        for (const BookCopyInput& copy : extra) {
+        for (const Repositories::BookCopyInput& copy : extra) {
             write.copies.push_back(copy);
         }
         return m_repository->saveExistingBook(bookId, write);
@@ -110,7 +110,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_repository;
+    std::unique_ptr<Repositories::CatalogRepository> m_repository;
 };
 
 TEST_F(test_core_ArchiveCatalog, LiveListsHideArchivedBooksAndTheArchiveShowsOnlyThem)
@@ -124,8 +124,8 @@ TEST_F(test_core_ArchiveCatalog, LiveListsHideArchivedBooksAndTheArchiveShowsOnl
     EXPECT_EQ(live.front().id, kept);
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countBooks({})), 1);
 
-    BookQuery archive;
-    archive.archive = ArchiveScope::Archived;
+    Repositories::BookQuery archive;
+    archive.archive = Repositories::ArchiveScope::Archived;
     const auto rows = VLMS_UNWRAP(m_repository->listBooks(archive));
     ASSERT_EQ(rows.size(), 1u);
     EXPECT_EQ(rows.front().id, archived);
@@ -208,7 +208,7 @@ TEST_F(test_core_ArchiveCatalog, ReAddingANumberStillHeldByAnArchivedCopyIsRefus
 {
     const std::int64_t bookId = seedBookWithCopies(8, 2);
     const auto copies = m_repository->listCopies(bookId).value();
-    BookCopyInput again;
+    Repositories::BookCopyInput again;
     again.source = copies.front().source;
     again.localId = copies.front().localId;
     again.globalCopyId = copies.front().globalCopyId;
@@ -283,11 +283,11 @@ TEST_F(test_core_ArchiveCatalog, ArchivedCopyListShowsTitleNumberAndStamp)
         ASSERT_TRUE(saveWithout(bookId, copies.at(0)));
     }
 
-    CopyQuery query;
-    query.archive = ArchiveScope::Archived;
+    Repositories::CopyQuery query;
+    query.archive = Repositories::ArchiveScope::Archived;
     const auto rows = VLMS_UNWRAP(m_repository->listCopyRows(query));
     ASSERT_EQ(rows.size(), 1u);
-    const BookCopyRecord& row = rows.front();
+    const Repositories::BookCopyRecord& row = rows.front();
     EXPECT_EQ(row.id, copies.at(0));
     EXPECT_EQ(row.bookTitle, m_repository->getBook(bookId)->title);
     EXPECT_EQ(row.archivedAt, "2026-09-19 10:00:00");

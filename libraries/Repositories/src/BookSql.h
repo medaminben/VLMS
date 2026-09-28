@@ -8,7 +8,7 @@ namespace VLMS {
 class SqliteStatement;
 }
 
-namespace VLMS::BookSql {
+namespace VLMS::Repositories::BookSql {
 
 [[nodiscard]] std::string filterClause(const BookQuery& query);
 void bindFilters(SqliteStatement& query, const BookQuery& queryData);
@@ -18,4 +18,4 @@ void bindFilters(SqliteStatement& query, const BookQuery& queryData);
 [[nodiscard]] std::string orderExpressions(const BookQuery& query);
 [[nodiscard]] std::string orderClause(const BookQuery& query);
 
-}  // namespace VLMS::BookSql
+}  // namespace VLMS::Repositories::BookSql

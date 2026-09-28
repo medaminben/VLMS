@@ -10,6 +10,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class NamedEntityStore {
 public:
     enum class Kind { Author, Publisher };
@@ -25,3 +27,5 @@ private:
 
     VLMS::SqliteSession& m_session;
 };
+
+}  // namespace VLMS::Repositories

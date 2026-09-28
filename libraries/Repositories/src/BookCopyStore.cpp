@@ -19,7 +19,8 @@ using VLMS::SqliteStatement;
 using VLMS::trim;
 using VLMS::SqlText::escapeLike;
 using VLMS::SqlText::nullableText;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 namespace {
 
@@ -762,3 +763,5 @@ Status BookCopyStore::saveCopies(const std::int64_t bookId, const std::vector<Bo
 {
     return m_session.transaction([&] { return applyCopies(bookId, copies); });
 }
+
+}  // namespace VLMS::Repositories

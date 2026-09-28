@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace VLMS::Repositories {
+
 struct MemberRecord {
     std::int64_t id = 0;
     std::string membershipNumber;
@@ -112,3 +114,5 @@ inline constexpr auto kLoans = "loans";
 inline constexpr auto kAllLoans = "allLoans";
 inline constexpr auto kArchivedAt = "archivedAt";
 }  // namespace MemberSort
+
+}  // namespace VLMS::Repositories

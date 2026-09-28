@@ -41,10 +41,10 @@ protected:
         if (!m_db->isValid()) {
             return false;
         }
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_activeMemberId = seedMember(*m_db, member);
         if (m_activeMemberId <= 0) {
             return false;
@@ -60,10 +60,10 @@ protected:
         return m_copyIds.size() == 4;
     }
 
-    LoanInput baseInput(int copyIndex) const
+    Repositories::LoanInput baseInput(int copyIndex) const
     {
         const Date today = Date::todayLocal();
-        LoanInput input;
+        Repositories::LoanInput input;
         input.memberId = m_activeMemberId;
         input.bookCopyId = m_copyIds.at(static_cast<std::size_t>(copyIndex));
         input.borrowedAt = today.toIso();
@@ -72,14 +72,14 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
     std::int64_t m_activeMemberId = 0;
     std::vector<std::int64_t> m_copyIds;
 };
 
 TEST_F(test_core_CirculationRepository, CreateLoanRejectsMissingMember)
 {
-    LoanInput input = baseInput(0);
+    Repositories::LoanInput input = baseInput(0);
     input.memberId = 0;
 
     const auto failed = m_repository->createLoan(input);
@@ -90,7 +90,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanRejectsMissingMember)
 
 TEST_F(test_core_CirculationRepository, CreateLoanRejectsMissingCopy)
 {
-    LoanInput input = baseInput(0);
+    Repositories::LoanInput input = baseInput(0);
     input.bookCopyId = 0;
 
     const auto failed = m_repository->createLoan(input);
@@ -102,7 +102,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanRejectsMissingCopy)
 TEST_F(test_core_CirculationRepository, CreateLoanRejectsNonActiveMember)
 {
     const std::vector<std::pair<const char*, const char*>> cases = {
-        {"non_active", MemberStatus::kNonActive},
+        {"non_active", Repositories::MemberStatus::kNonActive},
     };
 
     for (const auto& [name, status] : cases) {
@@ -114,7 +114,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanRejectsNonActiveMember)
         const std::int64_t memberId = seedMember(*m_db, seed);
         ASSERT_GT(memberId, 0);
 
-        LoanInput input = baseInput(0);
+        Repositories::LoanInput input = baseInput(0);
         input.memberId = memberId;
 
         EXPECT_FALSE(m_repository->createLoan(input)) << "only 'active' members may borrow";
@@ -145,7 +145,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanRejectsCopyAlreadyOnLoan)
 
 TEST_F(test_core_CirculationRepository, CreateLoanDefaultsBorrowedAtToToday)
 {
-    LoanInput input = baseInput(0);
+    Repositories::LoanInput input = baseInput(0);
     input.borrowedAt.clear();
 
     std::int64_t id = 0;
@@ -160,7 +160,7 @@ TEST_F(test_core_CirculationRepository, CreateLoanDefaultsBorrowedAtToToday)
 
 TEST_F(test_core_CirculationRepository, CreateLoanDefaultsDueAtToTodayPlusPolicy)
 {
-    LoanInput input = baseInput(0);
+    Repositories::LoanInput input = baseInput(0);
     input.dueAt.clear();
 
     std::int64_t id = 0;
@@ -171,12 +171,12 @@ TEST_F(test_core_CirculationRepository, CreateLoanDefaultsDueAtToTodayPlusPolicy
     const auto stored = m_repository->getLoan(id);
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->dueAt,
-              VLMS::LoanPolicy::suggestedDueDate(Date::todayLocal()).toIso());
+              Repositories::LoanPolicy::suggestedDueDate(Date::todayLocal()).toIso());
 }
 
 TEST_F(test_core_CirculationRepository, CreateLoanStoresBlankNotesAsNull)
 {
-    LoanInput input = baseInput(0);
+    Repositories::LoanInput input = baseInput(0);
     input.notes = "   ";
 
     std::int64_t id = 0;
@@ -305,7 +305,7 @@ TEST_F(test_core_CirculationRepository, ExtendLoanRejectsEarlierOrEqualDueDate)
 
 TEST_F(test_core_CirculationRepository, ListBorrowableMembersOnlyReturnsActive)
 {
-    for (const char* status : {MemberStatus::kNonActive}) {
+    for (const char* status : {Repositories::MemberStatus::kNonActive}) {
         MemberSeed seed = uniqueMemberSeed(200 + static_cast<int>(std::string_view(status).size()));
         seed.membershipNumber = std::string("B-") + status;
         seed.status = status;
@@ -330,10 +330,10 @@ TEST_F(test_core_CirculationRepository, ListAvailableCopiesExcludesOnLoanCopies)
 
 TEST_F(test_core_CirculationRepository, FilterCodesContainsEveryDefinedCode)
 {
-    const std::vector<std::string> codes = CirculationRepository::filterCodes();
-    EXPECT_TRUE(contains(codes, LoanFilter::kOpen));
-    EXPECT_TRUE(contains(codes, LoanFilter::kOverdue));
-    EXPECT_TRUE(contains(codes, LoanFilter::kReturned));
+    const std::vector<std::string> codes = Repositories::CirculationRepository::filterCodes();
+    EXPECT_TRUE(contains(codes, Repositories::LoanFilter::kOpen));
+    EXPECT_TRUE(contains(codes, Repositories::LoanFilter::kOverdue));
+    EXPECT_TRUE(contains(codes, Repositories::LoanFilter::kReturned));
 }
 
 TEST_F(test_core_CirculationRepository, ListLoansAndCountLoansAgree)
@@ -346,13 +346,13 @@ TEST_F(test_core_CirculationRepository, ListLoansAndCountLoansAgree)
     };
     const std::vector<Case> cases = {
         {"no filters", none, ""},
-        {"open", {LoanFilter::kOpen}, ""},
-        {"overdue", {LoanFilter::kOverdue}, ""},
-        {"returned", {LoanFilter::kReturned}, ""},
-        {"open+overdue", {LoanFilter::kOpen, LoanFilter::kOverdue}, ""},
-        {"all three", {LoanFilter::kOpen, LoanFilter::kOverdue, LoanFilter::kReturned}, ""},
+        {"open", {Repositories::LoanFilter::kOpen}, ""},
+        {"overdue", {Repositories::LoanFilter::kOverdue}, ""},
+        {"returned", {Repositories::LoanFilter::kReturned}, ""},
+        {"open+overdue", {Repositories::LoanFilter::kOpen, Repositories::LoanFilter::kOverdue}, ""},
+        {"all three", {Repositories::LoanFilter::kOpen, Repositories::LoanFilter::kOverdue, Repositories::LoanFilter::kReturned}, ""},
         {"search only", none, "Test Book"},
-        {"open+search", {LoanFilter::kOpen}, "Test Book"},
+        {"open+search", {Repositories::LoanFilter::kOpen}, "Test Book"},
     };
 
     for (const auto& testCase : cases) {
@@ -375,7 +375,7 @@ TEST_F(test_core_CirculationRepository, ListLoansAndCountLoansAgree)
                                 today.addDays(-50).toIso()),
                   0);
 
-        LoanQuery query;
+        Repositories::LoanQuery query;
         query.filters = testCase.filters;
         query.search = testCase.search;
 
@@ -402,14 +402,14 @@ TEST_F(test_core_CirculationRepository, ListLoansPagesCoverEveryRowExactlyOnce)
                   0);
     }
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.limit = kPageSize;
 
     std::set<std::int64_t> seen;
     int rows = 0;
     for (int offset = 0; offset < static_cast<int>(copies.size()); offset += kPageSize) {
         query.offset = offset;
-        for (const LoanRecord& loan : VLMS_UNWRAP(m_repository->listLoans(query))) {
+        for (const Repositories::LoanRecord& loan : VLMS_UNWRAP(m_repository->listLoans(query))) {
             seen.insert(loan.id);
             ++rows;
         }
@@ -422,7 +422,7 @@ TEST_F(test_core_CirculationRepository, ListLoansPagesCoverEveryRowExactlyOnce)
 TEST_F(test_core_CirculationRepository, ListLoansFilteredByMemberId)
 {
     MemberSeed other = uniqueMemberSeed(600);
-    other.status = MemberStatus::kActive;
+    other.status = Repositories::MemberStatus::kActive;
     const std::int64_t otherId = seedMember(*m_db, other);
     ASSERT_GT(otherId, 0);
 
@@ -435,7 +435,7 @@ TEST_F(test_core_CirculationRepository, ListLoansFilteredByMemberId)
                             today.addDays(14).toIso()),
               0);
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.memberId = otherId;
 
     const auto results = VLMS_UNWRAP(m_repository->listLoans(query));
@@ -446,10 +446,10 @@ TEST_F(test_core_CirculationRepository, ListLoansFilteredByMemberId)
 
 TEST_F(test_core_CirculationRepository, DefaultLoanDaysIsFourteen)
 {
-    // Moved out of CirculationRepository in C5. The number is asserted here as
+    // Moved out of Repositories::CirculationRepository in C5. The number is asserted here as
     // well as in tst_loan_policy because this suite is what a reader checks to
     // find out what a loan actually costs the borrower.
-    EXPECT_EQ(VLMS::LoanPolicy::defaultLoanDays(), 14);
+    EXPECT_EQ(Repositories::LoanPolicy::defaultLoanDays(), 14);
 }
 
 TEST_F(test_core_CirculationRepository, LastErrorIsSetOnEveryFailurePath)
@@ -471,25 +471,25 @@ TEST_F(test_core_CirculationRepository, LastErrorIsSetOnEveryFailurePath)
         VLMS::Error error;
         bool result = true;
         if (std::string_view(scenario) == "noMember") {
-            LoanInput input = baseInput(0);
+            Repositories::LoanInput input = baseInput(0);
             input.memberId = 0;
             const auto created = m_repository->createLoan(input);
             result = static_cast<bool>(created);
             error = created.error();
         } else if (std::string_view(scenario) == "noCopy") {
-            LoanInput input = baseInput(0);
+            Repositories::LoanInput input = baseInput(0);
             input.bookCopyId = 0;
             const auto created = m_repository->createLoan(input);
             result = static_cast<bool>(created);
             error = created.error();
         } else if (std::string_view(scenario) == "unknownMember") {
-            LoanInput input = baseInput(0);
+            Repositories::LoanInput input = baseInput(0);
             input.memberId = 999999;
             const auto created = m_repository->createLoan(input);
             result = static_cast<bool>(created);
             error = created.error();
         } else if (std::string_view(scenario) == "unknownCopy") {
-            LoanInput input = baseInput(0);
+            Repositories::LoanInput input = baseInput(0);
             input.bookCopyId = 999999;
             const auto created = m_repository->createLoan(input);
             result = static_cast<bool>(created);
@@ -543,8 +543,8 @@ TEST_F(test_core_CirculationRepository, ListLoansSortsByDueDate)
                             "2021-01-01", "2021-01-15"),
               0);
 
-    LoanQuery query;
-    query.sortColumn = LoanSort::kDue;
+    Repositories::LoanQuery query;
+    query.sortColumn = Repositories::LoanSort::kDue;
     query.sortAscending = true;
     const auto asc = VLMS_UNWRAP(m_repository->listLoans(query));
     ASSERT_EQ(asc.size(), 2u);
@@ -580,7 +580,7 @@ TEST_F(test_core_CirculationRepository, SearchFindsLoansByTheMembersFullName)
                             today.toIso(), today.addDays(14).toIso()),
               0);
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.search = "سلمى بنت علي الورداني";
 
     const auto results = VLMS_UNWRAP(m_repository->listLoans(query));
@@ -605,7 +605,7 @@ TEST_F(test_core_CirculationRepository, SearchFindsLoansByFirstAndLastNameWithou
                             today.toIso(), today.addDays(14).toIso()),
               0);
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.search = "Salma Trabelsi";
 
     const auto results = VLMS_UNWRAP(m_repository->listLoans(query));

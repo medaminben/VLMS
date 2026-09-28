@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace VLMS::Repositories {
+
 struct BookRecord {
     std::int64_t id = 0;
     std::string title;
@@ -161,3 +163,5 @@ struct BookWrite {
     /// `copies` takes. Released in the same transaction as the save; 0 = none.
     std::int64_t releaseFromCopyId = 0;
 };
+
+}  // namespace VLMS::Repositories

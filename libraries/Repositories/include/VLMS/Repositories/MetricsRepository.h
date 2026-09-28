@@ -11,6 +11,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class MetricsRepository {
 public:
     explicit MetricsRepository(VLMS::SqliteSession& session);
@@ -33,3 +35,5 @@ private:
 
     VLMS::SqliteSession& m_session;
 };
+
+}  // namespace VLMS::Repositories
