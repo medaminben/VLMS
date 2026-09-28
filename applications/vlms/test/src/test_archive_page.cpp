@@ -347,6 +347,7 @@ TEST_F(test_ui_ArchivePage, EveryTypeStaysVisibleWhateverTypeIsPicked)
     qApp->setStyleSheet({});
 }
 
+
 TEST_F(test_ui_ArchivePage, TypeFilterSitsAtTheTopOfItsColumn)
 {
     m_page->resize(1200, 800);

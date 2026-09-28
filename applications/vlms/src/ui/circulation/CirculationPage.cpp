@@ -222,6 +222,7 @@ void CirculationPage::retranslateUi() {
     refreshSelectedLoanPreview();
 }
 
+
 QString CirculationPage::loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const {
     if (!loan.returnedAt.empty()) {
         return T("circulation.status.returned");
