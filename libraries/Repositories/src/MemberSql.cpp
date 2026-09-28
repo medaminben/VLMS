@@ -12,9 +12,8 @@
 
 using VLMS::SqlText::escapeLike;
 using VLMS::trim;
-namespace LoanSql = VLMS::LoanSql;
 
-namespace VLMS::MemberSql {
+namespace VLMS::Repositories::MemberSql {
 namespace {
 
 void appendInClause(std::string& sql,
@@ -178,4 +177,4 @@ std::string orderClause(const MemberQuery& query)
     return " ORDER BY " + orderExpressions(query);
 }
 
-}  // namespace VLMS::MemberSql
+}  // namespace VLMS::Repositories::MemberSql

@@ -23,7 +23,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<CirculationRepository>(m_db->session());
+        m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_GT(m_memberId, 0);
     }
@@ -54,7 +54,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_repository;
+    std::unique_ptr<Repositories::CirculationRepository> m_repository;
     std::int64_t m_memberId = 0;
 };
 
@@ -64,12 +64,12 @@ TEST_F(test_core_ArchiveCirculation, ArchivingAReturnedLoanMovesItOutOfCirculati
     const ScopedClock pinned(DateTime(Date(2026, 9, 19), 10, 0, 0));
     ASSERT_TRUE(m_repository->archiveLoan(loanId));
 
-    LoanQuery live;
-    live.filters = {LoanFilter::kAll};
+    Repositories::LoanQuery live;
+    live.filters = {Repositories::LoanFilter::kAll};
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(live)), 0);
 
-    LoanQuery archive;
-    archive.archive = ArchiveScope::Archived;
+    Repositories::LoanQuery archive;
+    archive.archive = Repositories::ArchiveScope::Archived;
     const auto rows = VLMS_UNWRAP(m_repository->listLoans(archive));
     ASSERT_EQ(rows.size(), 1u);
     EXPECT_EQ(rows.front().id, loanId);
@@ -95,8 +95,8 @@ TEST_F(test_core_ArchiveCirculation, RestoreReturnsTheLoanToCirculationAsClosed)
     ASSERT_TRUE(m_repository->archiveLoan(loanId));
     ASSERT_TRUE(m_repository->restoreLoan(loanId));
 
-    LoanQuery returned;
-    returned.filters = {LoanFilter::kReturned};
+    Repositories::LoanQuery returned;
+    returned.filters = {Repositories::LoanFilter::kReturned};
     const auto rows = VLMS_UNWRAP(m_repository->listLoans(returned));
     ASSERT_EQ(rows.size(), 1u);
     EXPECT_EQ(rows.front().id, loanId);
@@ -116,11 +116,11 @@ TEST_F(test_core_ArchiveCirculation, MemberHistorySeesArchivedLoans)
     returnedLoan(6);
     ASSERT_TRUE(m_repository->archiveLoan(archived));
 
-    LoanQuery history;
+    Repositories::LoanQuery history;
     history.memberId = m_memberId;
-    history.archive = ArchiveScope::Any;
+    history.archive = Repositories::ArchiveScope::Any;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(history)), 2);
-    history.archive = ArchiveScope::Live;
+    history.archive = Repositories::ArchiveScope::Live;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countLoans(history)), 1);
 }
 
@@ -134,7 +134,7 @@ TEST_F(test_core_ArchiveCirculation, CheckoutPickerSkipsArchivedCopiesAndCopiesO
 
     const auto options = VLMS_UNWRAP(m_repository->listAvailableCopies());
     std::vector<std::int64_t> ids;
-    for (const LoanCopyOption& option : options) {
+    for (const Repositories::LoanCopyOption& option : options) {
         ids.push_back(option.id);
     }
     EXPECT_EQ(ids, std::vector<std::int64_t>{liveCopy});
@@ -146,7 +146,7 @@ TEST_F(test_core_ArchiveCirculation, CreateLoanRefusesAnArchivedCopy)
     rawArchive("book_copies", copyId);
     const ScopedClock pinned(Date(2026, 9, 19));
 
-    LoanInput input;
+    Repositories::LoanInput input;
     input.memberId = m_memberId;
     input.bookCopyId = copyId;
     input.borrowedAt = "2026-09-19";

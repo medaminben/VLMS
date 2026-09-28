@@ -58,7 +58,7 @@ protected:
         if (!m_db->isValid()) {
             return false;
         }
-        m_repository = std::make_unique<MemberRepository>(m_db->session(),
+        m_repository = std::make_unique<Repositories::MemberRepository>(m_db->session(),
                                                           m_db->resourcesDirectory());
         return true;
     }
@@ -84,7 +84,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_repository;
+    std::unique_ptr<Repositories::MemberRepository> m_repository;
 };
 
 TEST_F(test_core_MemberRepository, CreateMemberGeneratesMembershipNumberWhenBlank)
@@ -175,7 +175,7 @@ TEST_F(test_core_MemberRepository, CreateMemberStoresBlankOptionalFieldsAsNull)
     id = created.value();
 
     // nullableText() turns a blank optional field into SQL NULL. Pinned here
-    // because CatalogRepository uses the other convention ('') for
+    // because Repositories::CatalogRepository uses the other convention ('') for
     // publication_date, and the two are being unified.
     const int nulls = m_db->scalar(
                               "SELECT (phone IS NULL) + (address IS NULL) "
@@ -258,7 +258,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberRejectsAMalformedEmail)
     const std::int64_t id = seedMember(*m_db, seed);
     ASSERT_GT(id, 0);
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.email = "amina@example";
     EXPECT_FALSE(m_repository->updateMember(id, edited));
 
@@ -298,7 +298,7 @@ TEST_F(test_core_MemberRepository, EmailRoundTripsThroughCreateAndUpdate)
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->email, seed.email);
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.membershipNumber = stored->membershipNumber;
     edited.email = "amina.bensalah@example.org";
     const auto mutated = m_repository->updateMember(id, edited);
@@ -337,7 +337,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberDoesNotRequireMembershipNumber)
 TEST_F(test_core_MemberRepository, UpdateMemberWritesHistoryOnlyOnStatusChange)
 {
     MemberSeed seed = uniqueMemberSeed(11);
-    seed.status = MemberStatus::kNonActive;
+    seed.status = Repositories::MemberStatus::kNonActive;
     const std::int64_t id = seedMember(*m_db, seed);
     ASSERT_GT(id, 0);
     EXPECT_EQ(m_db->count("member_status_history"), 1);
@@ -349,7 +349,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberWritesHistoryOnlyOnStatusChange)
     EXPECT_EQ(m_db->count("member_status_history"), 1);
 
     // Changed status: exactly one more.
-    seed.status = MemberStatus::kActive;
+    seed.status = Repositories::MemberStatus::kActive;
     const auto mutatedAgain = m_repository->updateMember(id, seed.toInput());
     ASSERT_TRUE(mutatedAgain) << mutatedAgain.error().key;
     EXPECT_EQ(m_db->count("member_status_history"), 2);
@@ -374,7 +374,7 @@ TEST_F(test_core_MemberRepository, FailedUpdateLeavesMemberUnchanged)
 TEST_F(test_core_MemberRepository, DeleteMemberRefusesWithActiveLoans)
 {
     MemberSeed member = uniqueMemberSeed(13);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -388,7 +388,7 @@ TEST_F(test_core_MemberRepository, DeleteMemberRefusesWithActiveLoans)
               0);
 
     EXPECT_EQ(VLMS_UNWRAP(m_repository->removalBlock(memberId)),
-              MemberRepository::MemberRemovalBlock::OpenLoans);
+              Repositories::MemberRepository::MemberRemovalBlock::OpenLoans);
 
     // Neither removal is available while a book is still out, and the member
     // has to survive both refusals.
@@ -406,7 +406,7 @@ TEST_F(test_core_MemberRepository, DeleteMemberRemovesMember)
     const std::int64_t id = seedMember(*m_db, uniqueMemberSeed(14));
     ASSERT_GT(id, 0);
 
-    EXPECT_EQ(VLMS_UNWRAP(m_repository->removalBlock(id)), MemberRepository::MemberRemovalBlock::None);
+    EXPECT_EQ(VLMS_UNWRAP(m_repository->removalBlock(id)), Repositories::MemberRepository::MemberRemovalBlock::None);
     ASSERT_TRUE(m_repository->archiveMember(id));
     const auto mutated = m_repository->purgeMember(id);
     ASSERT_TRUE(mutated) << mutated.error().key;
@@ -419,7 +419,7 @@ TEST_F(test_core_MemberRepository, PurgeRefusesWithReturnedLoanHistory)
     // waves the member through, and then loans.member_id -- which has no ON
     // DELETE clause -- fails the DELETE with "FOREIGN KEY constraint failed".
     MemberSeed member = uniqueMemberSeed(15);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -434,7 +434,7 @@ TEST_F(test_core_MemberRepository, PurgeRefusesWithReturnedLoanHistory)
               0);
 
     EXPECT_EQ(VLMS_UNWRAP(m_repository->removalBlock(memberId)),
-              MemberRepository::MemberRemovalBlock::LoanHistory);
+              Repositories::MemberRepository::MemberRemovalBlock::LoanHistory);
 
     const auto failed = m_repository->purgeMember(memberId);
     EXPECT_FALSE(failed);
@@ -449,7 +449,7 @@ TEST_F(test_core_MemberRepository, PurgeRefusesWithReturnedLoanHistory)
 TEST_F(test_core_MemberRepository, ArchiveHidesMemberButKeepsLoanHistory)
 {
     MemberSeed member = uniqueMemberSeed(16);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -470,8 +470,8 @@ TEST_F(test_core_MemberRepository, ArchiveHidesMemberButKeepsLoanHistory)
     // archiving rather than deleting -- but the member is gone from the list.
     EXPECT_EQ(m_db->count("members"), 1);
     EXPECT_EQ(m_db->count("loans"), 1);
-    EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(MemberQuery{})), 0);
-    EXPECT_TRUE(VLMS_UNWRAP(m_repository->listMembers(MemberQuery{})).empty());
+    EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(Repositories::MemberQuery{})), 0);
+    EXPECT_TRUE(VLMS_UNWRAP(m_repository->listMembers(Repositories::MemberQuery{})).empty());
 
     // Still reachable by id, so anything holding one -- the loan history
     // dialog above all -- can still name the person.
@@ -627,7 +627,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberRejectsABirthDateAfterToday)
     const auto created = m_repository->createMember(seed.toInput());
     ASSERT_TRUE(created) << created.error().key;
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.dateOfBirth = "2027-01-01";
     const auto failed = m_repository->updateMember(created.value(), edited);
     ASSERT_FALSE(failed);
@@ -637,14 +637,14 @@ TEST_F(test_core_MemberRepository, UpdateMemberRejectsABirthDateAfterToday)
 
 TEST_F(test_core_MemberRepository, AgeGroupFromBirthDateUsesThirtyOnInscriptionDate)
 {
-    EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-09-19"),
-              MemberAgeGroup::kYouth);
-    EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-19", "2026-09-19"),
-              MemberAgeGroup::kAdult);
-    EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-18", "2026-09-19"),
-              MemberAgeGroup::kAdult);
-    EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-09-19 10:00:00"),
-              MemberAgeGroup::kYouth);
+    EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-09-19"),
+              Repositories::MemberAgeGroup::kYouth);
+    EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-19", "2026-09-19"),
+              Repositories::MemberAgeGroup::kAdult);
+    EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-18", "2026-09-19"),
+              Repositories::MemberAgeGroup::kAdult);
+    EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-09-19 10:00:00"),
+              Repositories::MemberAgeGroup::kYouth);
 }
 
 TEST_F(test_core_MemberRepository, CreateMemberRejectsABlankDateOfBirth)
@@ -693,7 +693,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberStampsUpdatedAtFromTheClock)
     const auto before = m_repository->getMember(id);
     ASSERT_TRUE(before.has_value());
 
-    MemberInput input;
+    Repositories::MemberInput input;
     input.membershipNumber = before->membershipNumber;
     input.firstName = "Amina";
     input.lastName = "Ben Salah";
@@ -750,9 +750,9 @@ TEST_F(test_core_MemberRepository, ListMembersAndCountMembersAgree)
     const std::vector<std::pair<const char*, std::pair<std::string, std::vector<std::string>>>> cases = {
         {"no filters", {"", none}},
         {"search", {"Member", none}},
-        {"one status", {"", {MemberStatus::kActive}}},
-        {"two statuses", {"", {MemberStatus::kActive, MemberStatus::kNonActive}}},
-        {"search+status", {"Member", {MemberStatus::kActive}}},
+        {"one status", {"", {Repositories::MemberStatus::kActive}}},
+        {"two statuses", {"", {Repositories::MemberStatus::kActive, Repositories::MemberStatus::kNonActive}}},
+        {"search+status", {"Member", {Repositories::MemberStatus::kActive}}},
     };
 
     for (const auto& [name, queryBits] : cases) {
@@ -761,12 +761,12 @@ TEST_F(test_core_MemberRepository, ListMembersAndCountMembersAgree)
 
         for (int i = 0; i < 6; ++i) {
             MemberSeed seed = uniqueMemberSeed(40 + i);
-            seed.status = (i % 2 == 0) ? MemberStatus::kActive
-                                       : MemberStatus::kNonActive;
+            seed.status = (i % 2 == 0) ? Repositories::MemberStatus::kActive
+                                       : Repositories::MemberStatus::kNonActive;
             EXPECT_GT(seedMember(*m_db, seed), 0);
         }
 
-        MemberQuery query;
+        Repositories::MemberQuery query;
         query.search = queryBits.first;
         query.statuses = queryBits.second;
 
@@ -781,7 +781,7 @@ TEST_F(test_core_MemberRepository, ListMembersFiltersBySexYearAgeGroupAndCity)
     const ScopedClock pinned(Date(2026, 9, 19));
 
     MemberSeed adultMale = uniqueMemberSeed(300);
-    adultMale.sex = MemberSex::kMale;
+    adultMale.sex = Repositories::MemberSex::kMale;
     adultMale.occupation = "قاضي";
     adultMale.city = "Tunis";
     const std::int64_t maleId = seedMember(*m_db, adultMale);
@@ -789,7 +789,7 @@ TEST_F(test_core_MemberRepository, ListMembersFiltersBySexYearAgeGroupAndCity)
     ASSERT_TRUE(rawSetRegisteredAt(*m_db, maleId, "2019-03-01 10:00:00"));
 
     MemberSeed youthFemale = uniqueMemberSeed(301);
-    youthFemale.sex = MemberSex::kFemale;
+    youthFemale.sex = Repositories::MemberSex::kFemale;
     youthFemale.occupation = "تلميذة";
     youthFemale.dateOfBirth = "2010-06-15";
     youthFemale.city = "Sfax";
@@ -797,42 +797,42 @@ TEST_F(test_core_MemberRepository, ListMembersFiltersBySexYearAgeGroupAndCity)
     ASSERT_GT(femaleId, 0);
     ASSERT_TRUE(rawSetRegisteredAt(*m_db, femaleId, "2024-06-15 09:00:00"));
 
-    const auto idsOf = [](const std::vector<MemberRecord>& rows) {
+    const auto idsOf = [](const std::vector<Repositories::MemberRecord>& rows) {
         std::set<std::int64_t> ids;
-        for (const MemberRecord& member : rows) {
+        for (const Repositories::MemberRecord& member : rows) {
             ids.insert(member.id);
         }
         return ids;
     };
 
-    MemberQuery bySex;
-    bySex.sexes = {MemberSex::kMale};
+    Repositories::MemberQuery bySex;
+    bySex.sexes = {Repositories::MemberSex::kMale};
     EXPECT_EQ(idsOf(VLMS_UNWRAP(m_repository->listMembers(bySex))),
               std::set<std::int64_t>({maleId}));
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(bySex)), 1);
 
-    MemberQuery byYear;
+    Repositories::MemberQuery byYear;
     byYear.inscriptionYears = {"2024"};
     EXPECT_EQ(idsOf(VLMS_UNWRAP(m_repository->listMembers(byYear))),
               std::set<std::int64_t>({femaleId}));
 
-    MemberQuery byAge;
-    byAge.ageGroups = {MemberAgeGroup::kYouth};
+    Repositories::MemberQuery byAge;
+    byAge.ageGroups = {Repositories::MemberAgeGroup::kYouth};
     EXPECT_EQ(idsOf(VLMS_UNWRAP(m_repository->listMembers(byAge))),
               std::set<std::int64_t>({femaleId}));
 
-    MemberQuery byCity;
+    Repositories::MemberQuery byCity;
     byCity.cities = {"Sfax"};
     EXPECT_EQ(idsOf(VLMS_UNWRAP(m_repository->listMembers(byCity))),
               std::set<std::int64_t>({femaleId}));
 
-    MemberQuery bothCities;
+    Repositories::MemberQuery bothCities;
     bothCities.cities = {"Tunis", "Sfax"};
     EXPECT_EQ(idsOf(VLMS_UNWRAP(m_repository->listMembers(bothCities))),
               std::set<std::int64_t>({maleId, femaleId}));
 
-    MemberQuery combined;
-    combined.sexes = {MemberSex::kMale};
+    Repositories::MemberQuery combined;
+    combined.sexes = {Repositories::MemberSex::kMale};
     combined.cities = {"Sfax"};
     EXPECT_TRUE(VLMS_UNWRAP(m_repository->listMembers(combined)).empty());
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(combined)), 0);
@@ -873,7 +873,7 @@ TEST_F(test_core_MemberRepository, MemberFilterValuesAreDistinctNonEmptyAndSkipA
     ASSERT_EQ(cities.size(), 1u);
     EXPECT_TRUE(cities.front() == "Tunis" || cities.front() == "tunis");
 
-    MemberQuery byListedCity;
+    Repositories::MemberQuery byListedCity;
     byListedCity.cities = {cities.front()};
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byListedCity)), 2);
 
@@ -890,14 +890,14 @@ TEST_F(test_core_MemberRepository, ListMembersPagesCoverEveryRowExactlyOnce)
         EXPECT_GT(seedMember(*m_db, uniqueMemberSeed(100 + i)), 0);
     }
 
-    MemberQuery query;
+    Repositories::MemberQuery query;
     query.limit = kPageSize;
 
     std::set<std::int64_t> seen;
     int rows = 0;
     for (int offset = 0; offset < kMembers; offset += kPageSize) {
         query.offset = offset;
-        for (const MemberRecord& member : VLMS_UNWRAP(m_repository->listMembers(query))) {
+        for (const Repositories::MemberRecord& member : VLMS_UNWRAP(m_repository->listMembers(query))) {
             seen.insert(member.id);
             ++rows;
         }
@@ -910,7 +910,7 @@ TEST_F(test_core_MemberRepository, ListMembersPagesCoverEveryRowExactlyOnce)
 TEST_F(test_core_MemberRepository, ActiveLoanCountMatchesOpenLoans)
 {
     MemberSeed member = uniqueMemberSeed(50);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -959,7 +959,7 @@ TEST_F(test_core_MemberRepository, GetMemberExecFailureIsSql)
 
 TEST_F(test_core_MemberRepository, SaveNewMemberRollsBackWhenPhotoFails)
 {
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = uniqueMemberSeed(80).toInput();
     write.photoSourcePath = "/nonexistent/photo.png";
 
@@ -982,7 +982,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoEmptiesTheColumnAndDeletesTheFile)
     const std::string idFile = m_repository->resolveImagePath(before->idImagePath);
     ASSERT_TRUE(std::filesystem::exists(photoFile));
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.clearPhoto = true;
     const auto saved = m_repository->saveExistingMember(id, write);
@@ -1008,7 +1008,7 @@ TEST_F(test_core_MemberRepository, ClearIdImageEmptiesTheColumnAndDeletesTheFile
     const std::string photoFile = m_repository->resolveImagePath(before->photoPath);
     const std::string idFile = m_repository->resolveImagePath(before->idImagePath);
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.clearIdImage = true;
     const auto saved = m_repository->saveExistingMember(id, write);
@@ -1032,7 +1032,7 @@ TEST_F(test_core_MemberRepository, FailedSaveKeepsTheImageItWasToClear)
     ASSERT_TRUE(before.has_value());
     const std::string photoFile = m_repository->resolveImagePath(before->photoPath);
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.member.firstName = "  ";  // refused: error.member.namesRequired
     write.clearPhoto = true;
@@ -1050,7 +1050,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoWithoutAPhotoSucceeds)
     const std::int64_t id = seedMember(*m_db, seed);
     ASSERT_GT(id, 0);
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.clearPhoto = true;
     const auto saved = m_repository->saveExistingMember(id, write);
@@ -1070,7 +1070,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoNeverDeletesAFileOutsideResources)
     ASSERT_TRUE(m_db->execBound("UPDATE members SET photo_path = :path WHERE id = :id",
                                 {{"path", outside}, {"id", id}}));
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.clearPhoto = true;
     const auto saved = m_repository->saveExistingMember(id, write);
@@ -1095,7 +1095,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoNeverDeletesAFileOutsideTheMembersF
     ASSERT_TRUE(m_db->execBound("UPDATE members SET photo_path = :path WHERE id = :id",
                                 {{"path", relativeToResources}, {"id", id}}));
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seed.toInput();
     write.clearPhoto = true;
     const auto saved = m_repository->saveExistingMember(id, write);
@@ -1124,7 +1124,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoNeverDeletesAnotherMembersImage)
     ASSERT_TRUE(m_db->execBound("UPDATE members SET photo_path = :path WHERE id = :id",
                                 {{"path", memberB->photoPath}, {"id", idA}}));
 
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = seedA.toInput();
     write.clearPhoto = true;
     const auto saved = m_repository->saveExistingMember(idA, write);
@@ -1136,7 +1136,7 @@ TEST_F(test_core_MemberRepository, ClearPhotoNeverDeletesAnotherMembersImage)
 
 TEST_F(test_core_MemberRepository, SaveNewMemberIgnoresClearFlags)
 {
-    MemberWrite write;
+    Repositories::MemberWrite write;
     write.member = uniqueMemberSeed(45).toInput();
     write.clearPhoto = true;
     write.clearIdImage = true;
@@ -1147,12 +1147,12 @@ TEST_F(test_core_MemberRepository, SaveNewMemberIgnoresClearFlags)
 
 TEST_F(test_core_MemberRepository, StatusCodesAndSexCodesAreNonEmpty)
 {
-    const std::vector<std::string> statuses = MemberRepository::statusCodes();
+    const std::vector<std::string> statuses = Repositories::MemberRepository::statusCodes();
     EXPECT_EQ(statuses.size(), 2u);
-    EXPECT_TRUE(contains(statuses, MemberStatus::kActive));
-    EXPECT_TRUE(contains(statuses, MemberStatus::kNonActive));
+    EXPECT_TRUE(contains(statuses, Repositories::MemberStatus::kActive));
+    EXPECT_TRUE(contains(statuses, Repositories::MemberStatus::kNonActive));
 
-    const std::vector<std::string> sexes = MemberRepository::sexCodes();
+    const std::vector<std::string> sexes = Repositories::MemberRepository::sexCodes();
     EXPECT_EQ(sexes.size(), 2u);
 }
 
@@ -1192,7 +1192,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberDoesNotChangeMembershipNumber)
     ASSERT_TRUE(before.has_value());
     const std::string assigned = before->membershipNumber;
 
-    MemberInput edited = uniqueMemberSeed(202).toInput();
+    Repositories::MemberInput edited = uniqueMemberSeed(202).toInput();
     edited.membershipNumber = "should-not-stick";
     edited.city = "Ksour Essef";
     const auto mutated = m_repository->updateMember(created.value(), edited);
@@ -1216,10 +1216,10 @@ TEST_F(test_core_MemberRepository, OccupationAgeGroupAndFullNameRoundTrip)
     auto stored = m_repository->getMember(created.value());
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->occupation, seed.occupation);
-    EXPECT_EQ(stored->ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(stored->ageGroup, Repositories::MemberAgeGroup::kAdult);
     EXPECT_EQ(stored->fullName, seed.fullName);
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.occupation = "طالبة";
     edited.fullName = "أميمة بنت حمودة بالحاج";
     ASSERT_TRUE(m_repository->updateMember(created.value(), edited));
@@ -1227,13 +1227,13 @@ TEST_F(test_core_MemberRepository, OccupationAgeGroupAndFullNameRoundTrip)
     stored = m_repository->getMember(created.value());
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->occupation, edited.occupation);
-    EXPECT_EQ(stored->ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(stored->ageGroup, Repositories::MemberAgeGroup::kAdult);
     EXPECT_EQ(stored->fullName, edited.fullName);
 
     const auto listed = VLMS_UNWRAP(m_repository->listMembers({}));
     ASSERT_FALSE(listed.empty());
     EXPECT_EQ(listed.front().occupation, edited.occupation);
-    EXPECT_EQ(listed.front().ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(listed.front().ageGroup, Repositories::MemberAgeGroup::kAdult);
     EXPECT_EQ(listed.front().fullName, edited.fullName);
 }
 
@@ -1244,11 +1244,11 @@ TEST_F(test_core_MemberRepository, SearchFindsFullNameAndOccupation)
     seed.fullName = "ليلى بنت سالم القديري";
     ASSERT_TRUE(m_repository->createMember(seed.toInput()));
 
-    MemberQuery byName;
+    Repositories::MemberQuery byName;
     byName.search = "القديري";
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byName)), 1);
 
-    MemberQuery byJob;
+    Repositories::MemberQuery byJob;
     byJob.search = "قاضية";
     EXPECT_EQ(VLMS_UNWRAP(m_repository->countMembers(byJob)), 1);
 }
@@ -1263,17 +1263,17 @@ TEST_F(test_core_MemberRepository, UpdateMemberKeepsAgeGroupWhenBirthDateUnchang
     // A stored label the rule would not produce, like an imported row the
     // workbook labelled by hand. Recomputing would turn it back into youth.
     ASSERT_TRUE(m_db->execBound("UPDATE members SET age_group = :group WHERE id = :id",
-                                {{"group", std::string(MemberAgeGroup::kAdult)},
+                                {{"group", std::string(Repositories::MemberAgeGroup::kAdult)},
                                  {"id", created.value()}}));
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.lastName = "Changed";
     ASSERT_TRUE(m_repository->updateMember(created.value(), edited));
 
     const auto stored = m_repository->getMember(created.value());
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->lastName, "Changed");
-    EXPECT_EQ(stored->ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(stored->ageGroup, Repositories::MemberAgeGroup::kAdult);
 }
 
 TEST_F(test_core_MemberRepository, UpdateMemberRecomputesAgeGroupWhenBirthDateChanges)
@@ -1284,15 +1284,15 @@ TEST_F(test_core_MemberRepository, UpdateMemberRecomputesAgeGroupWhenBirthDateCh
     ASSERT_TRUE(created) << created.error().key;
     ASSERT_TRUE(rawSetRegisteredAt(*m_db, created.value(), "2019-03-01 10:00:00"));
 
-    MemberInput adultEdit = seed.toInput();
+    Repositories::MemberInput adultEdit = seed.toInput();
     adultEdit.dateOfBirth = "1988-01-01";
     ASSERT_TRUE(m_repository->updateMember(created.value(), adultEdit));
-    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, Repositories::MemberAgeGroup::kAdult);
 
-    MemberInput youthEdit = seed.toInput();
+    Repositories::MemberInput youthEdit = seed.toInput();
     youthEdit.dateOfBirth = "2000-01-01";
     ASSERT_TRUE(m_repository->updateMember(created.value(), youthEdit));
-    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, MemberAgeGroup::kYouth);
+    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, Repositories::MemberAgeGroup::kYouth);
 }
 
 TEST_F(test_core_MemberRepository, AgeGroupFallsBackToTodayWhenRegisteredAtIsUnreadable)
@@ -1301,13 +1301,13 @@ TEST_F(test_core_MemberRepository, AgeGroupFallsBackToTodayWhenRegisteredAtIsUnr
     // shows which date was used.
     {
         const ScopedClock pinned(Date(2026, 9, 19));
-        EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-20", ""),
-                  MemberAgeGroup::kYouth);
+        EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", ""),
+                  Repositories::MemberAgeGroup::kYouth);
     }
     {
         const ScopedClock pinned(Date(2026, 9, 20));
-        EXPECT_EQ(MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-13-45 10:00:00"),
-                  MemberAgeGroup::kAdult);
+        EXPECT_EQ(Repositories::MemberRepository::ageGroupFromBirthDate("1996-09-20", "2026-13-45 10:00:00"),
+                  Repositories::MemberAgeGroup::kAdult);
     }
 
     // Same fallback through an edit that changes the birth date.
@@ -1317,10 +1317,10 @@ TEST_F(test_core_MemberRepository, AgeGroupFallsBackToTodayWhenRegisteredAtIsUnr
     ASSERT_TRUE(created) << created.error().key;
     ASSERT_TRUE(rawSetRegisteredAt(*m_db, created.value(), "unknown"));
 
-    MemberInput edited = seed.toInput();
+    Repositories::MemberInput edited = seed.toInput();
     edited.dateOfBirth = "1996-09-20";
     ASSERT_TRUE(m_repository->updateMember(created.value(), edited));
-    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, MemberAgeGroup::kYouth);
+    EXPECT_EQ(m_repository->getMember(created.value())->ageGroup, Repositories::MemberAgeGroup::kYouth);
 }
 
 TEST_F(test_core_MemberRepository, CreateMemberDerivesAgeGroupFromBirthDate)
@@ -1331,13 +1331,13 @@ TEST_F(test_core_MemberRepository, CreateMemberDerivesAgeGroupFromBirthDate)
     adultSeed.dateOfBirth = "1990-05-12";
     const auto adultCreated = m_repository->createMember(adultSeed.toInput());
     ASSERT_TRUE(adultCreated) << adultCreated.error().key;
-    EXPECT_EQ(m_repository->getMember(adultCreated.value())->ageGroup, MemberAgeGroup::kAdult);
+    EXPECT_EQ(m_repository->getMember(adultCreated.value())->ageGroup, Repositories::MemberAgeGroup::kAdult);
 
     MemberSeed youthSeed = uniqueMemberSeed(206);
     youthSeed.dateOfBirth = "2012-06-01";
     const auto youthCreated = m_repository->createMember(youthSeed.toInput());
     ASSERT_TRUE(youthCreated) << youthCreated.error().key;
-    EXPECT_EQ(m_repository->getMember(youthCreated.value())->ageGroup, MemberAgeGroup::kYouth);
+    EXPECT_EQ(m_repository->getMember(youthCreated.value())->ageGroup, Repositories::MemberAgeGroup::kYouth);
 }
 
 TEST_F(test_core_MemberRepository, CreateMemberStampsRegisteredAtAndAgeGroupFromTheClock)
@@ -1354,7 +1354,7 @@ TEST_F(test_core_MemberRepository, CreateMemberStampsRegisteredAtAndAgeGroupFrom
     const auto stored = m_repository->getMember(created.value());
     ASSERT_TRUE(stored.has_value());
     EXPECT_EQ(stored->registeredAt, "2000-03-01 09:30:00");
-    EXPECT_EQ(stored->ageGroup, MemberAgeGroup::kYouth);
+    EXPECT_EQ(stored->ageGroup, Repositories::MemberAgeGroup::kYouth);
 }
 
 TEST_F(test_core_MemberRepository, ListMembersSortsByNumberNumerically)
@@ -1384,8 +1384,8 @@ TEST_F(test_core_MemberRepository, ListMembersSortsByNumberNumerically)
     ASSERT_GT(id2, 0);
     ASSERT_GT(id2b, 0);
 
-    MemberQuery query;
-    query.sortColumn = MemberSort::kNumber;
+    Repositories::MemberQuery query;
+    query.sortColumn = Repositories::MemberSort::kNumber;
     query.sortAscending = true;
     const auto asc = VLMS_UNWRAP(m_repository->listMembers(query));
     ASSERT_EQ(asc.size(), 3u);
@@ -1414,8 +1414,8 @@ TEST_F(test_core_MemberRepository, ListMembersSortsByNameCaseInsensitive)
     ASSERT_GT(idZ, 0);
     ASSERT_GT(idA, 0);
 
-    MemberQuery query;
-    query.sortColumn = MemberSort::kName;
+    Repositories::MemberQuery query;
+    query.sortColumn = Repositories::MemberSort::kName;
     query.sortAscending = true;
     const auto rows = VLMS_UNWRAP(m_repository->listMembers(query));
     ASSERT_EQ(rows.size(), 2u);
@@ -1447,8 +1447,8 @@ TEST_F(test_core_MemberRepository, RankOfMemberFollowsNumberSort)
     ASSERT_GT(id2, 0);
     ASSERT_GT(id3, 0);
 
-    MemberQuery query;
-    query.sortColumn = MemberSort::kNumber;
+    Repositories::MemberQuery query;
+    query.sortColumn = Repositories::MemberSort::kNumber;
     query.sortAscending = true;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->rankOfMember(id1, query)), 0);
     EXPECT_EQ(VLMS_UNWRAP(m_repository->rankOfMember(id3, query)), 2);

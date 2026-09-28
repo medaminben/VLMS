@@ -32,9 +32,9 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -62,9 +62,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
 };
 
 TEST_F(test_core_CanRemove, ArchiveBookPassesWhenNothingIsOut)

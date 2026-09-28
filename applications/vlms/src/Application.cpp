@@ -126,12 +126,12 @@ Application::Application(int& argc, char** argv)
         return;
     }
 
-    m_catalogRepository = new CatalogRepository(m_database->session(),
+    m_catalogRepository = new VLMS::Repositories::CatalogRepository(m_database->session(),
                                                 VLMS::Paths::resourcesDirectory());
-    m_memberRepository = new MemberRepository(m_database->session(),
+    m_memberRepository = new VLMS::Repositories::MemberRepository(m_database->session(),
                                               VLMS::Paths::resourcesDirectory());
-    m_circulationRepository = new CirculationRepository(m_database->session());
-    m_metricsRepository = new MetricsRepository(m_database->session());
+    m_circulationRepository = new VLMS::Repositories::CirculationRepository(m_database->session());
+    m_metricsRepository = new VLMS::Repositories::MetricsRepository(m_database->session());
 }
 
 Application::~Application() {

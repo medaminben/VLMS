@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+namespace VLMS::Repositories {
+
 struct MetricsPeriodCounts {
     int checkouts = 0;
     int returns = 0;
@@ -29,3 +31,5 @@ struct LibraryMetrics {
     MetricsPeriodCounts thisMonth;
     std::vector<MetricsCategoryCount> topCategories;
 };
+
+}  // namespace VLMS::Repositories

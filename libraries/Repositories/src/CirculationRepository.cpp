@@ -18,10 +18,8 @@ using VLMS::SqliteStatement;
 using VLMS::trim;
 using VLMS::SqlText::escapeLike;
 using VLMS::SqlText::nullableText;
-namespace LoanPolicy = VLMS::LoanPolicy;
-namespace LoanSql = VLMS::LoanSql;
-namespace MemberSql = VLMS::MemberSql;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 namespace {
 
@@ -650,3 +648,5 @@ CirculationRepository::listAvailableCopies(const std::string& search,
     }
     return Result<std::vector<LoanCopyOption>>::ok(std::move(copies));
 }
+
+}  // namespace VLMS::Repositories

@@ -11,6 +11,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class BookCopyStore {
 public:
     explicit BookCopyStore(VLMS::SqliteSession& session);
@@ -67,3 +69,5 @@ public:
 private:
     VLMS::SqliteSession& m_session;
 };
+
+}  // namespace VLMS::Repositories

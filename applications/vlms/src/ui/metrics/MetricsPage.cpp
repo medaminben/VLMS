@@ -95,7 +95,7 @@ void configureMetricTable(QTableWidget* table)
 
 }  // namespace
 
-MetricsPage::MetricsPage(MetricsRepository& repository, QWidget* parent)
+MetricsPage::MetricsPage(VLMS::Repositories::MetricsRepository& repository, QWidget* parent)
     : QWidget(parent),
       m_repository(repository) {
     buildUi();
@@ -298,7 +298,7 @@ void MetricsPage::refreshMetrics() {
         VLMS::showRepoError(this, metricsResult.error());
         return;
     }
-    const LibraryMetrics& metrics = metricsResult.value();
+    const VLMS::Repositories::LibraryMetrics& metrics = metricsResult.value();
 
     const QList<int> overviewValues = {
         metrics.bookTitles,
@@ -330,7 +330,7 @@ void MetricsPage::refreshMetrics() {
 
     const struct {
         QString key;
-        MetricsPeriodCounts counts;
+        VLMS::Repositories::MetricsPeriodCounts counts;
     } periods[] = {
         {kPeriodToday, metrics.today},
         {kPeriodWeek, metrics.thisWeek},
@@ -348,7 +348,7 @@ void MetricsPage::refreshMetrics() {
 
     m_categoriesTable->setRowCount(metrics.topCategories.size());
     for (int row = 0; row < static_cast<int>(metrics.topCategories.size()); ++row) {
-        const MetricsCategoryCount& category = metrics.topCategories.at(row);
+        const VLMS::Repositories::MetricsCategoryCount& category = metrics.topCategories.at(row);
         m_categoriesTable->setItem(row, 0, makeCenteredTableItem(qs(category.label)));
         m_categoriesTable->setItem(row, 1, makeCenteredTableItem(category.bookCount));
     }

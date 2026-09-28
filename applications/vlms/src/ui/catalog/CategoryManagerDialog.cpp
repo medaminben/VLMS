@@ -27,7 +27,7 @@ using VLMS::Strings;
 
 }  // namespace
 
-CategoryManagerDialog::CategoryManagerDialog(CatalogRepository& repository, QWidget* parent)
+CategoryManagerDialog::CategoryManagerDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
     : QDialog(parent),
       m_repository(repository) {
     resize(640, 420);
@@ -99,7 +99,7 @@ void CategoryManagerDialog::refresh() {
     m_table->setRowCount(categories.size());
 
     for (int row = 0; row < static_cast<int>(categories.size()); ++row) {
-        const CategoryRecord& category = categories.at(row);
+        const VLMS::Repositories::CategoryRecord& category = categories.at(row);
         auto* codeItem = new QTableWidgetItem(qs(category.code));
         codeItem->setData(Qt::UserRole, QVariant::fromValue(category.id));
         m_table->setItem(row, 0, codeItem);

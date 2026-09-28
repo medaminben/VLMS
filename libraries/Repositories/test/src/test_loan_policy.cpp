@@ -33,12 +33,12 @@ bool containsInsensitive(std::string_view text, std::string_view needle)
 
 TEST(test_core_LoanPolicy, DefaultLoanDaysIsFourteen)
 {
-    EXPECT_EQ(LoanPolicy::defaultLoanDays(), 14);
+    EXPECT_EQ(Repositories::LoanPolicy::defaultLoanDays(), 14);
 }
 
 TEST(test_core_LoanPolicy, SuggestedDueDateIsFourteenDaysOut)
 {
-    EXPECT_EQ(LoanPolicy::suggestedDueDate(Date(2021, 6, 15)), Date(2021, 6, 29));
+    EXPECT_EQ(Repositories::LoanPolicy::suggestedDueDate(Date(2021, 6, 15)), Date(2021, 6, 29));
 }
 
 TEST(test_core_LoanPolicy, SuggestedDueDateCrossesMonthAndYearBoundaries)
@@ -52,38 +52,38 @@ TEST(test_core_LoanPolicy, SuggestedDueDateCrossesMonthAndYearBoundaries)
     };
     for (const auto& [borrowedOn, expected] : cases) {
         SCOPED_TRACE(borrowedOn.toIso());
-        EXPECT_EQ(LoanPolicy::suggestedDueDate(borrowedOn), expected);
+        EXPECT_EQ(Repositories::LoanPolicy::suggestedDueDate(borrowedOn), expected);
     }
 }
 
 TEST(test_core_LoanPolicy, SuggestedDueDateOfAnInvalidDateIsInvalid)
 {
-    EXPECT_FALSE(LoanPolicy::suggestedDueDate(Date()).isValid());
-    EXPECT_FALSE(LoanPolicy::suggestedDueDate(Date::fromIso("2024-02-30")).isValid());
+    EXPECT_FALSE(Repositories::LoanPolicy::suggestedDueDate(Date()).isValid());
+    EXPECT_FALSE(Repositories::LoanPolicy::suggestedDueDate(Date::fromIso("2024-02-30")).isValid());
 }
 
 TEST(test_core_LoanPolicy, MinimumExtensionIsTheDayAfterACurrentDueDate)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::minimumExtensionDate(Date(2021, 6, 25), today), Date(2021, 6, 26));
+    EXPECT_EQ(Repositories::LoanPolicy::minimumExtensionDate(Date(2021, 6, 25), today), Date(2021, 6, 26));
 }
 
 TEST(test_core_LoanPolicy, MinimumExtensionIsTodayForAnOverdueLoan)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::minimumExtensionDate(Date(2021, 5, 26), today), today);
+    EXPECT_EQ(Repositories::LoanPolicy::minimumExtensionDate(Date(2021, 5, 26), today), today);
 }
 
 TEST(test_core_LoanPolicy, MinimumExtensionIsTodayWhenTheStoredDueDateIsUnreadable)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::minimumExtensionDate(Date(), today), today);
+    EXPECT_EQ(Repositories::LoanPolicy::minimumExtensionDate(Date(), today), today);
 }
 
 TEST(test_core_LoanPolicy, MinimumExtensionIsTomorrowWhenTheLoanIsDueToday)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::minimumExtensionDate(today, today), Date(2021, 6, 16));
+    EXPECT_EQ(Repositories::LoanPolicy::minimumExtensionDate(today, today), Date(2021, 6, 16));
 }
 
 TEST(test_core_LoanPolicy, MinimumExtensionIsNeverInThePast)
@@ -93,20 +93,20 @@ TEST(test_core_LoanPolicy, MinimumExtensionIsNeverInThePast)
          {Date(2019, 1, 1), Date(2021, 6, 14), Date(2021, 6, 15), Date(2021, 6, 16),
           Date(2025, 1, 1), Date()}) {
         SCOPED_TRACE(currentDue.toIso());
-        EXPECT_GE(LoanPolicy::minimumExtensionDate(currentDue, today), today);
+        EXPECT_GE(Repositories::LoanPolicy::minimumExtensionDate(currentDue, today), today);
     }
 }
 
 TEST(test_core_LoanPolicy, ExtensionSuggestsFourteenDaysForACurrentLoan)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::suggestedExtensionDate(Date(2021, 6, 25), today), Date(2021, 7, 9));
+    EXPECT_EQ(Repositories::LoanPolicy::suggestedExtensionDate(Date(2021, 6, 25), today), Date(2021, 7, 9));
 }
 
 TEST(test_core_LoanPolicy, ExtensionSuggestsFourteenDaysForAnOverdueLoan)
 {
     const Date today(2021, 6, 15);
-    EXPECT_EQ(LoanPolicy::suggestedExtensionDate(Date(2021, 5, 26), today), Date(2021, 6, 29));
+    EXPECT_EQ(Repositories::LoanPolicy::suggestedExtensionDate(Date(2021, 5, 26), today), Date(2021, 6, 29));
 }
 
 TEST(test_core_LoanPolicy, ExtensionSuggestsFourteenDaysWhateverTheState)
@@ -118,7 +118,7 @@ TEST(test_core_LoanPolicy, ExtensionSuggestsFourteenDaysWhateverTheState)
         SCOPED_TRACE(currentDue.toIso());
         const Date effectiveFrom =
             (currentDue.isValid() && currentDue > today) ? currentDue : today;
-        EXPECT_EQ(LoanPolicy::suggestedExtensionDate(currentDue, today), effectiveFrom.addDays(14));
+        EXPECT_EQ(Repositories::LoanPolicy::suggestedExtensionDate(currentDue, today), effectiveFrom.addDays(14));
     }
 }
 
@@ -129,8 +129,8 @@ TEST(test_core_LoanPolicy, TheSuggestionIsAlwaysAtLeastTheMinimum)
          {Date(2021, 5, 26), Date(2021, 6, 14), Date(2021, 6, 15), Date(2021, 6, 16),
           Date(2021, 7, 15), Date()}) {
         SCOPED_TRACE(currentDue.toIso());
-        EXPECT_GE(LoanPolicy::suggestedExtensionDate(currentDue, today),
-                  LoanPolicy::minimumExtensionDate(currentDue, today));
+        EXPECT_GE(Repositories::LoanPolicy::suggestedExtensionDate(currentDue, today),
+                  Repositories::LoanPolicy::minimumExtensionDate(currentDue, today));
     }
 }
 
@@ -156,7 +156,7 @@ TEST(test_core_LoanPolicy, ParseIsoDateAcceptsOnlyFullIsoDates)
     };
     for (const auto& [text, expected] : cases) {
         SCOPED_TRACE(text);
-        const Date actual = LoanPolicy::parseIsoDate(text);
+        const Date actual = Repositories::LoanPolicy::parseIsoDate(text);
         if (expected.isValid()) {
             EXPECT_EQ(actual, expected);
         } else {
@@ -170,13 +170,13 @@ TEST(test_core_LoanPolicy, ParseIsoDateRejectsTheShapesSqliteMisreads)
     for (const char* text :
          {"2014", " 2014 ", "1999-09", "2024-02-30", "1900-02-29", "0", "2451545"}) {
         SCOPED_TRACE(text);
-        EXPECT_FALSE(LoanPolicy::parseIsoDate(text).isValid()) << text;
+        EXPECT_FALSE(Repositories::LoanPolicy::parseIsoDate(text).isValid()) << text;
     }
 }
 
 TEST(test_core_LoanPolicy, LoanDatesRejectAnUnparseableBorrowDateAsSuch)
 {
-    const auto result = LoanPolicy::validateLoanDates("14/08/2026", "2026-08-28", Date(2026, 8, 15));
+    const auto result = Repositories::LoanPolicy::validateLoanDates("14/08/2026", "2026-08-28", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_TRUE(containsInsensitive(result.message, "Borrow")) << result.message;
 }
@@ -184,56 +184,56 @@ TEST(test_core_LoanPolicy, LoanDatesRejectAnUnparseableBorrowDateAsSuch)
 TEST(test_core_LoanPolicy, LoanDatesRejectAnUnparseableDueDateWithoutMentioningOrdering)
 {
     const auto result =
-        LoanPolicy::validateLoanDates("2026-08-14", "28 August 2026", Date(2026, 8, 15));
+        Repositories::LoanPolicy::validateLoanDates("2026-08-14", "28 August 2026", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_FALSE(containsInsensitive(result.message, "before")) << result.message;
 }
 
 TEST(test_core_LoanPolicy, LoanDatesRejectAZeroDayLoan)
 {
-    const auto result = LoanPolicy::validateLoanDates("2026-03-10", "2026-03-10", Date(2026, 8, 15));
+    const auto result = Repositories::LoanPolicy::validateLoanDates("2026-03-10", "2026-03-10", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_FALSE(result.message.empty());
 }
 
 TEST(test_core_LoanPolicy, LoanDatesRejectAFutureBorrowDate)
 {
-    const auto result = LoanPolicy::validateLoanDates("2026-09-14", "2026-09-28", Date(2026, 8, 15));
+    const auto result = Repositories::LoanPolicy::validateLoanDates("2026-09-14", "2026-09-28", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_FALSE(result.message.empty());
 }
 
 TEST(test_core_LoanPolicy, LoanDatesAcceptAOneDayLoan)
 {
-    EXPECT_TRUE(LoanPolicy::validateLoanDates("2026-08-14", "2026-08-15", Date(2026, 8, 15)));
+    EXPECT_TRUE(Repositories::LoanPolicy::validateLoanDates("2026-08-14", "2026-08-15", Date(2026, 8, 15)));
 }
 
 TEST(test_core_LoanPolicy, LoanDatesAcceptABackdatedCheckout)
 {
-    EXPECT_TRUE(LoanPolicy::validateLoanDates("2026-07-01", "2026-07-15", Date(2026, 8, 15)));
+    EXPECT_TRUE(Repositories::LoanPolicy::validateLoanDates("2026-07-01", "2026-07-15", Date(2026, 8, 15)));
 }
 
 TEST(test_core_LoanPolicy, ReturnDateRejectsAnUnreadableStoredBorrowDate)
 {
-    const auto result = LoanPolicy::validateReturnDate("2026-08-15", "14/08/2026", Date(2026, 8, 15));
+    const auto result = Repositories::LoanPolicy::validateReturnDate("2026-08-15", "14/08/2026", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_FALSE(result.message.empty());
 }
 
 TEST(test_core_LoanPolicy, ReturnDateAcceptsTheBorrowDateItself)
 {
-    EXPECT_TRUE(LoanPolicy::validateReturnDate("2026-08-15", "2026-08-15", Date(2026, 8, 15)));
+    EXPECT_TRUE(Repositories::LoanPolicy::validateReturnDate("2026-08-15", "2026-08-15", Date(2026, 8, 15)));
 }
 
 TEST(test_core_LoanPolicy, ReturnDateRejectsTomorrow)
 {
-    EXPECT_FALSE(LoanPolicy::validateReturnDate("2026-08-16", "2026-08-01", Date(2026, 8, 15)));
+    EXPECT_FALSE(Repositories::LoanPolicy::validateReturnDate("2026-08-16", "2026-08-01", Date(2026, 8, 15)));
 }
 
 TEST(test_core_LoanPolicy, ExtensionRejectsAnUnreadableStoredDueDate)
 {
     const auto result =
-        LoanPolicy::validateExtension("2026-09-14", "sometime next month", Date(2026, 8, 15));
+        Repositories::LoanPolicy::validateExtension("2026-09-14", "sometime next month", Date(2026, 8, 15));
     EXPECT_FALSE(result);
     EXPECT_FALSE(result.message.empty());
 }
@@ -241,27 +241,27 @@ TEST(test_core_LoanPolicy, ExtensionRejectsAnUnreadableStoredDueDate)
 TEST(test_core_LoanPolicy, ExtensionRejectsGoingBackwardsFromAReadableDueDate)
 {
     const Date today(2026, 8, 15);
-    EXPECT_FALSE(LoanPolicy::validateExtension("2026-08-20", "2026-08-25", today));
-    EXPECT_TRUE(LoanPolicy::validateExtension("2026-08-26", "2026-08-25", today));
+    EXPECT_FALSE(Repositories::LoanPolicy::validateExtension("2026-08-20", "2026-08-25", today));
+    EXPECT_TRUE(Repositories::LoanPolicy::validateExtension("2026-08-26", "2026-08-25", today));
 }
 
 TEST(test_core_LoanPolicy, EveryRejectionCarriesAMessage)
 {
     const Date today(2026, 8, 15);
-    const std::vector<LoanPolicy::Validation> results = {
-        LoanPolicy::validateLoanDates("nope", "2026-08-28", today),
-        LoanPolicy::validateLoanDates("2026-08-14", "nope", today),
-        LoanPolicy::validateLoanDates("2026-08-14", "2026-08-14", today),
-        LoanPolicy::validateLoanDates("2026-08-14", "2026-08-13", today),
-        LoanPolicy::validateLoanDates("2026-08-16", "2026-08-30", today),
-        LoanPolicy::validateReturnDate("nope", "2026-08-01", today),
-        LoanPolicy::validateReturnDate("2026-08-15", "nope", today),
-        LoanPolicy::validateReturnDate("2026-07-31", "2026-08-01", today),
-        LoanPolicy::validateReturnDate("2026-08-16", "2026-08-01", today),
-        LoanPolicy::validateExtension("nope", "2026-08-25", today),
-        LoanPolicy::validateExtension("2026-09-14", "nope", today),
-        LoanPolicy::validateExtension("2026-08-25", "2026-08-25", today),
-        LoanPolicy::validateExtension("2026-08-10", "2026-08-01", today),
+    const std::vector<Repositories::LoanPolicy::Validation> results = {
+        Repositories::LoanPolicy::validateLoanDates("nope", "2026-08-28", today),
+        Repositories::LoanPolicy::validateLoanDates("2026-08-14", "nope", today),
+        Repositories::LoanPolicy::validateLoanDates("2026-08-14", "2026-08-14", today),
+        Repositories::LoanPolicy::validateLoanDates("2026-08-14", "2026-08-13", today),
+        Repositories::LoanPolicy::validateLoanDates("2026-08-16", "2026-08-30", today),
+        Repositories::LoanPolicy::validateReturnDate("nope", "2026-08-01", today),
+        Repositories::LoanPolicy::validateReturnDate("2026-08-15", "nope", today),
+        Repositories::LoanPolicy::validateReturnDate("2026-07-31", "2026-08-01", today),
+        Repositories::LoanPolicy::validateReturnDate("2026-08-16", "2026-08-01", today),
+        Repositories::LoanPolicy::validateExtension("nope", "2026-08-25", today),
+        Repositories::LoanPolicy::validateExtension("2026-09-14", "nope", today),
+        Repositories::LoanPolicy::validateExtension("2026-08-25", "2026-08-25", today),
+        Repositories::LoanPolicy::validateExtension("2026-08-10", "2026-08-01", today),
     };
     for (const auto& result : results) {
         EXPECT_FALSE(result);

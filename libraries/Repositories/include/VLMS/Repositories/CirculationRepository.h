@@ -11,6 +11,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class CirculationRepository {
 public:
     explicit CirculationRepository(VLMS::SqliteSession& session);
@@ -52,3 +54,5 @@ private:
 
     VLMS::SqliteSession& m_session;
 };
+
+}  // namespace VLMS::Repositories

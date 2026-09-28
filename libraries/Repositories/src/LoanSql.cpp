@@ -11,7 +11,7 @@
 using VLMS::SqlText::escapeLike;
 using VLMS::trim;
 
-namespace VLMS::LoanSql {
+namespace VLMS::Repositories::LoanSql {
 
 std::string isOverdue(const std::string_view prefix)
 {
@@ -189,4 +189,4 @@ std::string orderClause(const LoanQuery& query)
     return " ORDER BY " + orderExpressions(query);
 }
 
-}  // namespace VLMS::LoanSql
+}  // namespace VLMS::Repositories::LoanSql

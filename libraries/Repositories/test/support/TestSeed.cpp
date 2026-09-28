@@ -11,9 +11,9 @@
 
 namespace Test {
 
-MemberInput MemberSeed::toInput() const
+VLMS::Repositories::MemberInput MemberSeed::toInput() const
 {
-    MemberInput input;
+    VLMS::Repositories::MemberInput input;
     input.membershipNumber = membershipNumber;
     input.firstName = firstName;
     input.lastName = lastName;
@@ -30,9 +30,9 @@ MemberInput MemberSeed::toInput() const
     return input;
 }
 
-BookInput BookSeed::toInput() const
+VLMS::Repositories::BookInput BookSeed::toInput() const
 {
-    BookInput input;
+    VLMS::Repositories::BookInput input;
     input.title = title;
     input.authorName = authorName;
     input.publisherName = publisherName;
@@ -71,7 +71,7 @@ BookSeed uniqueBookSeed(int index)
 
 std::int64_t seedMember(TestDatabase& db, const MemberSeed& seed)
 {
-    MemberRepository repository(db.session(), db.resourcesDirectory());
+    VLMS::Repositories::MemberRepository repository(db.session(), db.resourcesDirectory());
     const auto created = repository.createMember(seed.toInput());
     if (!created) {
         std::fprintf(stderr, "seedMember failed: %s\n", created.error().key.c_str());
@@ -82,7 +82,7 @@ std::int64_t seedMember(TestDatabase& db, const MemberSeed& seed)
 
 std::int64_t seedBook(TestDatabase& db, const BookSeed& seed)
 {
-    CatalogRepository repository(db.session(), db.resourcesDirectory());
+    VLMS::Repositories::CatalogRepository repository(db.session(), db.resourcesDirectory());
     const auto created = repository.createBook(seed.toInput());
     if (!created) {
         std::fprintf(stderr, "seedBook failed: %s\n", created.error().key.c_str());
@@ -93,7 +93,7 @@ std::int64_t seedBook(TestDatabase& db, const BookSeed& seed)
 
 std::int64_t seedCategory(TestDatabase& db, std::string_view code, std::string_view label)
 {
-    CatalogRepository repository(db.session(), db.resourcesDirectory());
+    VLMS::Repositories::CatalogRepository repository(db.session(), db.resourcesDirectory());
     const auto created = repository.createCategory(std::string(code), std::string(label));
     if (!created) {
         std::fprintf(stderr, "seedCategory failed: %s\n", created.error().key.c_str());

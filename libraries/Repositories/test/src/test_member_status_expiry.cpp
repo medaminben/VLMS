@@ -28,9 +28,9 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -64,9 +64,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_members;
-    std::unique_ptr<CirculationRepository> m_circulation;
-    std::unique_ptr<MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
 };
 
 TEST_F(test_core_MemberStatusExpiry, RegisteringStartsAYearLessADay)
@@ -75,9 +75,9 @@ TEST_F(test_core_MemberStatusExpiry, RegisteringStartsAYearLessADay)
     ASSERT_GT(id, 0);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    const MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
+    const Repositories::MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
     EXPECT_EQ(member.activeUntil, "2027-09-22");
-    EXPECT_EQ(member.status, MemberStatus::kActive);
+    EXPECT_EQ(member.status, Repositories::MemberStatus::kActive);
     EXPECT_EQ(lastHistoryNote(id), "Registered, active until 2027-09-22");
 }
 
@@ -86,20 +86,20 @@ TEST_F(test_core_MemberStatusExpiry, ActiveOnTheLastDayNotActiveTheDayAfter)
     const std::int64_t id = registerOn(Date(2025, 9, 24), 1);
     ASSERT_GT(id, 0);
 
-    MemberQuery active;
-    active.statuses = {MemberStatus::kActive};
-    MemberQuery notActive;
-    notActive.statuses = {MemberStatus::kNonActive};
+    Repositories::MemberQuery active;
+    active.statuses = {Repositories::MemberStatus::kActive};
+    Repositories::MemberQuery notActive;
+    notActive.statuses = {Repositories::MemberStatus::kNonActive};
 
     {
         const ScopedClock pinned(Date(2026, 9, 23));
-        EXPECT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, MemberStatus::kActive);
+        EXPECT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, Repositories::MemberStatus::kActive);
         EXPECT_EQ(VLMS_UNWRAP(m_members->countMembers(active)), 1);
         EXPECT_EQ(VLMS_UNWRAP(m_members->countMembers(notActive)), 0);
     }
     {
         const ScopedClock pinned(Date(2026, 9, 24));
-        EXPECT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, MemberStatus::kNonActive);
+        EXPECT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, Repositories::MemberStatus::kNonActive);
         EXPECT_EQ(VLMS_UNWRAP(m_members->countMembers(active)), 0);
         EXPECT_EQ(VLMS_UNWRAP(m_members->countMembers(notActive)), 1);
         EXPECT_EQ(VLMS_UNWRAP(m_members->listMembers(notActive)).size(), 1u);
@@ -112,21 +112,21 @@ TEST_F(test_core_MemberStatusExpiry, RenewingAnExpiredMemberGivesAnotherYear)
     ASSERT_GT(id, 0);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    ASSERT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, MemberStatus::kNonActive);
+    ASSERT_EQ(VLMS_UNWRAP(m_members->getMember(id)).status, Repositories::MemberStatus::kNonActive);
 
-    MemberInput input = uniqueMemberSeed(1).toInput();
-    input.status = MemberStatus::kActive;
+    Repositories::MemberInput input = uniqueMemberSeed(1).toInput();
+    input.status = Repositories::MemberStatus::kActive;
     ASSERT_TRUE(m_members->updateMember(id, input));
 
-    const MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
+    const Repositories::MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
     EXPECT_EQ(member.activeUntil, "2027-09-22");
-    EXPECT_EQ(member.status, MemberStatus::kActive);
+    EXPECT_EQ(member.status, Repositories::MemberStatus::kActive);
     EXPECT_EQ(lastHistoryNote(id), "Renewed until 2027-09-22");
     EXPECT_EQ(m_db->scalar("SELECT old_status FROM member_status_history WHERE member_id = :id "
                            "ORDER BY id DESC LIMIT 1",
                            {{"id", id}})
                   .toString(),
-              MemberStatus::kNonActive);
+              Repositories::MemberStatus::kNonActive);
 }
 
 TEST_F(test_core_MemberStatusExpiry, SettingNotActiveEndsTheMembershipYesterday)
@@ -135,13 +135,13 @@ TEST_F(test_core_MemberStatusExpiry, SettingNotActiveEndsTheMembershipYesterday)
     ASSERT_GT(id, 0);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    MemberInput input = uniqueMemberSeed(1).toInput();
-    input.status = MemberStatus::kNonActive;
+    Repositories::MemberInput input = uniqueMemberSeed(1).toInput();
+    input.status = Repositories::MemberStatus::kNonActive;
     ASSERT_TRUE(m_members->updateMember(id, input));
 
-    const MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
+    const Repositories::MemberRecord member = VLMS_UNWRAP(m_members->getMember(id));
     EXPECT_EQ(member.activeUntil, "2026-09-22");
-    EXPECT_EQ(member.status, MemberStatus::kNonActive);
+    EXPECT_EQ(member.status, Repositories::MemberStatus::kNonActive);
     EXPECT_EQ(lastHistoryNote(id), "Ended early");
 }
 
@@ -152,9 +152,9 @@ TEST_F(test_core_MemberStatusExpiry, SavingWithTheSameStatusKeepsTheDate)
     const int historyBefore = historyCount(id);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    MemberInput input = uniqueMemberSeed(1).toInput();
+    Repositories::MemberInput input = uniqueMemberSeed(1).toInput();
     input.phone = "71 000 000";
-    input.status = MemberStatus::kActive;
+    input.status = Repositories::MemberStatus::kActive;
     ASSERT_TRUE(m_members->updateMember(id, input));
 
     EXPECT_EQ(VLMS_UNWRAP(m_members->getMember(id)).activeUntil, "2027-08-31");
@@ -170,7 +170,7 @@ TEST_F(test_core_MemberStatusExpiry, BorrowingIsRefusedTheDayAfterExpiry)
     const auto copies = copyIdsOf(*m_db, seedBook(*m_db, book));
     ASSERT_EQ(copies.size(), 2u);
 
-    LoanInput loan;
+    Repositories::LoanInput loan;
     loan.memberId = memberId;
     {
         const ScopedClock pinned(Date(2026, 9, 23));
@@ -197,7 +197,7 @@ TEST_F(test_core_MemberStatusExpiry, TheBorrowableListDropsTheExpiredMember)
     const auto borrowable = VLMS_UNWRAP(m_circulation->listBorrowableMembers());
     ASSERT_EQ(borrowable.size(), 1u);
     EXPECT_EQ(borrowable.front().id, current);
-    EXPECT_EQ(borrowable.front().status, MemberStatus::kActive);
+    EXPECT_EQ(borrowable.front().status, Repositories::MemberStatus::kActive);
 }
 
 TEST_F(test_core_MemberStatusExpiry, LoanRowsCarryTheMembersStatusOnTheDay)
@@ -206,17 +206,17 @@ TEST_F(test_core_MemberStatusExpiry, LoanRowsCarryTheMembersStatusOnTheDay)
     const auto copies = copyIdsOf(*m_db, seedBook(*m_db, uniqueBookSeed(1)));
     ASSERT_GT(rawInsertLoan(*m_db, memberId, copies.at(0), "2026-09-20", "2026-10-04"), 0);
 
-    LoanQuery all;
-    all.filters = {LoanFilter::kAll};
+    Repositories::LoanQuery all;
+    all.filters = {Repositories::LoanFilter::kAll};
     {
         const ScopedClock pinned(Date(2026, 9, 23));
         EXPECT_EQ(VLMS_UNWRAP(m_circulation->listLoans(all)).front().memberStatus,
-                  MemberStatus::kActive);
+                  Repositories::MemberStatus::kActive);
     }
     {
         const ScopedClock pinned(Date(2026, 9, 24));
         EXPECT_EQ(VLMS_UNWRAP(m_circulation->listLoans(all)).front().memberStatus,
-                  MemberStatus::kNonActive);
+                  Repositories::MemberStatus::kNonActive);
     }
 }
 
@@ -227,7 +227,7 @@ TEST_F(test_core_MemberStatusExpiry, MetricsCountFromTheDate)
     ASSERT_GT(registerOn(Date(2026, 9, 2), 3), 0);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    const LibraryMetrics metrics = VLMS_UNWRAP(m_metrics->fetchMetrics());
+    const Repositories::LibraryMetrics metrics = VLMS_UNWRAP(m_metrics->fetchMetrics());
     EXPECT_EQ(metrics.membersActive, 2);
     EXPECT_EQ(metrics.membersNonActive, 1);
 }
@@ -238,8 +238,8 @@ TEST_F(test_core_MemberStatusExpiry, SortingByStatusPutsTheEarliestLastDayFirst)
     const std::int64_t earlier = registerOn(Date(2025, 1, 10), 2);
 
     const ScopedClock pinned(Date(2026, 9, 23));
-    MemberQuery query;
-    query.sortColumn = MemberSort::kStatus;
+    Repositories::MemberQuery query;
+    query.sortColumn = Repositories::MemberSort::kStatus;
     query.sortAscending = true;
     const auto members = VLMS_UNWRAP(m_members->listMembers(query));
     ASSERT_EQ(members.size(), 2u);

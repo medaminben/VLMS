@@ -86,10 +86,10 @@ protected:
         m_clock = std::make_unique<ScopedClock>(Date(2026, 9, 19));
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_memberRepo =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
@@ -105,7 +105,7 @@ protected:
     void seedOpenOverdueAndReturned()
     {
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -131,9 +131,9 @@ protected:
 
     std::unique_ptr<ScopedClock> m_clock;
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<MemberRepository> m_memberRepo;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<CirculationPage> m_page;
     std::int64_t m_memberId = 0;
     std::int64_t m_openId = 0;
@@ -149,9 +149,9 @@ TEST_F(test_ui_CirculationFilters, FilterListIncludesEveryStateAndDefaultsToAll)
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     ASSERT_NE(list, nullptr);
     const QStringList codes = filterCodesOnList(list);
-    EXPECT_TRUE(codes.contains(QString::fromLatin1(LoanFilter::kOpen)));
-    EXPECT_TRUE(codes.contains(QString::fromLatin1(LoanFilter::kOverdue)));
-    EXPECT_TRUE(codes.contains(QString::fromLatin1(LoanFilter::kReturned)));
+    EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kOpen)));
+    EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kOverdue)));
+    EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kReturned)));
 
     // All is the first row and carries an empty code.
     ASSERT_EQ(list->selectedItems().size(), 1);
@@ -173,7 +173,7 @@ TEST_F(test_ui_CirculationFilters, SelectingOverdueShowsOnlyLoansPastTheirDueDat
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
-    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(LoanFilter::kOverdue)));
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kOverdue)));
 
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_overdueId);
@@ -189,9 +189,9 @@ TEST_F(test_ui_CirculationFilters, SelectingReturnedShowsOnlyReturnedLoans)
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
-    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(LoanFilter::kReturned)));
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kReturned)));
 
-    EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(LoanFilter::kReturned)});
+    EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(Repositories::LoanFilter::kReturned)});
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_returnedId);
 }
@@ -206,10 +206,10 @@ TEST_F(test_ui_CirculationFilters, SelectingOpenAgainShowsOnlyOpenLoans)
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
-    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(LoanFilter::kReturned)));
-    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(LoanFilter::kOpen)));
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kReturned)));
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kOpen)));
 
-    EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(LoanFilter::kOpen)});
+    EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(Repositories::LoanFilter::kOpen)});
     ASSERT_EQ(table->rowCount(), 1);
     EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_openId);
 }
@@ -228,7 +228,7 @@ TEST_F(test_ui_CirculationFilters, SelectingAllShowsEveryLoan)
     for (int row = 0; row < list->count(); ++row) {
         QListWidgetItem* item = list->item(row);
         if (item->data(Qt::UserRole).toString().isEmpty()
-            || item->data(Qt::UserRole).toString() == QLatin1String(LoanFilter::kAll)) {
+            || item->data(Qt::UserRole).toString() == QLatin1String(Repositories::LoanFilter::kAll)) {
             list->setCurrentItem(item);
             item->setSelected(true);
             QApplication::processEvents();

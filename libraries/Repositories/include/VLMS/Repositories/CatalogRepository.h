@@ -12,6 +12,8 @@ namespace VLMS {
 class SqliteSession;
 }
 
+namespace VLMS::Repositories {
+
 class BookCopyStore;
 class CategoryStore;
 class NamedEntityStore;
@@ -101,3 +103,5 @@ private:
     std::unique_ptr<BookCopyStore> m_copies;
     std::unique_ptr<CategoryStore> m_categories;
 };
+
+}  // namespace VLMS::Repositories

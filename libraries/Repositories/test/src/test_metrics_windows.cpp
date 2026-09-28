@@ -41,8 +41,8 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_metrics = std::make_unique<MetricsRepository>(m_db->session());
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_metrics = std::make_unique<Repositories::MetricsRepository>(m_db->session());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_memberId = 0;
         m_copies.clear();
     }
@@ -58,7 +58,7 @@ protected:
     void seedMemberAndCopies(int copyCount = 6)
     {
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         m_memberId = seedMember(*m_db, member);
         ASSERT_GT(m_memberId, 0);
 
@@ -77,7 +77,7 @@ protected:
 
     [[nodiscard]] std::int64_t copyAt(int index) const { return m_copies.at(static_cast<std::size_t>(index)); }
 
-    [[nodiscard]] LibraryMetrics metrics() const { return VLMS_UNWRAP(m_metrics->fetchMetrics()); }
+    [[nodiscard]] Repositories::LibraryMetrics metrics() const { return VLMS_UNWRAP(m_metrics->fetchMetrics()); }
 
     bool borrowOn(int copyIndex, const Date& borrowed, const Date& returned = {})
     {
@@ -87,8 +87,8 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MetricsRepository> m_metrics;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MetricsRepository> m_metrics;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::int64_t m_memberId = 0;
     std::vector<std::int64_t> m_copies;
 };
@@ -126,7 +126,7 @@ TEST_F(test_core_MetricsWindows, WeekWindowIsRollingSevenDaysNotCalendarWeek)
     ASSERT_TRUE(borrowOn(0, today.addDays(-6)));
     ASSERT_TRUE(borrowOn(1, today.addDays(-10)));
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.thisWeek.checkouts, 1);
     EXPECT_EQ(m.today.checkouts, 0);
 }
@@ -150,7 +150,7 @@ TEST_F(test_core_MetricsWindows, MonthWindowIsCalendarMonthNotRollingThirtyDays)
     ASSERT_TRUE(borrowOn(0, firstOfMonth));
     ASSERT_TRUE(borrowOn(1, firstOfMonth.addDays(-1)));  // last day of the previous month
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     ASSERT_GE(m.thisMonth.checkouts, 1) << "the first of this month fell outside the month window";
 
     // The exclusion is the half that actually distinguishes a calendar month
@@ -174,7 +174,7 @@ TEST_F(test_core_MetricsWindows, ReturnsWindowCountsTheReturnDateNotTheBorrowDat
     // Borrowed two months ago, returned today.
     ASSERT_TRUE(borrowOn(0, today.addDays(-60), today));
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.today.returns, 1);
     EXPECT_EQ(m.today.checkouts, 0);
     EXPECT_EQ(m.thisWeek.checkouts, 0);
@@ -189,7 +189,7 @@ TEST_F(test_core_MetricsWindows, NewMembersWindowCountsRegisteredAt)
     ASSERT_GT(freshId, 0);
     ASSERT_TRUE(rawSetRegisteredAt(*m_db, freshId, Date::todayLocal().toIso()));
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.totalMembers, 2);
     EXPECT_EQ(m.today.newMembers, 1);  // the 2019 member from seedMemberAndCopies is excluded
 }
@@ -205,7 +205,7 @@ TEST_F(test_core_MetricsWindows, WindowsNestSoTodayNeverExceedsTheMonth)
     ASSERT_TRUE(borrowOn(2, firstOfMonth));
     ASSERT_TRUE(borrowOn(3, today.addDays(-200)));
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
 
     // Today nests inside both wider windows: its start is the latest of the
     // three. Note that week and month do NOT nest in each other -- early in a
@@ -226,11 +226,11 @@ TEST_F(test_core_MetricsWindows, OverdueKpiAgreesWithTheOverdueFilter)
     ASSERT_TRUE(borrowOn(2, today));                                 // due in 14 days
     ASSERT_TRUE(borrowOn(3, today.addDays(-60), today.addDays(-1))); // returned
 
-    LoanQuery overdueOnly;
-    overdueOnly.filters = {LoanFilter::kOverdue};
+    Repositories::LoanQuery overdueOnly;
+    overdueOnly.filters = {Repositories::LoanFilter::kOverdue};
 
-    // The KPI lives in MetricsRepository and the filter in
-    // CirculationRepository, and C3 and C4 rewrite them separately. They are
+    // The KPI lives in Repositories::MetricsRepository and the filter in
+    // Repositories::CirculationRepository, and C3 and C4 rewrite them separately. They are
     // meant to be the same predicate; this is what says so.
     EXPECT_EQ(metrics().overdueLoans, VLMS_UNWRAP(m_circulation->countLoans(overdueOnly)));
     EXPECT_EQ(metrics().overdueLoans, 2);
@@ -264,7 +264,7 @@ TEST_F(test_core_MetricsWindows, EveryWindowFollowsThePinnedClock)
     ASSERT_TRUE(borrowOn(2, Date(2021, 6, 8)));   // seven days back: outside it
     ASSERT_TRUE(borrowOn(3, Date(2021, 6, 1)));   // first of the pinned month
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.today.checkouts, 1);
     EXPECT_EQ(m.thisWeek.checkouts, 2);   // the 15th and the 9th, not the 8th
     EXPECT_EQ(m.thisMonth.checkouts, 4);  // everything from the 1st onward
@@ -295,7 +295,7 @@ TEST_F(test_core_MetricsWindows, WindowsAreClosedIntervalsEndingOnThePinnedToday
     ASSERT_TRUE(borrowOn(0, Date(2021, 6, 15)));  // the last included day
     ASSERT_TRUE(borrowOn(1, Date(2021, 6, 16)));  // one day past the end
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
     EXPECT_EQ(m.today.checkouts, 1);
     EXPECT_EQ(m.thisWeek.checkouts, 1);
     EXPECT_EQ(m.thisMonth.checkouts, 1);
@@ -310,7 +310,7 @@ TEST_F(test_core_MetricsWindows, FutureDatedLoanIsNotCountedInAllThreeWindowsSim
     seedMemberAndCopies();
     ASSERT_TRUE(borrowOn(0, Date::todayLocal().addDays(30)));
 
-    const LibraryMetrics m = metrics();
+    const Repositories::LibraryMetrics m = metrics();
 
     // Every window used to be `date(borrowed_at) >= <start>` with no upper
     // bound, so one row a month in the future was reported as a checkout

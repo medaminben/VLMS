@@ -173,7 +173,7 @@ TEST_F(test_core_StringsParity, BookLanguageLabelFallsBackToRawCode)
 
 TEST_F(test_core_StringsParity, MemberStatusLabelCoversAllStatusCodes)
 {
-    for (const std::string& code : MemberRepository::statusCodes()) {
+    for (const std::string& code : Repositories::MemberRepository::statusCodes()) {
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
             Locale::setCode(locale);
             const std::string label = Strings::memberStatusLabel(code);
@@ -184,7 +184,7 @@ TEST_F(test_core_StringsParity, MemberStatusLabelCoversAllStatusCodes)
 
 TEST_F(test_core_StringsParity, MemberSexLabelCoversAllSexCodes)
 {
-    for (const std::string& code : MemberRepository::sexCodes()) {
+    for (const std::string& code : Repositories::MemberRepository::sexCodes()) {
         for (const char* locale : {kArabic, kFrench, kEnglish}) {
             Locale::setCode(locale);
             const std::string label = Strings::memberSexLabel(code);

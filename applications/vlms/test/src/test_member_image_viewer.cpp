@@ -79,7 +79,7 @@ protected:
         ASSERT_TRUE(m_dir.isValid());
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_repository = std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_repository = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_pickerCalls = 0;
         m_pickerAnswer.clear();
         MemberEditorDialog::setImageFilePickerForTesting(
@@ -105,15 +105,15 @@ protected:
         return path;
     }
 
-    static MemberRecord memberWithPhoto(const QString& photoPath, const QString& idImagePath = {})
+    static Repositories::MemberRecord memberWithPhoto(const QString& photoPath, const QString& idImagePath = {})
     {
-        MemberRecord member;
+        Repositories::MemberRecord member;
         member.id = 1;
         member.membershipNumber = "1";
         member.firstName = "Amina";
         member.lastName = "Ben Salah";
         member.dateOfBirth = "1990-05-12";
-        member.status = MemberStatus::kActive;
+        member.status = Repositories::MemberStatus::kActive;
         member.activeUntil = "2099-01-01";
         // Absolute paths: resolveImagePath passes them through unchanged.
         member.photoPath = photoPath.toStdString();
@@ -136,7 +136,7 @@ protected:
 
     QTemporaryDir m_dir;
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<MemberRepository> m_repository;
+    std::unique_ptr<Repositories::MemberRepository> m_repository;
     int m_pickerCalls = 0;
     QString m_pickerAnswer;
 };

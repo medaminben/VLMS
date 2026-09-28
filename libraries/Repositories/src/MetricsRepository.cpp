@@ -10,8 +10,8 @@
 using VLMS::Clock;
 using VLMS::Date;
 using VLMS::Result;
-namespace LoanSql = VLMS::LoanSql;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 MetricsRepository::MetricsRepository(VLMS::SqliteSession& session)
     : m_session(session)
@@ -117,10 +117,10 @@ Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
          {}},
         {&metrics.totalMembers, "SELECT COUNT(*) FROM members", {}},
         {&metrics.membersActive,
-         "SELECT COUNT(*) FROM members m WHERE " + VLMS::MemberSql::isActive("m."),
+         "SELECT COUNT(*) FROM members m WHERE " + MemberSql::isActive("m."),
          {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
         {&metrics.membersNonActive,
-         "SELECT COUNT(*) FROM members m WHERE NOT " + VLMS::MemberSql::isActive("m."),
+         "SELECT COUNT(*) FROM members m WHERE NOT " + MemberSql::isActive("m."),
          {{LoanSql::todayPlaceholder(), Clock::todayIso()}}},
         // Same three states as the Circulation filter: Open stops at the due date.
         {&metrics.openLoans,
@@ -190,3 +190,5 @@ Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
 
     return Result<LibraryMetrics>::ok(metrics);
 }
+
+}  // namespace VLMS::Repositories

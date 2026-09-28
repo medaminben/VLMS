@@ -22,8 +22,8 @@ protected:
 
 TEST_F(test_core_MemberStatusRule, StatusCodesAreActiveAndNotActiveOnly)
 {
-    const std::vector<std::string> expected = {MemberStatus::kActive, MemberStatus::kNonActive};
-    EXPECT_EQ(MemberRepository::statusCodes(), expected);
+    const std::vector<std::string> expected = {Repositories::MemberStatus::kActive, Repositories::MemberStatus::kNonActive};
+    EXPECT_EQ(Repositories::MemberRepository::statusCodes(), expected);
 }
 
 TEST_F(test_core_MemberStatusRule, AddYearsKeepsTheDayOfTheMonth)
@@ -45,54 +45,54 @@ TEST_F(test_core_MemberStatusRule, AddYearsOnAnInvalidDateStaysInvalid)
 
 TEST_F(test_core_MemberStatusRule, ActiveOnTheLastDayNotActiveTheDayAfter)
 {
-    EXPECT_EQ(MemberRepository::statusOn("2026-09-23", m_today), MemberStatus::kActive);
-    EXPECT_EQ(MemberRepository::statusOn("2026-09-22", m_today), MemberStatus::kNonActive);
+    EXPECT_EQ(Repositories::MemberRepository::statusOn("2026-09-23", m_today), Repositories::MemberStatus::kActive);
+    EXPECT_EQ(Repositories::MemberRepository::statusOn("2026-09-22", m_today), Repositories::MemberStatus::kNonActive);
 }
 
 TEST_F(test_core_MemberStatusRule, NoDateOrAnUnreadableDateIsNotActive)
 {
-    EXPECT_EQ(MemberRepository::statusOn("", m_today), MemberStatus::kNonActive);
-    EXPECT_EQ(MemberRepository::statusOn("next year", m_today), MemberStatus::kNonActive);
+    EXPECT_EQ(Repositories::MemberRepository::statusOn("", m_today), Repositories::MemberStatus::kNonActive);
+    EXPECT_EQ(Repositories::MemberRepository::statusOn("next year", m_today), Repositories::MemberStatus::kNonActive);
 }
 
 TEST_F(test_core_MemberStatusRule, ANewMemberIsActiveForAYearLessADay)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("", MemberStatus::kActive, m_today), "2027-09-22");
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", Repositories::MemberStatus::kActive, m_today), "2027-09-22");
 }
 
 TEST_F(test_core_MemberStatusRule, ANewMemberRegisteredOnALeapDayEndsOnTheLastDayOfFebruary)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("", MemberStatus::kActive, Date(2024, 2, 29)),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", Repositories::MemberStatus::kActive, Date(2024, 2, 29)),
               "2025-02-28");
 }
 
 TEST_F(test_core_MemberStatusRule, ANewMemberSavedNotActiveEndedYesterday)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("", MemberStatus::kNonActive, m_today),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", Repositories::MemberStatus::kNonActive, m_today),
               "2026-09-22");
 }
 
 TEST_F(test_core_MemberStatusRule, RenewingAnExpiredMemberGivesAYearFromToday)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("2026-01-09", MemberStatus::kActive, m_today),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("2026-01-09", Repositories::MemberStatus::kActive, m_today),
               "2027-09-22");
 }
 
 TEST_F(test_core_MemberStatusRule, EndingAMembershipEarlySetsYesterday)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("2027-01-01", MemberStatus::kNonActive, m_today),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("2027-01-01", Repositories::MemberStatus::kNonActive, m_today),
               "2026-09-22");
 }
 
 TEST_F(test_core_MemberStatusRule, KeepingTheStatusKeepsTheDate)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("2027-01-01", MemberStatus::kActive, m_today),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("2027-01-01", Repositories::MemberStatus::kActive, m_today),
               "2027-01-01");
-    EXPECT_EQ(MemberRepository::activeUntilFor("2026-01-09", MemberStatus::kNonActive, m_today),
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("2026-01-09", Repositories::MemberStatus::kNonActive, m_today),
               "2026-01-09");
 }
 
 TEST_F(test_core_MemberStatusRule, AnEmptyChoiceMeansActive)
 {
-    EXPECT_EQ(MemberRepository::activeUntilFor("", "", m_today), "2027-09-22");
+    EXPECT_EQ(Repositories::MemberRepository::activeUntilFor("", "", m_today), "2027-09-22");
 }

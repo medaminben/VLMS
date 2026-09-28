@@ -39,13 +39,13 @@ protected:
         if (!m_db->isValid()) {
             return false;
         }
-        m_repository = std::make_unique<CatalogRepository>(m_db->session(),
+        m_repository = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
                                                            m_db->resourcesDirectory());
         return true;
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CatalogRepository> m_repository;
+    std::unique_ptr<Repositories::CatalogRepository> m_repository;
 };
 
 // ---------------------------------------------------------------------------
@@ -232,7 +232,7 @@ TEST_F(test_core_CatalogRepository, UpdateBookRenormalisesThePublicationDate)
     ASSERT_TRUE(created) << created.error().key;
     id = created.value();
 
-    BookInput edited = seed.toInput();
+    Repositories::BookInput edited = seed.toInput();
     edited.publicationDate = "20 May 2013";
     const auto mutated = m_repository->updateBook(id, edited);
     ASSERT_TRUE(mutated) << mutated.error().key;
@@ -301,7 +301,7 @@ TEST_F(test_core_CatalogRepository, UpdateBookReturnsFalseForUnknownId)
     EXPECT_FALSE(failed.error().key.empty());
 }
 
-/// updateBook used to reconcile the holdings against BookInput::initialCopyCount,
+/// updateBook used to reconcile the holdings against Repositories::BookInput::initialCopyCount,
 /// deleting copies from the highest id down to make the numbers agree. Once a
 /// copy carries the library's own local and central numbers, that is a way to
 /// destroy inventory by editing a title. Copies move only through saveCopies now.
@@ -369,7 +369,7 @@ TEST_F(test_core_CatalogRepository, DeleteBookRefusesWhenActiveLoansExist)
     ASSERT_GT(id, 0);
 
     MemberSeed member = uniqueMemberSeed(21);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -503,11 +503,11 @@ TEST_F(test_core_CatalogRepository, ListBooksAndCountBooksAgree)
             EXPECT_GT(seedBook(*m_db, seed), 0);
         }
 
-        BookQuery query;
+        Repositories::BookQuery query;
         query.search = testCase.search;
         query.categoryCodes = testCase.categoryCodes;
         query.languages = testCase.languages;
-        query.coverFilter = static_cast<CoverFilter>(testCase.coverFilter);
+        query.coverFilter = static_cast<Repositories::CoverFilter>(testCase.coverFilter);
 
         // listBooks joins publishers/book_copies/loans; countBooks joins none.
         // They must still agree for every filter combination.
@@ -522,7 +522,7 @@ TEST_F(test_core_CatalogRepository, ListBooksRespectsLimitAndOffset)
         EXPECT_GT(seedBook(*m_db, uniqueBookSeed(50 + i)), 0);
     }
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.limit = 3;
     query.offset = 0;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->listBooks(query)).size(), 3u);
@@ -543,14 +543,14 @@ TEST_F(test_core_CatalogRepository, ListBooksPagesCoverEveryRowExactlyOnce)
         EXPECT_GT(seedBook(*m_db, uniqueBookSeed(100 + i)), 0);
     }
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.limit = kPageSize;
 
     std::set<std::int64_t> seen;
     int rows = 0;
     for (int offset = 0; offset < kBooks; offset += kPageSize) {
         query.offset = offset;
-        for (const BookRecord& book : VLMS_UNWRAP(m_repository->listBooks(query))) {
+        for (const Repositories::BookRecord& book : VLMS_UNWRAP(m_repository->listBooks(query))) {
             seen.insert(book.id);
             ++rows;
         }
@@ -558,7 +558,7 @@ TEST_F(test_core_CatalogRepository, ListBooksPagesCoverEveryRowExactlyOnce)
 
     EXPECT_EQ(rows, kBooks);
     EXPECT_EQ(static_cast<int>(seen.size()), kBooks);
-    EXPECT_EQ(VLMS_UNWRAP(m_repository->countBooks(BookQuery{})), kBooks);
+    EXPECT_EQ(VLMS_UNWRAP(m_repository->countBooks(Repositories::BookQuery{})), kBooks);
 }
 
 TEST_F(test_core_CatalogRepository, ListBooksPagesAreStableWithDuplicateTitles)
@@ -576,14 +576,14 @@ TEST_F(test_core_CatalogRepository, ListBooksPagesAreStableWithDuplicateTitles)
         EXPECT_GT(seedBook(*m_db, seed), 0);
     }
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.limit = kPageSize;
 
     std::set<std::int64_t> seen;
     int rows = 0;
     for (int offset = 0; offset < kBooks; offset += kPageSize) {
         query.offset = offset;
-        for (const BookRecord& book : VLMS_UNWRAP(m_repository->listBooks(query))) {
+        for (const Repositories::BookRecord& book : VLMS_UNWRAP(m_repository->listBooks(query))) {
             seen.insert(book.id);
             ++rows;
         }
@@ -603,7 +603,7 @@ TEST_F(test_core_CatalogRepository, AvailableCopiesExcludesOpenLoans)
     ASSERT_GT(id, 0);
 
     MemberSeed member = uniqueMemberSeed(60);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -637,12 +637,12 @@ TEST_F(test_core_CatalogRepository, CoverFilterSelectsBooksWithoutCovers)
         EXPECT_GT(seedBook(*m_db, uniqueBookSeed(70 + i)), 0);
     }
 
-    BookQuery withoutCover;
-    withoutCover.coverFilter = CoverFilter::WithoutCover;
+    Repositories::BookQuery withoutCover;
+    withoutCover.coverFilter = Repositories::CoverFilter::WithoutCover;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->listBooks(withoutCover)).size(), 3u);
 
-    BookQuery withCover;
-    withCover.coverFilter = CoverFilter::WithCover;
+    Repositories::BookQuery withCover;
+    withCover.coverFilter = Repositories::CoverFilter::WithCover;
     EXPECT_EQ(VLMS_UNWRAP(m_repository->listBooks(withCover)).size(), 0u);
 }
 
@@ -741,7 +741,7 @@ TEST_F(test_core_CatalogRepository, GetBookExecFailureIsSql)
 
 TEST_F(test_core_CatalogRepository, SaveNewBookRollsBackWhenCoverFails)
 {
-    BookWrite write;
+    Repositories::BookWrite write;
     write.book = uniqueBookSeed(90).toInput();
     write.coverSourcePath = "/nonexistent/cover.png";
 
@@ -761,7 +761,7 @@ namespace {
 
 /// A book with one copy, and that copy filled in the way an imported one is.
 std::int64_t seedBookWithACatalogedCopy(::Test::TestDatabase& db,
-                                        CatalogRepository& repository,
+                                        Repositories::CatalogRepository& repository,
                                         int index,
                                         std::int64_t* outCopyId)
 {
@@ -772,12 +772,12 @@ std::int64_t seedBookWithACatalogedCopy(::Test::TestDatabase& db,
         return 0;
     }
 
-    const std::vector<BookCopyRecord> existing = VLMS_UNWRAP(repository.listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> existing = VLMS_UNWRAP(repository.listCopies(bookId));
     if (existing.size() != 1) {
         return 0;
     }
 
-    BookCopyInput copy;
+    Repositories::BookCopyInput copy;
     copy.id = existing.front().id;
     copy.source = "arabic";
     copy.localId = "90" + std::to_string(index);
@@ -808,10 +808,10 @@ TEST_F(test_core_CatalogRepository, ListCopiesReturnsEveryStoredField)
     const std::int64_t bookId = seedBookWithACatalogedCopy(*m_db, *m_repository, 40, &copyId);
     ASSERT_GT(bookId, 0) << "repository call failed";
 
-    const std::vector<BookCopyRecord> copies = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> copies = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(copies.size(), 1u);
 
-    const BookCopyRecord& copy = copies.front();
+    const Repositories::BookCopyRecord& copy = copies.front();
     EXPECT_EQ(copy.id, copyId);
     EXPECT_EQ(copy.bookId, bookId);
     EXPECT_EQ(copy.source, "arabic");
@@ -836,7 +836,7 @@ TEST_F(test_core_CatalogRepository, ListCopiesFlagsCopiesOnLoan)
     ASSERT_GT(bookId, 0);
 
     MemberSeed member = uniqueMemberSeed(41);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -847,7 +847,7 @@ TEST_F(test_core_CatalogRepository, ListCopiesFlagsCopiesOnLoan)
               0);
 
     int onLoan = 0;
-    for (const BookCopyRecord& copy : VLMS_UNWRAP(m_repository->listCopies(bookId))) {
+    for (const Repositories::BookCopyRecord& copy : VLMS_UNWRAP(m_repository->listCopies(bookId))) {
         if (copy.onLoan) {
             ++onLoan;
             EXPECT_EQ(copy.id, copyIds.front());
@@ -862,10 +862,10 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRoundTripsAnEdit)
     const std::int64_t bookId = seedBookWithACatalogedCopy(*m_db, *m_repository, 42, &copyId);
     ASSERT_GT(bookId, 0) << "repository call failed";
 
-    std::vector<BookCopyRecord> copies = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    std::vector<Repositories::BookCopyRecord> copies = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(copies.size(), 1u);
 
-    BookCopyInput edited;
+    Repositories::BookCopyInput edited;
     edited.id = copies.front().id;
     edited.source = copies.front().source;
     edited.localId = copies.front().localId;
@@ -892,13 +892,13 @@ TEST_F(test_core_CatalogRepository, SaveCopiesInsertsUpdatesAndDeletesInOneCall)
     const std::int64_t bookId = seedBook(*m_db, seed);
     ASSERT_GT(bookId, 0);
 
-    const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(before.size(), 3u);
 
-    std::vector<BookCopyInput> submitted;
+    std::vector<Repositories::BookCopyInput> submitted;
 
     // Keep the first, edited.
-    BookCopyInput kept;
+    Repositories::BookCopyInput kept;
     kept.id = before.at(0).id;
     kept.source = before.at(0).source;
     kept.localId = before.at(0).localId;
@@ -907,7 +907,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesInsertsUpdatesAndDeletesInOneCall)
     submitted.push_back(kept);
 
     // Keep the second untouched. Drop the third by leaving it out.
-    BookCopyInput untouched;
+    Repositories::BookCopyInput untouched;
     untouched.id = before.at(1).id;
     untouched.source = before.at(1).source;
     untouched.localId = before.at(1).localId;
@@ -915,7 +915,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesInsertsUpdatesAndDeletesInOneCall)
     submitted.push_back(untouched);
 
     // And add a brand new one.
-    BookCopyInput added;
+    Repositories::BookCopyInput added;
     added.source = "foreign";
     added.localId = "77043";
     added.globalCopyId = "FR-77043";
@@ -925,11 +925,11 @@ TEST_F(test_core_CatalogRepository, SaveCopiesInsertsUpdatesAndDeletesInOneCall)
     const auto mutated = m_repository->saveCopies(bookId, submitted);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
-    const std::vector<BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(after.size(), 3u);
 
     std::set<std::int64_t> ids;
-    for (const BookCopyRecord& copy : after) {
+    for (const Repositories::BookCopyRecord& copy : after) {
         ids.insert(copy.id);
     }
     EXPECT_TRUE(ids.contains(before.at(0).id));
@@ -938,7 +938,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesInsertsUpdatesAndDeletesInOneCall)
 
     bool foundEdited = false;
     bool foundAdded = false;
-    for (const BookCopyRecord& copy : after) {
+    for (const Repositories::BookCopyRecord& copy : after) {
         if (copy.id == before.at(0).id) {
             foundEdited = copy.subject == "Poésie";
         }
@@ -959,18 +959,18 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRefusesToDeleteACopyOnLoan)
     ASSERT_GT(bookId, 0);
 
     MemberSeed member = uniqueMemberSeed(44);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
-    const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
     const Date today = Date::todayLocal();
     EXPECT_GT(rawInsertLoan(*m_db, memberId, before.at(0).id, today.toIso(),
                             today.addDays(14).toIso()),
               0);
 
     // Submit only the second copy: the loaned one would be dropped.
-    BookCopyInput survivor;
+    Repositories::BookCopyInput survivor;
     survivor.id = before.at(1).id;
     survivor.source = before.at(1).source;
     survivor.localId = before.at(1).localId;
@@ -999,12 +999,12 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRollsBackEverythingWhenOneRowIsRef
     const std::string takenGlobalId =
         VLMS_UNWRAP(m_repository->listCopies(otherBookId)).front().globalCopyId;
 
-    const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(before.size(), 2u);
 
-    std::vector<BookCopyInput> submitted;
+    std::vector<Repositories::BookCopyInput> submitted;
 
-    BookCopyInput good;
+    Repositories::BookCopyInput good;
     good.id = before.at(0).id;
     good.source = before.at(0).source;
     good.localId = before.at(0).localId;
@@ -1012,7 +1012,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRollsBackEverythingWhenOneRowIsRef
     good.subject = "This edit must not survive";
     submitted.push_back(good);
 
-    BookCopyInput bad;
+    Repositories::BookCopyInput bad;
     bad.id = before.at(1).id;
     bad.source = before.at(1).source;
     bad.localId = before.at(1).localId;
@@ -1021,7 +1021,7 @@ TEST_F(test_core_CatalogRepository, SaveCopiesRollsBackEverythingWhenOneRowIsRef
 
     EXPECT_FALSE(m_repository->saveCopies(bookId, submitted));
 
-    const std::vector<BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    const std::vector<Repositories::BookCopyRecord> after = VLMS_UNWRAP(m_repository->listCopies(bookId));
     EXPECT_EQ(after.size(), 2u);
     EXPECT_EQ(after.at(0).subject, "");
     EXPECT_EQ(after.at(1).globalCopyId, before.at(1).globalCopyId);
@@ -1034,10 +1034,10 @@ TEST_F(test_core_CatalogRepository, SaveCopiesReportsDuplicateGlobalIdReadably)
     const std::int64_t bookId = seedBook(*m_db, seed);
     ASSERT_GT(bookId, 0);
 
-    const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
-    std::vector<BookCopyInput> submitted;
-    for (const BookCopyRecord& copy : before) {
-        BookCopyInput input;
+    const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    std::vector<Repositories::BookCopyInput> submitted;
+    for (const Repositories::BookCopyRecord& copy : before) {
+        Repositories::BookCopyInput input;
         input.id = copy.id;
         input.source = copy.source;
         input.localId = copy.localId;
@@ -1061,11 +1061,11 @@ TEST_F(test_core_CatalogRepository, SaveCopiesReportsDuplicateLocalIdReadably)
     const std::int64_t bookId = seedBook(*m_db, seed);
     ASSERT_GT(bookId, 0);
 
-    const std::vector<BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
-    std::vector<BookCopyInput> submitted;
+    const std::vector<Repositories::BookCopyRecord> before = VLMS_UNWRAP(m_repository->listCopies(bookId));
+    std::vector<Repositories::BookCopyInput> submitted;
     int index = 0;
-    for (const BookCopyRecord& copy : before) {
-        BookCopyInput input;
+    for (const Repositories::BookCopyRecord& copy : before) {
+        Repositories::BookCopyInput input;
         input.id = copy.id;
         input.source = "arabic";
         input.localId = "55555";  // same local number, same stock
@@ -1114,10 +1114,10 @@ TEST_F(test_core_CatalogRepository, SaveCopiesPreservesSourceRow)
                                 {{"id", copyId}}))
         << m_db->lastError();
 
-    const BookCopyRecord stored = VLMS_UNWRAP(m_repository->listCopies(bookId)).front();
+    const Repositories::BookCopyRecord stored = VLMS_UNWRAP(m_repository->listCopies(bookId)).front();
     EXPECT_EQ(stored.sourceRow, 4711);
 
-    BookCopyInput edited;
+    Repositories::BookCopyInput edited;
     edited.id = stored.id;
     edited.source = stored.source;
     edited.localId = stored.localId;
@@ -1152,14 +1152,14 @@ TEST_F(test_core_CatalogRepository, SuggestCopyIdentifiersFollowsTheLibraryNumbe
 
     m_repository->suggestCopyIdentifiers("fr", &source, &localId, &globalCopyId);
 
-    const BookCopyRecord existing = VLMS_UNWRAP(m_repository->listCopies(bookId)).front();
-    BookCopyInput keep;
+    const Repositories::BookCopyRecord existing = VLMS_UNWRAP(m_repository->listCopies(bookId)).front();
+    Repositories::BookCopyInput keep;
     keep.id = existing.id;
     keep.source = existing.source;
     keep.localId = existing.localId;
     keep.globalCopyId = existing.globalCopyId;
 
-    BookCopyInput added;
+    Repositories::BookCopyInput added;
     added.source = source;
     added.localId = localId;
     added.globalCopyId = globalCopyId;
@@ -1187,16 +1187,16 @@ TEST_F(test_core_CatalogRepository, ListBooksSortsByTitleAndCopies)
     ASSERT_GT(idZ, 0);
     ASSERT_GT(idA, 0);
 
-    BookQuery byTitle;
-    byTitle.sortColumn = BookSort::kTitle;
+    Repositories::BookQuery byTitle;
+    byTitle.sortColumn = Repositories::BookSort::kTitle;
     byTitle.sortAscending = true;
     const auto titles = VLMS_UNWRAP(m_repository->listBooks(byTitle));
     ASSERT_EQ(titles.size(), 2u);
     EXPECT_EQ(titles.at(0).id, idA);
     EXPECT_EQ(titles.at(1).id, idZ);
 
-    BookQuery byCopies;
-    byCopies.sortColumn = BookSort::kCopies;
+    Repositories::BookQuery byCopies;
+    byCopies.sortColumn = Repositories::BookSort::kCopies;
     byCopies.sortAscending = false;
     const auto copies = VLMS_UNWRAP(m_repository->listBooks(byCopies));
     ASSERT_EQ(copies.size(), 2u);
@@ -1221,7 +1221,7 @@ TEST_F(test_core_CatalogRepository, ListBooksReturnsCopyLocalIdsAscendingNumeric
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, copyIds[1], "9"));
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, copyIds[2], "10"));
 
-    BookQuery query;
+    Repositories::BookQuery query;
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_EQ(books.front().localIds, (std::vector<std::string>{"9", "10", "100"}));
@@ -1241,7 +1241,7 @@ TEST_F(test_core_CatalogRepository, ListBooksReturnsNoLocalIdsForABookWithoutCop
     ASSERT_GT(bookId, 0);
     ASSERT_TRUE(m_repository->saveCopies(bookId, {}));
 
-    BookQuery query;
+    Repositories::BookQuery query;
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_TRUE(books.front().localIds.empty());
@@ -1261,7 +1261,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesTheCopiesThatAreOutOnLoan)
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, copyIds[2], "9"));
 
     MemberSeed member = uniqueMemberSeed(210);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -1270,7 +1270,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesTheCopiesThatAreOutOnLoan)
                             today.addDays(14).toIso()),
               0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_EQ(books.front().localIds, (std::vector<std::string>{"7", "8", "9"}));
@@ -1289,7 +1289,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesNoCopiesOnLoanWhenEveryLoanIsR
     ASSERT_EQ(copyIds.size(), 2U);
 
     MemberSeed member = uniqueMemberSeed(211);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -1301,7 +1301,7 @@ TEST_F(test_core_CatalogRepository, ListBooksNamesNoCopiesOnLoanWhenEveryLoanIsR
     ASSERT_TRUE(m_db->execBound("UPDATE loans SET returned_at = :when WHERE id = :id",
                                 {{"when", today.addDays(-6).toIso()}, {"id", loanId}}));
 
-    BookQuery query;
+    Repositories::BookQuery query;
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_EQ(books.front().localIds.size(), 2U);
@@ -1326,7 +1326,7 @@ TEST_F(test_core_CatalogRepository, ACopyWithoutALocalNumberNeverLeaksABlankOnLo
                                 {{"id", copyIds[1]}}));
 
     MemberSeed member = uniqueMemberSeed(212);
-    member.status = MemberStatus::kActive;
+    member.status = Repositories::MemberStatus::kActive;
     const std::int64_t memberId = seedMember(*m_db, member);
     ASSERT_GT(memberId, 0);
 
@@ -1335,7 +1335,7 @@ TEST_F(test_core_CatalogRepository, ACopyWithoutALocalNumberNeverLeaksABlankOnLo
                             today.addDays(14).toIso()),
               0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_EQ(books.front().localIds, (std::vector<std::string>{"31"}));
@@ -1361,8 +1361,8 @@ TEST_F(test_core_CatalogRepository, SortingByLocalNumberOrdersByTheLowestNumber)
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, lowCopies[0], "900"));
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, lowCopies[1], "42"));
 
-    BookQuery query;
-    query.sortColumn = BookSort::kLocalNumber;
+    Repositories::BookQuery query;
+    query.sortColumn = Repositories::BookSort::kLocalNumber;
     query.sortAscending = true;
     const auto ascending = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(ascending.size(), 2U);
@@ -1395,8 +1395,8 @@ TEST_F(test_core_CatalogRepository, BooksWithoutCopiesSortLastByLocalNumberInBot
     ASSERT_GT(bareId, 0);
     ASSERT_TRUE(m_repository->saveCopies(bareId, {}));
 
-    BookQuery query;
-    query.sortColumn = BookSort::kLocalNumber;
+    Repositories::BookQuery query;
+    query.sortColumn = Repositories::BookSort::kLocalNumber;
 
     query.sortAscending = true;
     const auto ascending = VLMS_UNWRAP(m_repository->listBooks(query));
@@ -1440,11 +1440,11 @@ std::int64_t seedBookWithLocalNumber(TestDatabase& db,
     return bookId;
 }
 
-std::vector<std::string> titlesOf(const std::vector<BookRecord>& books)
+std::vector<std::string> titlesOf(const std::vector<Repositories::BookRecord>& books)
 {
     std::vector<std::string> titles;
     titles.reserve(books.size());
-    for (const BookRecord& book : books) {
+    for (const Repositories::BookRecord& book : books) {
         titles.push_back(book.title);
     }
     std::sort(titles.begin(), titles.end());
@@ -1458,7 +1458,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberFindsTheBookHoldingThatCo
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 60, "Wanted", "4100"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 61, "Other", "77"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "4100";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"Wanted"}));
@@ -1471,7 +1471,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberFindsEveryBookSharingThat
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 62, "Arabic side", "1002", "ar"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 63, "Foreign side", "1002", "fr"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "1002";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"Arabic side", "Foreign side"}));
@@ -1483,7 +1483,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberIgnoresNumbersThatMerelyC
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 65, "Longer", "1234"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 66, "Suffix", "9123"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "123";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"Exactly"}));
@@ -1495,7 +1495,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberFallsBackToPrefixWhenNoCo
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 68, "Second", "5001"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 69, "Elsewhere", "700"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "50";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"First", "Second"}));
@@ -1506,7 +1506,7 @@ TEST_F(test_core_CatalogRepository, PrefixFallbackStaysOffWhenAnExactNumberExist
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 70, "Exactly fifty", "50"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 71, "Starts with fifty", "5001"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "50";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"Exactly fifty"}));
@@ -1517,7 +1517,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberStillMatchesTheTextFields
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 72, "By number", "1984"), 0);
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 73, "Orwell 1984", "31"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "1984";
     EXPECT_EQ(titlesOf(VLMS_UNWRAP(m_repository->listBooks(query))),
               (std::vector<std::string>{"By number", "Orwell 1984"}));
@@ -1531,7 +1531,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberIgnoresArchivedCopiesInTh
     // book live with no live copies; its number is released with it.
     ASSERT_TRUE(m_repository->saveCopies(bookId, {}));
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "8800";
     EXPECT_TRUE(VLMS_UNWRAP(m_repository->listBooks(query)).empty());
 }
@@ -1549,7 +1549,7 @@ TEST_F(test_core_CatalogRepository, SearchByLocalNumberReportsWhichCopyMatched)
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, copies[1], "15000"));
     ASSERT_TRUE(rawSetCopyLocalId(*m_db, copies[2], "15001"));
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "15000";
     const auto matched = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(matched.size(), 1U);
@@ -1563,7 +1563,7 @@ TEST_F(test_core_CatalogRepository, NoCopyIsReportedAsMatchedForANonNumericSearc
 {
     ASSERT_GT(seedBookWithLocalNumber(*m_db, 76, "Plain title", "4242"), 0);
 
-    BookQuery query;
+    Repositories::BookQuery query;
     query.search = "Plain";
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);

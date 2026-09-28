@@ -28,11 +28,11 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_catalog =
-            std::make_unique<CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_members =
-            std::make_unique<MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+            std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
 
         MemberSeed tunis = uniqueMemberSeed(1);
         tunis.sex = "male";
@@ -81,9 +81,9 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_circulation;
-    std::unique_ptr<CatalogRepository> m_catalog;
-    std::unique_ptr<MemberRepository> m_members;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
     std::int64_t m_tunisId = 0;
     std::int64_t m_sfaxId = 0;
     std::int64_t m_historyId = 0;
@@ -93,7 +93,7 @@ protected:
 
 TEST_F(test_core_ListFacets, LoansFollowTheBorrowersSexCityAndYear)
 {
-    LoanQuery bySex;
+    Repositories::LoanQuery bySex;
     bySex.member.sexes = {"female"};
     const auto female = m_circulation->listLoans(bySex);
     ASSERT_TRUE(female.has_value());
@@ -101,25 +101,25 @@ TEST_F(test_core_ListFacets, LoansFollowTheBorrowersSexCityAndYear)
     EXPECT_EQ(female.value().front().memberId, m_sfaxId);
     EXPECT_EQ(m_circulation->countLoans(bySex).value(), 1);
 
-    LoanQuery byCity;
+    Repositories::LoanQuery byCity;
     byCity.member.cities = {"tunis"};
     const auto tunis = m_circulation->listLoans(byCity);
     ASSERT_TRUE(tunis.has_value());
     ASSERT_EQ(tunis.value().size(), 1U);
     EXPECT_EQ(tunis.value().front().memberId, m_tunisId);
 
-    LoanQuery byYear;
+    Repositories::LoanQuery byYear;
     byYear.member.inscriptionYears = {"2024"};
     byYear.member.cities = {"Tunis"};
     EXPECT_EQ(m_circulation->countLoans(byYear).value(), 0) << "dimensions are ANDed";
 
-    LoanQuery none;
+    Repositories::LoanQuery none;
     EXPECT_EQ(m_circulation->countLoans(none).value(), 2);
 }
 
 TEST_F(test_core_ListFacets, LoanRowsCarryTheBorrowersPhoto)
 {
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.member.cities = {"Tunis"};
     const auto loans = m_circulation->listLoans(query);
     ASSERT_TRUE(loans.has_value());
@@ -129,8 +129,8 @@ TEST_F(test_core_ListFacets, LoanRowsCarryTheBorrowersPhoto)
 
 TEST_F(test_core_ListFacets, CopiesFollowTheirTitlesLanguageCategoryAndCover)
 {
-    CopyQuery byLanguage;
-    byLanguage.archive = ArchiveScope::Any;
+    Repositories::CopyQuery byLanguage;
+    byLanguage.archive = Repositories::ArchiveScope::Any;
     byLanguage.languages = {"fr"};
     const auto french = m_catalog->listCopyRows(byLanguage);
     ASSERT_TRUE(french.has_value());
@@ -138,8 +138,8 @@ TEST_F(test_core_ListFacets, CopiesFollowTheirTitlesLanguageCategoryAndCover)
     EXPECT_EQ(french.value().front().bookId, m_frenchBookId);
     EXPECT_EQ(m_catalog->countCopyRows(byLanguage).value(), 1);
 
-    CopyQuery byCategory;
-    byCategory.archive = ArchiveScope::Any;
+    Repositories::CopyQuery byCategory;
+    byCategory.archive = Repositories::ArchiveScope::Any;
     byCategory.categoryCodes = {"HIS"};
     const auto history = m_catalog->listCopyRows(byCategory);
     ASSERT_TRUE(history.has_value());
@@ -147,9 +147,9 @@ TEST_F(test_core_ListFacets, CopiesFollowTheirTitlesLanguageCategoryAndCover)
     EXPECT_EQ(history.value().front().bookId, m_arabicBookId);
     EXPECT_EQ(history.value().front().coverImagePath, "books/1/cover.jpg");
 
-    CopyQuery withoutCover;
-    withoutCover.archive = ArchiveScope::Any;
-    withoutCover.coverFilter = CoverFilter::WithoutCover;
+    Repositories::CopyQuery withoutCover;
+    withoutCover.archive = Repositories::ArchiveScope::Any;
+    withoutCover.coverFilter = Repositories::CoverFilter::WithoutCover;
     EXPECT_EQ(m_catalog->countCopyRows(withoutCover).value(), 1);
 }
 
@@ -164,15 +164,15 @@ TEST_F(test_core_ListFacets, ValueListsFollowTheScope)
     ASSERT_TRUE(liveYears.has_value());
     EXPECT_EQ(liveYears.value(), (std::vector<std::string>{"2024"}));
 
-    const auto archivedYears = m_members->listInscriptionYears(ArchiveScope::Archived);
+    const auto archivedYears = m_members->listInscriptionYears(Repositories::ArchiveScope::Archived);
     ASSERT_TRUE(archivedYears.has_value());
     EXPECT_EQ(archivedYears.value(), (std::vector<std::string>{"2019"}));
 
-    const auto anyCities = m_members->listCities(ArchiveScope::Any);
+    const auto anyCities = m_members->listCities(Repositories::ArchiveScope::Any);
     ASSERT_TRUE(anyCities.has_value());
     EXPECT_EQ(anyCities.value(), (std::vector<std::string>{"Sfax", "Tunis"}));
 
-    const auto archivedLanguages = m_catalog->listBookLanguages(ArchiveScope::Archived);
+    const auto archivedLanguages = m_catalog->listBookLanguages(Repositories::ArchiveScope::Archived);
     ASSERT_TRUE(archivedLanguages.has_value());
     ASSERT_EQ(archivedLanguages.value().size(), 1U);
     EXPECT_EQ(archivedLanguages.value().front().code, "fr");
@@ -181,9 +181,9 @@ TEST_F(test_core_ListFacets, ValueListsFollowTheScope)
 TEST_F(test_core_ListFacets, ACopysHistoryHoldsOnlyItsOwnLoans)
 {
     const auto arabicCopy = copyIdsOf(*m_db, m_arabicBookId).at(0);
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.copyId = arabicCopy;
-    query.archive = ArchiveScope::Any;
+    query.archive = Repositories::ArchiveScope::Any;
     const auto loans = m_circulation->listLoans(query);
     ASSERT_TRUE(loans.has_value());
     ASSERT_EQ(loans.value().size(), 1U);
@@ -194,7 +194,7 @@ TEST_F(test_core_ListFacets, ACopysHistoryHoldsOnlyItsOwnLoans)
 TEST_F(test_core_ListFacets, LoansFollowTheYearTheyWereMade)
 {
     // Registered 2019 and 2024, but both borrowed in 2025.
-    LoanQuery byLoanYear;
+    Repositories::LoanQuery byLoanYear;
     byLoanYear.loanYears = {"2025"};
     EXPECT_EQ(m_circulation->countLoans(byLoanYear).value(), 2);
     byLoanYear.loanYears = {"2019"};

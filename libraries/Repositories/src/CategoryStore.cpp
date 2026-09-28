@@ -7,7 +7,8 @@
 using VLMS::Result;
 using VLMS::Status;
 using VLMS::trim;
-namespace RepoSql = VLMS::RepoSql;
+
+namespace VLMS::Repositories {
 
 namespace {
 
@@ -147,3 +148,5 @@ Status CategoryStore::deleteCategory(const std::int64_t id)
     }
     return Status::ok();
 }
+
+}  // namespace VLMS::Repositories

@@ -26,7 +26,7 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_circulation = std::make_unique<CirculationRepository>(m_db->session());
+        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
 
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_GT(m_memberId, 0);
@@ -63,7 +63,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::int64_t m_memberId = 0;
     std::int64_t m_firstBookId = 0;
     std::int64_t m_secondBookId = 0;
@@ -71,23 +71,23 @@ protected:
 
 TEST_F(test_core_LoanBookFilter, ListingByBookReturnsEveryCopysLoanAndNoOthers)
 {
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.bookId = m_firstBookId;
-    query.archive = ArchiveScope::Any;
+    query.archive = Repositories::ArchiveScope::Any;
 
     const auto loans = m_circulation->listLoans(query);
     ASSERT_TRUE(loans.has_value());
     EXPECT_EQ(loans.value().size(), 2U);
-    for (const LoanRecord& loan : loans.value()) {
+    for (const Repositories::LoanRecord& loan : loans.value()) {
         EXPECT_NE(loan.borrowedAt, "2025-03-10") << "a loan of another book leaked in";
     }
 }
 
 TEST_F(test_core_LoanBookFilter, CountingByBookCountsOnlyThatBook)
 {
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.bookId = m_secondBookId;
-    query.archive = ArchiveScope::Any;
+    query.archive = Repositories::ArchiveScope::Any;
 
     const auto count = m_circulation->countLoans(query);
     ASSERT_TRUE(count.has_value());
@@ -99,9 +99,9 @@ TEST_F(test_core_LoanBookFilter, ABookWithNoLoansCountsZero)
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(3));
     ASSERT_GT(bookId, 0);
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.bookId = bookId;
-    query.archive = ArchiveScope::Any;
+    query.archive = Repositories::ArchiveScope::Any;
 
     const auto count = m_circulation->countLoans(query);
     ASSERT_TRUE(count.has_value());
@@ -114,12 +114,12 @@ TEST_F(test_core_LoanBookFilter, AnArchivedCopysLoanIsStillPartOfTheHistory)
     // copy leaves the live list, but the loan it once carried still happened.
     // It has to be the first copy — saveCopies refuses to archive a copy that
     // is still out (error.copy.onLoan), and only the first one came back.
-    CatalogRepository catalog(m_db->session(), m_db->resourcesDirectory());
+    Repositories::CatalogRepository catalog(m_db->session(), m_db->resourcesDirectory());
     const auto before = catalog.listCopies(m_firstBookId);
     ASSERT_TRUE(before.has_value());
     ASSERT_EQ(before.value().size(), 2U);
 
-    BookCopyInput survivor;
+    Repositories::BookCopyInput survivor;
     survivor.id = before.value().at(1).id;
     survivor.source = before.value().at(1).source;
     survivor.localId = before.value().at(1).localId;
@@ -127,9 +127,9 @@ TEST_F(test_core_LoanBookFilter, AnArchivedCopysLoanIsStillPartOfTheHistory)
     const auto saved = catalog.saveCopies(m_firstBookId, {survivor});
     ASSERT_TRUE(saved) << saved.error().key;
 
-    LoanQuery query;
+    Repositories::LoanQuery query;
     query.bookId = m_firstBookId;
-    query.archive = ArchiveScope::Any;
+    query.archive = Repositories::ArchiveScope::Any;
 
     const auto count = m_circulation->countLoans(query);
     ASSERT_TRUE(count.has_value());
@@ -138,8 +138,8 @@ TEST_F(test_core_LoanBookFilter, AnArchivedCopysLoanIsStillPartOfTheHistory)
 
 TEST_F(test_core_LoanBookFilter, LeavingTheBookUnsetChangesNothing)
 {
-    LoanQuery query;
-    query.archive = ArchiveScope::Any;
+    Repositories::LoanQuery query;
+    query.archive = Repositories::ArchiveScope::Any;
 
     const auto count = m_circulation->countLoans(query);
     ASSERT_TRUE(count.has_value());
@@ -162,7 +162,7 @@ TEST_F(test_core_LoanBookFilter, AvailableCopiesCanBeScopedToOneBook)
     const auto scoped = m_circulation->listAvailableCopies({}, spareId);
     ASSERT_TRUE(scoped.has_value());
     EXPECT_EQ(scoped.value().size(), 2U);
-    for (const LoanCopyOption& copy : scoped.value()) {
+    for (const Repositories::LoanCopyOption& copy : scoped.value()) {
         EXPECT_EQ(copy.bookTitle, "Spare Book") << "another book's copy leaked in";
     }
 }

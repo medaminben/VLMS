@@ -2,7 +2,7 @@
 
 #include <VLMS/Core/Text.h>
 
-namespace VLMS::LoanPolicy {
+namespace VLMS::Repositories::LoanPolicy {
 
 Date suggestedDueDate(const Date& borrowedOn)
 {
@@ -128,4 +128,4 @@ Validation validateExtension(std::string_view newDueAt,
     return accepted();
 }
 
-}  // namespace VLMS::LoanPolicy
+}  // namespace VLMS::Repositories::LoanPolicy

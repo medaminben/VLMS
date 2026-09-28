@@ -73,9 +73,9 @@ protected:
 
     ThemeMode m_original = ThemeMode::Light;
     TestDatabase m_db;
-    CatalogRepository m_catalog{m_db.session(), m_db.resourcesDirectory()};
-    MemberRepository m_memberRepo{m_db.session(), m_db.resourcesDirectory()};
-    CirculationRepository m_circulation{m_db.session()};
+    Repositories::CatalogRepository m_catalog{m_db.session(), m_db.resourcesDirectory()};
+    Repositories::MemberRepository m_memberRepo{m_db.session(), m_db.resourcesDirectory()};
+    Repositories::CirculationRepository m_circulation{m_db.session()};
 };
 
 }  // namespace

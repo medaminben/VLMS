@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+namespace VLMS::Repositories {
+
 struct LoanRecord {
     std::int64_t id = 0;
     std::int64_t memberId = 0;
@@ -86,3 +88,5 @@ inline constexpr auto kStatus = "status";
 inline constexpr auto kReturned = "returned";
 inline constexpr auto kArchivedAt = "archivedAt";
 }  // namespace LoanSort
+
+}  // namespace VLMS::Repositories

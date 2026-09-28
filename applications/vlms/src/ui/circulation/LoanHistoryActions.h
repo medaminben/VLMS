@@ -15,7 +15,7 @@ class LoanHistoryActions final : public QWidget {
     Q_OBJECT
 
 public:
-    LoanHistoryActions(CirculationRepository& repository,
+    LoanHistoryActions(VLMS::Repositories::CirculationRepository& repository,
                        QTableWidget* table,
                        QWidget* parent = nullptr);
 
@@ -31,7 +31,7 @@ private:
     void returnLoan();
     [[nodiscard]] qint64 selectedLoanId() const;
 
-    CirculationRepository& m_repository;
+    VLMS::Repositories::CirculationRepository& m_repository;
     QTableWidget* m_table = nullptr;
     QPushButton* m_loanButton = nullptr;
     QPushButton* m_extendButton = nullptr;
