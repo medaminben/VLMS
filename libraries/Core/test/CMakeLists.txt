@@ -42,32 +42,6 @@ set(DATABASE_TST_SOURCES
 
 # --- Repositories tests: moved to libraries/Repositories/test by the Repositories test task ---
 
-set(REPOSITORIES_TST_SOURCES
-    src/test_loan_policy.cpp
-    src/test_strings_parity.cpp
-    src/test_catalog_repository.cpp
-    src/test_member_repository.cpp
-    src/test_member_status_rule.cpp
-    src/test_member_status_expiry.cpp
-    src/test_circulation_repository.cpp
-    src/test_circulation_dates.cpp
-    src/test_loan_book_filter.cpp
-    src/test_list_facets.cpp
-    src/test_metrics_repository.cpp
-    src/test_catalog_injection.cpp
-    src/test_member_injection.cpp
-    src/test_circulation_injection.cpp
-    src/test_metrics_windows.cpp
-    src/test_circulation_timezone.cpp
-    src/test_archive_catalog.cpp
-    src/test_archive_circulation.cpp
-    src/test_archive_purge.cpp
-    src/test_free_local_numbers.cpp
-    src/test_archive_members.cpp
-    src/test_archive_reuse.cpp
-    src/test_can_remove.cpp
-)
-
 # --- Until both blocks above have moved, this binary runs all three sets. ---
 
 build_gtest_executable(
