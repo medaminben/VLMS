@@ -205,6 +205,10 @@ and add `using namespace VLMS;` after the last `#include`. Also add
 `.cpp` that contains `VLMS::`. Place it at global scope, never inside an
 anonymous namespace.
 
+In `applications/vlms/test/src/test_book_editor_ocr.cpp`, delete
+`namespace Ocr = VLMS::Ocr;`. With `using namespace VLMS;`, its `Ocr::…`
+uses resolve to `VLMS::Ocr` unchanged.
+
 - [ ] **Step 5: Build and fix**
 
 Run **Build**. With `using namespace VLMS;` at global scope, an ambiguity
