@@ -7,15 +7,15 @@
 #include <map>
 #include <string>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
 class MetricsRepository {
 public:
-    explicit MetricsRepository(VLMS::SqliteSession& session);
+    explicit MetricsRepository(Database::SqliteSession& session);
 
     [[nodiscard]] VLMS::Result<LibraryMetrics> fetchMetrics() const;
 
@@ -33,7 +33,7 @@ private:
         const std::map<std::string, std::string>& binds = {}) const;
     [[nodiscard]] VLMS::Result<MetricsPeriodCounts> fetchPeriodCounts(Window window) const;
 
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
 };
 
 }  // namespace VLMS::Repositories

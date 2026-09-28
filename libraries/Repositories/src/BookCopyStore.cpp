@@ -15,10 +15,7 @@ using VLMS::Clock;
 using VLMS::Result;
 using VLMS::Status;
 using VLMS::Strings;
-using VLMS::SqliteStatement;
 using VLMS::trim;
-using VLMS::SqlText::escapeLike;
-using VLMS::SqlText::nullableText;
 
 namespace VLMS::Repositories {
 
@@ -40,7 +37,7 @@ std::string appendedRemark(const std::string& notes, const std::string& remark)
     return notes.empty() ? remark : notes + "\n" + remark;
 }
 
-Status nextCopyNumber(VLMS::SqliteSession& session,
+Status nextCopyNumber(Database::SqliteSession& session,
                       const std::string& source,
                       std::int64_t* outNumber)
 {
@@ -59,19 +56,19 @@ Status nextCopyNumber(VLMS::SqliteSession& session,
     return Status::ok();
 }
 
-Status bindCopyFields(SqliteStatement& query, const BookCopyInput& copy)
+Status bindCopyFields(Database::SqliteStatement& query, const BookCopyInput& copy)
 {
     if (!query.bind(":global_copy_id", trim(copy.globalCopyId))
         || !query.bind(":source", normalizedCopySource(copy.source))
         || !query.bind(":local_id", trim(copy.localId))
-        || !query.bindOptional(":central_id", nullableText(copy.centralId))
-        || !query.bindOptional(":classification", nullableText(copy.classification))
-        || !query.bindOptional(":subject", nullableText(copy.subject))
-        || !query.bindOptional(":notes", nullableText(copy.notes))
-        || !query.bindOptional(":inventory_status", nullableText(copy.inventoryStatus))
-        || !query.bindOptional(":compensation", nullableText(copy.compensation))
-        || !query.bindOptional(":location", nullableText(copy.location))
-        || !query.bindOptional(":index_code", nullableText(copy.indexCode))) {
+        || !query.bindOptional(":central_id", Database::SqlText::nullableText(copy.centralId))
+        || !query.bindOptional(":classification", Database::SqlText::nullableText(copy.classification))
+        || !query.bindOptional(":subject", Database::SqlText::nullableText(copy.subject))
+        || !query.bindOptional(":notes", Database::SqlText::nullableText(copy.notes))
+        || !query.bindOptional(":inventory_status", Database::SqlText::nullableText(copy.inventoryStatus))
+        || !query.bindOptional(":compensation", Database::SqlText::nullableText(copy.compensation))
+        || !query.bindOptional(":location", Database::SqlText::nullableText(copy.location))
+        || !query.bindOptional(":index_code", Database::SqlText::nullableText(copy.indexCode))) {
         return RepoSql::sqlFailure("bind copy fields");
     }
     return Status::ok();
@@ -79,7 +76,7 @@ Status bindCopyFields(SqliteStatement& query, const BookCopyInput& copy)
 
 /// True when the number `copy` asks for is held by an archived copy: the
 /// librarian removed it (or typed it) while the archive still owns it.
-bool numberHeldByArchived(VLMS::SqliteSession& session, const BookCopyInput& copy)
+bool numberHeldByArchived(Database::SqliteSession& session, const BookCopyInput& copy)
 {
     auto q = session.prepare(
         "SELECT 1 FROM book_copies WHERE archived_at IS NOT NULL AND "
@@ -96,7 +93,7 @@ bool numberHeldByArchived(VLMS::SqliteSession& session, const BookCopyInput& cop
     return q->next();
 }
 
-Status describeCopyConstraint(VLMS::SqliteSession& session,
+Status describeCopyConstraint(Database::SqliteSession& session,
                               const std::string& sqliteError,
                               const BookCopyInput& copy)
 {
@@ -158,10 +155,10 @@ std::string copyFilterClause(const CopyQuery& query)
 }
 
 /// Binds what copyFilterClause wrote. False when a bind failed.
-bool bindCopyFilters(VLMS::SqliteStatement& q, const CopyQuery& query)
+bool bindCopyFilters(Database::SqliteStatement& q, const CopyQuery& query)
 {
     const std::string search = trim(query.search);
-    if (!search.empty() && !q.bind(":search", "%" + escapeLike(search) + "%")) {
+    if (!search.empty() && !q.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%")) {
         return false;
     }
     for (std::size_t i = 0; i < query.categoryCodes.size(); ++i) {
@@ -203,7 +200,7 @@ std::string copyOrderClause(const CopyQuery& query)
 
 }  // namespace
 
-BookCopyStore::BookCopyStore(VLMS::SqliteSession& session)
+BookCopyStore::BookCopyStore(Database::SqliteSession& session)
     : m_session(session)
 {
 }
@@ -736,7 +733,7 @@ Status BookCopyStore::applyCopies(const std::int64_t bookId, const std::vector<B
     }
 
     for (const BookCopyInput& copy : copies) {
-        SqliteStatement& query = copy.id > 0 ? *update : *insert;
+        Database::SqliteStatement& query = copy.id > 0 ? *update : *insert;
         query.reset();
         if (const auto bound = bindCopyFields(query, copy); !bound) {
             return bound;

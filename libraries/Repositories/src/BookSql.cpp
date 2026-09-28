@@ -5,7 +5,6 @@
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
-using VLMS::SqlText::escapeLike;
 using VLMS::trim;
 
 namespace VLMS::Repositories::BookSql {
@@ -108,15 +107,15 @@ std::string filterClause(const BookQuery& query)
     return sql;
 }
 
-void bindFilters(SqliteStatement& query, const BookQuery& queryData)
+void bindFilters(Database::SqliteStatement& query, const BookQuery& queryData)
 {
     const std::string search = trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + escapeLike(search) + "%");
+        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
     }
     if (const std::string number = localNumberTerm(queryData); !number.empty()) {
         query.bind(":local_number", number);
-        query.bind(":local_number_prefix", escapeLike(number) + "%");
+        query.bind(":local_number_prefix", Database::SqlText::escapeLike(number) + "%");
     }
     for (std::size_t i = 0; i < queryData.categoryCodes.size(); ++i) {
         query.bind(":category_code_" + std::to_string(i), queryData.categoryCodes[i]);

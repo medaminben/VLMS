@@ -19,9 +19,7 @@ using VLMS::Clock;
 using VLMS::Date;
 using VLMS::Result;
 using VLMS::Status;
-using VLMS::SqliteStatement;
 using VLMS::trim;
-using VLMS::SqlText::nullableText;
 
 namespace VLMS::Repositories {
 
@@ -68,7 +66,7 @@ std::string memberSelectSql()
 )SQL";
 }
 
-MemberRecord readMemberRow(SqliteStatement& query)
+MemberRecord readMemberRow(Database::SqliteStatement& query)
 {
     MemberRecord member;
     member.id = query.int64(0);
@@ -104,7 +102,7 @@ bool codesContain(const std::vector<std::string>& codes, const std::string& valu
 
 }  // namespace
 
-MemberRepository::MemberRepository(VLMS::SqliteSession& session,
+MemberRepository::MemberRepository(Database::SqliteSession& session,
                                    std::string resourcesDirectory)
     : m_session(session), m_resourcesDirectory(std::move(resourcesDirectory))
 {
@@ -318,7 +316,7 @@ Result<int> MemberRepository::countMembers(const MemberQuery& query) const
 
 namespace {
 
-Result<std::vector<std::string>> listDistinctTexts(VLMS::SqliteSession& session,
+Result<std::vector<std::string>> listDistinctTexts(Database::SqliteSession& session,
                                                    const char* sql)
 {
     auto q = session.prepare(sql);
@@ -447,9 +445,9 @@ Status MemberRepository::recordStatusChange(const std::int64_t memberId,
         return RepoSql::sqlFailure(insert.error().detail);
     }
     if (!insert->bind(":member_id", memberId)
-        || !insert->bindOptional(":old_status", nullableText(oldStatus))
+        || !insert->bindOptional(":old_status", Database::SqlText::nullableText(oldStatus))
         || !insert->bind(":new_status", newStatus)
-        || !insert->bindOptional(":note", nullableText(note)) || !insert->exec()) {
+        || !insert->bindOptional(":note", Database::SqlText::nullableText(note)) || !insert->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
     return Status::ok();
@@ -493,17 +491,17 @@ Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& input)
     if (!insert->bind(":membership_number", membershipNumber)
         || !insert->bind(":first_name", trim(input.firstName))
         || !insert->bind(":last_name", trim(input.lastName))
-        || !insert->bindOptional(":sex", nullableText(input.sex))
-        || !insert->bindOptional(":date_of_birth", nullableText(input.dateOfBirth))
-        || !insert->bindOptional(":email", nullableText(input.email))
-        || !insert->bindOptional(":phone", nullableText(input.phone))
-        || !insert->bindOptional(":address", nullableText(input.address))
-        || !insert->bindOptional(":city", nullableText(input.city))
+        || !insert->bindOptional(":sex", Database::SqlText::nullableText(input.sex))
+        || !insert->bindOptional(":date_of_birth", Database::SqlText::nullableText(input.dateOfBirth))
+        || !insert->bindOptional(":email", Database::SqlText::nullableText(input.email))
+        || !insert->bindOptional(":phone", Database::SqlText::nullableText(input.phone))
+        || !insert->bindOptional(":address", Database::SqlText::nullableText(input.address))
+        || !insert->bindOptional(":city", Database::SqlText::nullableText(input.city))
         || !insert->bind(":active_until", activeUntil)
-        || !insert->bindOptional(":notes", nullableText(input.notes))
-        || !insert->bindOptional(":occupation", nullableText(input.occupation))
-        || !insert->bindOptional(":age_group", nullableText(ageGroup))
-        || !insert->bindOptional(":full_name", nullableText(input.fullName))
+        || !insert->bindOptional(":notes", Database::SqlText::nullableText(input.notes))
+        || !insert->bindOptional(":occupation", Database::SqlText::nullableText(input.occupation))
+        || !insert->bindOptional(":age_group", Database::SqlText::nullableText(ageGroup))
+        || !insert->bindOptional(":full_name", Database::SqlText::nullableText(input.fullName))
         || !insert->bind(":registered_at", registeredAt)
         || !insert->exec()) {
         return RepoSql::sqlResult<std::int64_t>(m_session.lastError());
@@ -578,17 +576,17 @@ Status MemberRepository::applyMemberFields(const std::int64_t id, const MemberIn
     }
     if (!update->bind(":first_name", trim(input.firstName))
         || !update->bind(":last_name", trim(input.lastName))
-        || !update->bindOptional(":sex", nullableText(input.sex))
-        || !update->bindOptional(":date_of_birth", nullableText(input.dateOfBirth))
-        || !update->bindOptional(":email", nullableText(input.email))
-        || !update->bindOptional(":phone", nullableText(input.phone))
-        || !update->bindOptional(":address", nullableText(input.address))
-        || !update->bindOptional(":city", nullableText(input.city))
+        || !update->bindOptional(":sex", Database::SqlText::nullableText(input.sex))
+        || !update->bindOptional(":date_of_birth", Database::SqlText::nullableText(input.dateOfBirth))
+        || !update->bindOptional(":email", Database::SqlText::nullableText(input.email))
+        || !update->bindOptional(":phone", Database::SqlText::nullableText(input.phone))
+        || !update->bindOptional(":address", Database::SqlText::nullableText(input.address))
+        || !update->bindOptional(":city", Database::SqlText::nullableText(input.city))
         || !update->bind(":active_until", activeUntil)
-        || !update->bindOptional(":notes", nullableText(input.notes))
-        || !update->bindOptional(":occupation", nullableText(input.occupation))
-        || !update->bindOptional(":age_group", nullableText(ageGroup))
-        || !update->bindOptional(":full_name", nullableText(input.fullName))
+        || !update->bindOptional(":notes", Database::SqlText::nullableText(input.notes))
+        || !update->bindOptional(":occupation", Database::SqlText::nullableText(input.occupation))
+        || !update->bindOptional(":age_group", Database::SqlText::nullableText(ageGroup))
+        || !update->bindOptional(":full_name", Database::SqlText::nullableText(input.fullName))
         || !update->bind(":updated_at", Clock::nowIso()) || !update->bind(":id", id)
         || !update->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());

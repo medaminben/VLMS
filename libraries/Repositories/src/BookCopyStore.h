@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
 class BookCopyStore {
 public:
-    explicit BookCopyStore(VLMS::SqliteSession& session);
+    explicit BookCopyStore(Database::SqliteSession& session);
 
     [[nodiscard]] VLMS::Result<std::vector<BookCopyRecord>> listCopies(
         std::int64_t bookId) const;
@@ -67,7 +67,7 @@ public:
         int limit) const;
 
 private:
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
 };
 
 }  // namespace VLMS::Repositories

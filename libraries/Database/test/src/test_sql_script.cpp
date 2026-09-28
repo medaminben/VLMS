@@ -18,7 +18,7 @@ using namespace VLMS;
 using namespace Test;
 
 /**
- * Database::execSqlScript used to split on a bare ';':
+ * Connection::execSqlScript used to split on a bare ';':
  *
  *     script.split(QChar(';'), Qt::SkipEmptyParts)
  *
@@ -32,7 +32,7 @@ using namespace Test;
  * question worth answering is "would applying a schema like this work?", not
  * "does a private function tokenise correctly". Each case appends statements
  * to the genuine database/schema.sql, points VLMS_SCHEMA_PATH at the
- * result, and asks whether Database::open() succeeds.
+ * result, and asks whether Connection::open() succeeds.
  */
 class test_core_SqlScript : public ::testing::Test {
 protected:

@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
@@ -16,7 +16,7 @@ class NamedEntityStore {
 public:
     enum class Kind { Author, Publisher };
 
-    explicit NamedEntityStore(VLMS::SqliteSession& session);
+    explicit NamedEntityStore(Database::SqliteSession& session);
 
     [[nodiscard]] VLMS::Result<std::int64_t> findOrCreate(Kind kind,
                                                                 const std::string& name) const;
@@ -25,7 +25,7 @@ public:
 private:
     [[nodiscard]] static const char* tableName(Kind kind);
 
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
 };
 
 }  // namespace VLMS::Repositories

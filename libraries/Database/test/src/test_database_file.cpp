@@ -1,6 +1,6 @@
 #include <VLMS/Database/SqliteSession.h>
 
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <gtest/gtest.h>
 
@@ -10,8 +10,6 @@
 
 using namespace VLMS;
 
-using VLMS::SqliteSession;
-
 namespace fs = std::filesystem;
 
 namespace {
@@ -20,7 +18,7 @@ namespace {
 /// which physical file ended up under which name.
 void writeMarkerDatabase(const fs::path& path, const std::string& value)
 {
-    auto opened = SqliteSession::open(path.string());
+    auto opened = Database::SqliteSession::open(path.string());
     ASSERT_TRUE(opened) << opened.error().detail;
     ASSERT_TRUE(opened.value()->exec("CREATE TABLE marker (value TEXT)"));
     ASSERT_TRUE(opened.value()->exec("INSERT INTO marker (value) VALUES ('" + value + "')"));
@@ -28,7 +26,7 @@ void writeMarkerDatabase(const fs::path& path, const std::string& value)
 
 std::string readMarker(const fs::path& path)
 {
-    auto opened = SqliteSession::open(path.string());
+    auto opened = Database::SqliteSession::open(path.string());
     if (!opened) {
         return {};
     }
@@ -42,7 +40,7 @@ std::string readMarker(const fs::path& path)
 }  // namespace
 
 /**
- * Database::open() works on vlms.db and nothing else. Another SQLite file in
+ * Connection::open() works on vlms.db and nothing else. Another SQLite file in
  * the same directory is never renamed, moved aside or read.
  */
 class test_core_DatabaseFile : public ::testing::Test {
@@ -70,7 +68,7 @@ TEST_F(test_core_DatabaseFile, AnotherDatabaseBesideItIsLeftAlone)
     writeMarkerDatabase(m_dir / "other.db", "other");
 
     {
-        Database database(m_dir.string());
+        Database::Connection database(m_dir.string());
         ASSERT_TRUE(database.open());
     }
 
@@ -83,7 +81,7 @@ TEST_F(test_core_DatabaseFile, AnotherDatabaseAloneDoesNotBecomeVlmsDb)
     writeMarkerDatabase(m_dir / "other.db", "other");
 
     {
-        Database database(m_dir.string());
+        Database::Connection database(m_dir.string());
         ASSERT_TRUE(database.open());
     }
 

@@ -13,7 +13,7 @@ using VLMS::Result;
 
 namespace VLMS::Repositories {
 
-MetricsRepository::MetricsRepository(VLMS::SqliteSession& session)
+MetricsRepository::MetricsRepository(Database::SqliteSession& session)
     : m_session(session)
 {
 }

@@ -20,9 +20,7 @@ using VLMS::Clock;
 using VLMS::DateText::normalizePublicationDate;
 using VLMS::Result;
 using VLMS::Status;
-using VLMS::SqliteStatement;
 using VLMS::trim;
-using VLMS::SqlText::nullableText;
 
 namespace VLMS::Repositories {
 
@@ -34,7 +32,7 @@ std::string blankIsbnSentinel(const std::string& isbn)
     return trimmed.empty() ? std::string() : trimmed;
 }
 
-Status bindOptionalId(SqliteStatement& query, const std::string& name, const std::int64_t id)
+Status bindOptionalId(Database::SqliteStatement& query, const std::string& name, const std::int64_t id)
 {
     if (id > 0) {
         return query.bind(name, id);
@@ -42,7 +40,7 @@ Status bindOptionalId(SqliteStatement& query, const std::string& name, const std
     return query.bindNull(name);
 }
 
-Status bindBookFields(SqliteStatement& query,
+Status bindBookFields(Database::SqliteStatement& query,
                       const BookInput& input,
                       const std::int64_t authorId,
                       const std::int64_t publisherId)
@@ -53,13 +51,13 @@ Status bindBookFields(SqliteStatement& query,
         || !bindOptionalId(query, ":category_id", input.categoryId)
         || !query.bind(":isbn", blankIsbnSentinel(input.isbn))
         || !query.bindOptional(":publication_date",
-                               nullableText(normalizePublicationDate(input.publicationDate)))
-        || !query.bindOptional(":publication_date_original", nullableText(input.publicationDate))
-        || !query.bindOptional(":place_of_publication", nullableText(input.placeOfPublication))
-        || !query.bindOptional(":pages", nullableText(input.pages))
-        || !query.bindOptional(":dimensions", nullableText(input.dimensions))
+                               Database::SqlText::nullableText(normalizePublicationDate(input.publicationDate)))
+        || !query.bindOptional(":publication_date_original", Database::SqlText::nullableText(input.publicationDate))
+        || !query.bindOptional(":place_of_publication", Database::SqlText::nullableText(input.placeOfPublication))
+        || !query.bindOptional(":pages", Database::SqlText::nullableText(input.pages))
+        || !query.bindOptional(":dimensions", Database::SqlText::nullableText(input.dimensions))
         || !query.bind(":language", language)
-        || !query.bindOptional(":description", nullableText(input.description))) {
+        || !query.bindOptional(":description", Database::SqlText::nullableText(input.description))) {
         return RepoSql::sqlFailure("bind book fields");
     }
     return Status::ok();
@@ -147,7 +145,7 @@ std::vector<std::string> splitLocalIds(const std::string& joined)
     return ids;
 }
 
-BookRecord readBookRow(SqliteStatement& query)
+BookRecord readBookRow(Database::SqliteStatement& query)
 {
     BookRecord book;
     book.id = query.int64(0);
@@ -180,7 +178,7 @@ BookRecord readBookRow(SqliteStatement& query)
 
 }  // namespace
 
-CatalogRepository::CatalogRepository(VLMS::SqliteSession& session,
+CatalogRepository::CatalogRepository(Database::SqliteSession& session,
                                      std::string resourcesDirectory)
     : m_session(session),
       m_resourcesDirectory(std::move(resourcesDirectory)),

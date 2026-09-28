@@ -4,7 +4,7 @@
 
 #include <cctype>
 
-namespace VLMS::SqlText {
+namespace VLMS::Database::SqlText {
 
 namespace {
 
@@ -169,4 +169,4 @@ std::vector<std::string> splitStatements(std::string_view script)
     return statements;
 }
 
-}  // namespace VLMS::SqlText
+}  // namespace VLMS::Database::SqlText

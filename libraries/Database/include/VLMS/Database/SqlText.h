@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace VLMS::SqlText {
+namespace VLMS::Database::SqlText {
 
 [[nodiscard]] std::string escapeLike(std::string_view value);
 
@@ -14,4 +14,4 @@ namespace VLMS::SqlText {
 
 [[nodiscard]] std::vector<std::string> splitStatements(std::string_view script);
 
-}  // namespace VLMS::SqlText
+}  // namespace VLMS::Database::SqlText

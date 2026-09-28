@@ -14,10 +14,7 @@
 using VLMS::Clock;
 using VLMS::Result;
 using VLMS::Status;
-using VLMS::SqliteStatement;
 using VLMS::trim;
-using VLMS::SqlText::escapeLike;
-using VLMS::SqlText::nullableText;
 
 namespace VLMS::Repositories {
 
@@ -56,7 +53,7 @@ std::string loanSelectSql()
     )SQL";
 }
 
-LoanRecord readLoanRow(SqliteStatement& query)
+LoanRecord readLoanRow(Database::SqliteStatement& query)
 {
     LoanRecord loan;
     loan.id = query.int64(0);
@@ -81,7 +78,7 @@ LoanRecord readLoanRow(SqliteStatement& query)
 
 }  // namespace
 
-CirculationRepository::CirculationRepository(VLMS::SqliteSession& session)
+CirculationRepository::CirculationRepository(Database::SqliteSession& session)
     : m_session(session)
 {
 }
@@ -333,7 +330,7 @@ Result<std::int64_t> CirculationRepository::createLoan(const LoanInput& input)
         if (!insert->bind(":member_id", input.memberId)
             || !insert->bind(":book_copy_id", input.bookCopyId)
             || !insert->bind(":borrowed_at", borrowedAt) || !insert->bind(":due_at", dueAt)
-            || !insert->bindOptional(":notes", nullableText(input.notes)) || !insert->exec()) {
+            || !insert->bindOptional(":notes", Database::SqlText::nullableText(input.notes)) || !insert->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
         newId = m_session.lastInsertRowId();
@@ -561,7 +558,7 @@ CirculationRepository::listBorrowableMembers(const std::string& search) const
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
     if (!trimmedSearch.empty()
-        && !q->bind(":search", "%" + escapeLike(trimmedSearch) + "%")) {
+        && !q->bind(":search", "%" + Database::SqlText::escapeLike(trimmedSearch) + "%")) {
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
 
@@ -626,7 +623,7 @@ CirculationRepository::listAvailableCopies(const std::string& search,
         return RepoSql::sqlResult<std::vector<LoanCopyOption>>(q.error().detail);
     }
     if (!trimmedSearch.empty()
-        && !q->bind(":search", "%" + escapeLike(trimmedSearch) + "%")) {
+        && !q->bind(":search", "%" + Database::SqlText::escapeLike(trimmedSearch) + "%")) {
         return RepoSql::sqlResult<std::vector<LoanCopyOption>>(m_session.lastError());
     }
     if (bookId > 0 && !q->bind(":book_id", bookId)) {

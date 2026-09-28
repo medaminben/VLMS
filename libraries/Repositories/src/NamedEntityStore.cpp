@@ -9,7 +9,7 @@ using VLMS::trim;
 
 namespace VLMS::Repositories {
 
-NamedEntityStore::NamedEntityStore(VLMS::SqliteSession& session)
+NamedEntityStore::NamedEntityStore(Database::SqliteSession& session)
     : m_session(session)
 {
 }

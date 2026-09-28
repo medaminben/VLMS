@@ -4,7 +4,9 @@
 #include <QString>
 #include <QTranslator>
 
-class Database;
+namespace VLMS::Database {
+class Connection;
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 class CatalogRepository;
@@ -20,8 +22,8 @@ public:
     Application(int& argc, char** argv);
     ~Application() override;
 
-    [[nodiscard]] Database& database() const { return *m_database; }
-    /// False when Database::open() refused. main() must not build a window on
+    [[nodiscard]] VLMS::Database::Connection& database() const { return *m_database; }
+    /// False when Connection::open() refused. main() must not build a window on
     /// top of a database that is not there.
     [[nodiscard]] bool isDatabaseReady() const { return m_databaseReady; }
     [[nodiscard]] VLMS::Repositories::CatalogRepository& catalog() const { return *m_catalogRepository; }
@@ -49,7 +51,7 @@ private:
 
     QTranslator m_qtTranslator;
 
-    Database* m_database = nullptr;
+    VLMS::Database::Connection* m_database = nullptr;
     bool m_databaseReady = false;
     VLMS::Repositories::CatalogRepository* m_catalogRepository = nullptr;
     VLMS::Repositories::MemberRepository* m_memberRepository = nullptr;

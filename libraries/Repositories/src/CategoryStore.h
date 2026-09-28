@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
+namespace VLMS::Database {
 class SqliteSession;
-}
+}  // namespace VLMS::Database
 
 namespace VLMS::Repositories {
 
 class CategoryStore {
 public:
-    explicit CategoryStore(VLMS::SqliteSession& session);
+    explicit CategoryStore(Database::SqliteSession& session);
 
     [[nodiscard]] VLMS::Result<std::vector<CategoryRecord>> listCategories() const;
     [[nodiscard]] VLMS::Result<std::vector<CategoryRecord>> listAllCategories() const;
@@ -27,7 +27,7 @@ public:
     [[nodiscard]] VLMS::Status deleteCategory(std::int64_t id);
 
 private:
-    VLMS::SqliteSession& m_session;
+    Database::SqliteSession& m_session;
 };
 
 }  // namespace VLMS::Repositories

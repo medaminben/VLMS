@@ -4,24 +4,24 @@
 #include <string>
 #include <vector>
 
-namespace VLMS {
-class SqliteSession;
-}
+namespace VLMS::Database {
 
-class Database final {
+class SqliteSession;
+
+class Connection final {
 public:
     static constexpr int kSchemaVersion = 7;
 
-    explicit Database(std::string dataDirectory);
-    ~Database();
+    explicit Connection(std::string dataDirectory);
+    ~Connection();
 
-    Database(const Database&) = delete;
-    Database& operator=(const Database&) = delete;
+    Connection(const Connection&) = delete;
+    Connection& operator=(const Connection&) = delete;
 
     bool open();
     [[nodiscard]] const std::string& dataDirectory() const { return m_dataDirectory; }
     [[nodiscard]] std::string databasePath() const;
-    [[nodiscard]] VLMS::SqliteSession& session() const;
+    [[nodiscard]] SqliteSession& session() const;
     [[nodiscard]] int schemaVersion() const;
     [[nodiscard]] const std::string& lastError() const { return m_lastError; }
 
@@ -53,5 +53,7 @@ private:
 
     std::string m_dataDirectory;
     std::string m_lastError;
-    std::unique_ptr<VLMS::SqliteSession> m_session;
+    std::unique_ptr<SqliteSession> m_session;
 };
+
+}  // namespace VLMS::Database

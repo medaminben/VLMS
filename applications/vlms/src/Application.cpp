@@ -5,7 +5,7 @@
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MetricsRepository.h>
@@ -113,7 +113,7 @@ Application::Application(int& argc, char** argv)
 
     VLMS::Paths::ensureLayout();
 
-    m_database = new Database(VLMS::Paths::databaseDirectory());
+    m_database = new VLMS::Database::Connection(VLMS::Paths::databaseDirectory());
     // The result was discarded here until D2 gave open() a reason to refuse on
     // purpose -- a database written by a newer build. Carrying on regardless
     // means every page renders empty and every action fails with a blank
@@ -136,7 +136,7 @@ Application::Application(int& argc, char** argv)
 
 Application::~Application() {
     // Repositories go first: they hold a session reference and must not
-    // outlive Database. Database itself is no longer a QObject child.
+    // outlive Connection. Connection itself is no longer a QObject child.
     delete m_metricsRepository;
     m_metricsRepository = nullptr;
     delete m_circulationRepository;

@@ -8,7 +8,7 @@
 
 #include <utility>
 
-namespace VLMS {
+namespace VLMS::Database {
 
 namespace {
 
@@ -281,4 +281,4 @@ std::int64_t SqliteSession::lastInsertRowId() const
     return sqlite3_last_insert_rowid(m_db);
 }
 
-}  // namespace VLMS
+}  // namespace VLMS::Database

@@ -1,7 +1,7 @@
 #include <VLMS/Database/SqliteSession.h>
 #include "TestDatabase.h"
 
-#include <VLMS/Database/Database.h>
+#include <VLMS/Database/Connection.h>
 
 #include <gtest/gtest.h>
 
@@ -47,10 +47,10 @@ std::vector<std::filesystem::path> backupsIn(const std::string& directory)
     return found;
 }
 
-/// One text value read straight from a database file, outside Database.
+/// One text value read straight from a database file, outside Connection.
 std::string readText(const std::filesystem::path& path, const std::string& sql)
 {
-    auto opened = VLMS::SqliteSession::open(path.string());
+    auto opened = Database::SqliteSession::open(path.string());
     if (!opened) {
         return {};
     }
@@ -97,7 +97,7 @@ std::vector<std::string> checkLines(const std::string& createSql)
 }  // namespace
 
 /**
- * The four migrateXIfNeeded() steps in Database::open(), one fixture per
+ * The four migrateXIfNeeded() steps in Connection::open(), one fixture per
  * historical shape.
  *
  * Every other suite drives these too -- TestDatabase always goes through the
@@ -268,7 +268,7 @@ TEST_F(test_core_DatabaseMigrations, BookLanguageMigrationIsNotBlockedByItsOwnDe
     // open() returned false and the app would not start at all against a
     // database on this shape. Every other assertion about shape 2 depends on
     // this one, so it is stated separately: unscope the detector in
-    // Database::migrateBookLanguageIfNeeded and this is the test that names why
+    // Connection::migrateBookLanguageIfNeeded and this is the test that names why
     // the other five went red.
     EXPECT_TRUE(db->isValid()) << db->lastError();
 }
@@ -350,7 +350,7 @@ TEST_F(test_core_DatabaseMigrations, ADatabaseThatStaysOnItsVersionIsCopiedOnce)
     ASSERT_TRUE(db.isValid()) << db.lastError();
     ASSERT_EQ(db.userVersion(), 0);
 
-    Database again(db.dataDirectory());
+    Database::Connection again(db.dataDirectory());
     ASSERT_TRUE(again.open()) << again.lastError();
 
     EXPECT_EQ(backupsIn(db.dataDirectory()).size(), 1u);
@@ -368,7 +368,7 @@ TEST_F(test_core_DatabaseMigrations, ACurrentDatabaseIsNotCopiedOnTheNextLaunch)
 {
     const std::string directory = (m_scratch / "current").string();
     for (int launch = 0; launch < 2; ++launch) {
-        Database database(directory);
+        Database::Connection database(directory);
         ASSERT_TRUE(database.open()) << database.lastError();
     }
 
@@ -579,7 +579,7 @@ TEST_F(test_core_DatabaseMigrations, LegacyDatabaseIsStampedOnceMigrated)
 
         // The stamp is what stops the four detectors running a PRAGMA table_info
         // apiece on every launch for the rest of the database's life.
-        EXPECT_EQ(db->userVersion(), Database::kSchemaVersion);
+        EXPECT_EQ(db->userVersion(), Database::Connection::kSchemaVersion);
     }
 }
 
@@ -612,7 +612,7 @@ TEST_F(test_core_DatabaseMigrations, LegacyDatabaseGainsTheEmailColumn)
     EXPECT_TRUE(contains(db->columnNames("members"), "email"));
     EXPECT_EQ(db->scalar("SELECT COUNT(*) FROM members WHERE email IS NULL").toInt(),
               db->count("members"));
-    EXPECT_EQ(db->userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db->userVersion(), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_DatabaseMigrations, StampedVersionOneDatabaseIsUpgradedRatherThanSniffed)
@@ -629,7 +629,7 @@ TEST_F(test_core_DatabaseMigrations, StampedVersionOneDatabaseIsUpgradedRatherTh
     EXPECT_TRUE(contains(db.columnNames("members"), "email"));
     EXPECT_TRUE(!contains(db.columnNames("members"), "sex"))
         << "the versioned upgrade must not drag the legacy detectors in with it";
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_DatabaseMigrations, ConstraintRebuildCarriesEmailAddressesAcross)
@@ -672,7 +672,7 @@ TEST_F(test_core_DatabaseMigrations, ConstraintMigrationAppliesToACleanDatabase)
         db->scalar("SELECT sql FROM sqlite_master WHERE type='table' AND name='loans'").toString();
     EXPECT_TRUE(createSql.find("date(due_at) IS due_at") != std::string::npos) << createSql;
 
-    EXPECT_EQ(db->userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db->userVersion(), Database::Connection::kSchemaVersion);
 }
 
 TEST_F(test_core_DatabaseMigrations, ConstraintMigrationPreservesEveryRow)
@@ -846,7 +846,7 @@ TEST_F(test_core_DatabaseMigrations, SkippedConstraintMigrationRunsOnceTheDataIs
     EXPECT_TRUE(db.exec("UPDATE members SET date_of_birth = '1900-03-01' WHERE id = 12"));
 
     ASSERT_TRUE(db.database().open()) << "the next launch must migrate";
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
     EXPECT_EQ(db.count("loans"), 7);
 }
 
@@ -1037,7 +1037,7 @@ TEST_F(test_core_DatabaseMigrations, ImportedCatalogGetsItsPublicationDatesNorma
               std::string("1996-11-06"));
     EXPECT_EQ(db.scalar("SELECT publication_date FROM books WHERE id = 901").toString(),
               std::string("2014"));
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
 }
 
 /// A publication date column legitimately holds things that are not dates. The
@@ -1100,7 +1100,7 @@ TEST_F(test_core_DatabaseMigrations, VersionThreeUpgradeIsIdempotent)
     ASSERT_TRUE(db.database().open()) << "second open() failed";
 
     EXPECT_EQ(db.scalar(kDatesQuery).toString(), firstPass);
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
 }
 
 // --- member spreadsheet columns (v4 -> v5) ---------------------------------
@@ -1138,7 +1138,7 @@ TEST_F(test_core_DatabaseMigrations, VersionFourDatabaseGainsMemberSpreadsheetCo
     EXPECT_TRUE(contains(columns, "age_group"));
     EXPECT_TRUE(contains(columns, "full_name"));
     EXPECT_TRUE(contains(columns, "source_row"));
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
     EXPECT_EQ(db.count("members"), 2);
 }
 
@@ -1170,7 +1170,7 @@ TEST_F(test_core_DatabaseMigrations, VersionFiveGainsArchiveColumnsAndNullableCo
     ASSERT_NE(db, nullptr);
     ASSERT_TRUE(db->isValid()) << db->lastError();
 
-    EXPECT_EQ(db->scalar("PRAGMA user_version").toInt(), Database::kSchemaVersion);
+    EXPECT_EQ(db->scalar("PRAGMA user_version").toInt(), Database::Connection::kSchemaVersion);
     for (const std::string table : {"books", "book_copies", "loans"}) {
         EXPECT_EQ(db->scalar("SELECT COUNT(*) FROM pragma_table_info('" + table
                              + "') WHERE name = 'archived_at'")
@@ -1249,7 +1249,7 @@ TEST_F(test_core_DatabaseMigrations, VersionSixGainsActiveUntilOneYearAfterRegis
     ASSERT_NE(db, nullptr);
     ASSERT_TRUE(db->isValid()) << db->lastError();
 
-    EXPECT_EQ(db->userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db->userVersion(), Database::Connection::kSchemaVersion);
     EXPECT_EQ(db->scalar("SELECT active_until FROM members WHERE id = 1").toString(), "2026-09-23");
     EXPECT_EQ(db->scalar("SELECT active_until FROM members WHERE id = 2").toString(), "2026-09-22");
     EXPECT_EQ(db->scalar("SELECT active_until FROM members WHERE id = 3").toString(), "2025-02-28");
@@ -1314,7 +1314,7 @@ PRAGMA user_version = 7;
     EXPECT_EQ(db.scalar("SELECT new_status FROM member_status_history WHERE member_id = 3").toString(),
               "non_active");
     EXPECT_EQ(db.scalar("SELECT active_until FROM members WHERE id = 1").toString(), "2031-06-15");
-    EXPECT_EQ(db.userVersion(), Database::kSchemaVersion);
+    EXPECT_EQ(db.userVersion(), Database::Connection::kSchemaVersion);
 
     ASSERT_TRUE(db.database().open()) << "second open() failed";
     EXPECT_EQ(db.scalar("SELECT active_until FROM members WHERE id = 1").toString(), "2031-06-15");
