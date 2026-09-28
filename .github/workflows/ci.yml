@@ -34,7 +34,8 @@ jobs:
         include:
           - name: default
             cmake_args: ""
-          # Proves Core has no upward dependency on the UI. Skips test_vlms_ui.
+          # Proves Core, Database and Repositories have no upward dependency
+          # on the UI. Skips test_vlms_ui.
           - name: core-only
             cmake_args: "-DBUILD_APPS=OFF"
           # The codebase is raw `new` throughout, relying on Qt parent
@@ -62,7 +63,7 @@ jobs:
             libsqlite3-dev \
             libgl1-mesa-dev \
             ninja-build
-        # libsqlite3-dev so find_package(SQLite3) succeeds for Core.
+        # libsqlite3-dev so find_package(SQLite3) succeeds for Database.
         # libgl1-mesa-dev is needed to link Qt6::Gui for the application and
         # UI tests, even for offscreen runs. Core itself no longer links Qt.
 
