@@ -311,7 +311,7 @@ Core::Result<int> MemberRepository::countMembers(const MemberQuery& query) const
 namespace {
 
 Core::Result<std::vector<std::string>> listDistinctTexts(Database::SqliteSession& session,
-                                                   const char* sql)
+                                                         const char* sql)
 {
     auto q = session.prepare(sql);
     if (!q) {
@@ -424,9 +424,9 @@ Core::Status MemberRepository::validateInput(const MemberInput& input) const
 }
 
 Core::Status MemberRepository::recordStatusChange(const std::int64_t memberId,
-                                            const std::string& oldStatus,
-                                            const std::string& newStatus,
-                                            const std::string& note)
+                                                  const std::string& oldStatus,
+                                                  const std::string& newStatus,
+                                                  const std::string& note)
 {
     auto insert = m_session.prepare(R"SQL(
         INSERT INTO member_status_history (
@@ -451,7 +451,7 @@ Core::Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& 
 {
     if (const auto valid = validateInput(input); !valid) {
         return Core::Result<std::int64_t>::fail(valid.error().kind, valid.error().key,
-                                          valid.error().detail);
+                                                valid.error().detail);
     }
 
     std::string status = Core::trim(input.status);
@@ -506,7 +506,7 @@ Core::Result<std::int64_t> MemberRepository::insertMemberRow(const MemberInput& 
             recordStatusChange(memberId, {}, status, "Registered, active until " + activeUntil);
         !history) {
         return Core::Result<std::int64_t>::fail(history.error().kind, history.error().key,
-                                          history.error().detail);
+                                                history.error().detail);
     }
     return Core::Result<std::int64_t>::ok(memberId);
 }
@@ -900,8 +900,8 @@ std::string MemberRepository::resolveImagePath(const std::string& storedPath) co
 }
 
 Core::Status MemberRepository::storeMemberImage(const std::int64_t memberId,
-                                          const std::string& sourceFilePath,
-                                          const ImageSlot slot)
+                                                const std::string& sourceFilePath,
+                                                const ImageSlot slot)
 {
     const char* basename = slot == ImageSlot::Photo ? "photo" : "id";
 
@@ -956,8 +956,8 @@ Core::Status MemberRepository::storeMemberImage(const std::int64_t memberId,
 }
 
 Core::Status MemberRepository::clearMemberImage(const std::int64_t memberId,
-                                          const ImageSlot slot,
-                                          std::vector<std::string>& clearedPaths)
+                                                const ImageSlot slot,
+                                                std::vector<std::string>& clearedPaths)
 {
     std::string stored;
     {
@@ -994,7 +994,7 @@ Core::Status MemberRepository::clearMemberImage(const std::int64_t memberId,
 }
 
 Core::Status MemberRepository::setPhotoImage(const std::int64_t memberId,
-                                       const std::string& sourceFilePath)
+                                             const std::string& sourceFilePath)
 {
     return storeMemberImage(memberId, sourceFilePath, ImageSlot::Photo);
 }

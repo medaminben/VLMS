@@ -15,7 +15,7 @@ MetricsRepository::MetricsRepository(Database::SqliteSession& session)
 }
 
 Core::Result<int> MetricsRepository::scalarCount(const std::string& sql,
-                                           const std::map<std::string, std::string>& binds) const
+                                                 const std::map<std::string, std::string>& binds) const
 {
     auto query = m_session.prepare(sql);
     if (!query) {
@@ -133,7 +133,7 @@ Core::Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
         const auto value = scalarCount(item.sql, item.binds);
         if (!value) {
             return Core::Result<LibraryMetrics>::fail(value.error().kind, value.error().key,
-                                                value.error().detail);
+                                                      value.error().detail);
         }
         *item.dest = value.value();
     }
@@ -141,7 +141,7 @@ Core::Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
     const auto today = fetchPeriodCounts(Window::Today);
     if (!today) {
         return Core::Result<LibraryMetrics>::fail(today.error().kind, today.error().key,
-                                            today.error().detail);
+                                                  today.error().detail);
     }
     metrics.today = today.value();
 
@@ -154,7 +154,7 @@ Core::Result<LibraryMetrics> MetricsRepository::fetchMetrics() const
     const auto month = fetchPeriodCounts(Window::ThisMonth);
     if (!month) {
         return Core::Result<LibraryMetrics>::fail(month.error().kind, month.error().key,
-                                            month.error().detail);
+                                                  month.error().detail);
     }
     metrics.thisMonth = month.value();
 

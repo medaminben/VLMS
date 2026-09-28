@@ -80,8 +80,8 @@ Core::Date dateAtFixedUtcOffset(const std::chrono::system_clock::time_point& utc
     const auto days = std::chrono::floor<std::chrono::days>(shifted);
     const std::chrono::year_month_day ymd{days};
     return Core::Date(static_cast<int>(ymd.year()),
-                static_cast<int>(static_cast<unsigned>(ymd.month())),
-                static_cast<int>(static_cast<unsigned>(ymd.day())));
+                      static_cast<int>(static_cast<unsigned>(ymd.month())),
+                      static_cast<int>(static_cast<unsigned>(ymd.day())));
 }
 
 std::string suiteContext()

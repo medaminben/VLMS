@@ -32,8 +32,8 @@ std::string appendedRemark(const std::string& notes, const std::string& remark)
 }
 
 Core::Status nextCopyNumber(Database::SqliteSession& session,
-                      const std::string& source,
-                      std::int64_t* outNumber)
+                            const std::string& source,
+                            std::int64_t* outNumber)
 {
     auto query = session.prepare(
         "SELECT COALESCE(MAX(CAST(local_id AS INTEGER)), 0) FROM book_copies WHERE source = :source");
@@ -88,8 +88,8 @@ bool numberHeldByArchived(Database::SqliteSession& session, const BookCopyInput&
 }
 
 Core::Status describeCopyConstraint(Database::SqliteSession& session,
-                              const std::string& sqliteError,
-                              const BookCopyInput& copy)
+                                    const std::string& sqliteError,
+                                    const BookCopyInput& copy)
 {
     const bool globalClash = sqliteError.find("global_copy_id") != std::string::npos;
     const bool localClash = sqliteError.find("local_id") != std::string::npos;
@@ -378,7 +378,7 @@ void BookCopyStore::suggestCopyIdentifiers(const std::string& language,
 }
 
 Core::Result<std::vector<std::string>> BookCopyStore::freeLocalNumbers(const std::string& source,
-                                                                 const int limit) const
+                                                                       const int limit) const
 {
     std::vector<std::string> free;
     if (limit <= 0) {
@@ -491,7 +491,7 @@ Core::Status BookCopyStore::restoreCopy(const std::int64_t copyId)
             || !renumber->bind(":global_copy_id", globalCopyIdFor(source, localId))
             || !renumber->bind(":notes",
                                appendedRemark(notes, Core::Strings::t("copy.note.newIndexedAs",
-                                                                "number", localId)))
+                                                                      "number", localId)))
             || !renumber->bind(":id", copyId) || !renumber->exec()) {
             return RepoSql::sqlFailure(m_session.lastError());
         }
@@ -573,8 +573,8 @@ Core::Status BookCopyStore::purgeCopy(const std::int64_t copyId)
 }
 
 Core::Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
-                                            const std::vector<BookCopyInput>& incoming,
-                                            const std::string& bookLanguage)
+                                                  const std::vector<BookCopyInput>& incoming,
+                                                  const std::string& bookLanguage)
 {
     std::string source;
     std::string localId;
@@ -623,7 +623,7 @@ Core::Status BookCopyStore::releaseArchivedNumber(const std::int64_t copyId,
         return RepoSql::sqlFailure(release.error().detail);
     }
     if (!release->bind(":notes", appendedRemark(notes, Core::Strings::t("copy.note.wasIndexedAs",
-                                                                  "number", localId)))
+                                                                        "number", localId)))
         || !release->bind(":id", copyId) || !release->exec()) {
         return RepoSql::sqlFailure(m_session.lastError());
     }
