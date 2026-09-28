@@ -21,7 +21,8 @@
 #include <vector>
 
 using VLMS::Locale;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_FreeNumberPicker : public ::testing::Test {
 protected:

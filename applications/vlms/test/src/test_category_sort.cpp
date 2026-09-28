@@ -6,13 +6,15 @@
 #include <QTableWidget>
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 TEST(test_ui_CategorySort, HeaderClickSortsByCode)
 {
-    VLMS::Test::TestDatabase db;
+    ::Test::TestDatabase db;
     ASSERT_TRUE(db.isValid()) << db.lastError();
     CatalogRepository repository(db.session(), db.resourcesDirectory());
-    ASSERT_GT(VLMS::Test::seedCategory(db, "Z9", "Zebra"), 0);
-    ASSERT_GT(VLMS::Test::seedCategory(db, "A1", "Apple"), 0);
+    ASSERT_GT(::Test::seedCategory(db, "Z9", "Zebra"), 0);
+    ASSERT_GT(::Test::seedCategory(db, "A1", "Apple"), 0);
 
     CategoryManagerDialog dialog(repository);
     auto* table = dialog.findChild<QTableWidget*>();

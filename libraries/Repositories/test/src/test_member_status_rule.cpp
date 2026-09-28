@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+using namespace VLMS;
+
 using VLMS::Date;
 
 /**

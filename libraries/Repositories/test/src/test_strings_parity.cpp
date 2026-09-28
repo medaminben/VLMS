@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+using namespace VLMS;
+
 using VLMS::Locale;
 using VLMS::Strings;
 

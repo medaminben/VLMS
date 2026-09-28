@@ -18,7 +18,8 @@
 #include <vector>
 
 using VLMS::Date;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_core_CirculationRepository : public ::testing::Test {
 protected:

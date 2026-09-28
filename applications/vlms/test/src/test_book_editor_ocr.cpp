@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <memory>
 
-using namespace VLMS::Test;
-namespace Ocr = VLMS::Ocr;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_BookEditorOcr : public ::testing::Test {
 protected:

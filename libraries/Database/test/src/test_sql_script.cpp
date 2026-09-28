@@ -14,7 +14,8 @@
 #include <system_error>
 
 using VLMS::Clock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 /**
  * Database::execSqlScript used to split on a bare ';':

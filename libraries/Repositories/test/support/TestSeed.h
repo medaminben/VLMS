@@ -12,7 +12,7 @@
 #include <string_view>
 #include <vector>
 
-namespace VLMS::Test {
+namespace Test {
 
 struct MemberSeed {
     std::string membershipNumber;
@@ -83,4 +83,4 @@ bool schemaIsIntact(const TestDatabase& db,
                     const std::vector<std::string>& expectedTables,
                     std::string* whatChanged);
 
-}  // namespace VLMS::Test
+}  // namespace Test

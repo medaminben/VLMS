@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace VLMS::Test {
+namespace Test {
 
 MemberInput MemberSeed::toInput() const
 {
@@ -258,4 +258,4 @@ bool schemaIsIntact(const TestDatabase& db,
     return true;
 }
 
-}  // namespace VLMS::Test
+}  // namespace Test

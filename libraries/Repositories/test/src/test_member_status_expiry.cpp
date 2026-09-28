@@ -15,7 +15,8 @@
 
 using VLMS::Date;
 using VLMS::ScopedClock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 /**
  * The one-year rule through the repositories: what a member reads as,

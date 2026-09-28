@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::ClickableLabel;
 
 TEST(test_ui_ClickableLabel, ALeftClickIsReported)

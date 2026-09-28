@@ -27,7 +27,8 @@
 using VLMS::Date;
 using VLMS::Locale;
 using VLMS::ScopedClock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 namespace {
 

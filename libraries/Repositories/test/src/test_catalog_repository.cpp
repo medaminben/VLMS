@@ -16,7 +16,8 @@
 #include <vector>
 
 using VLMS::Date;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_core_CatalogRepository : public ::testing::Test {
 protected:
@@ -759,7 +760,7 @@ TEST_F(test_core_CatalogRepository, SaveNewBookRollsBackWhenCoverFails)
 namespace {
 
 /// A book with one copy, and that copy filled in the way an imported one is.
-std::int64_t seedBookWithACatalogedCopy(VLMS::Test::TestDatabase& db,
+std::int64_t seedBookWithACatalogedCopy(::Test::TestDatabase& db,
                                         CatalogRepository& repository,
                                         int index,
                                         std::int64_t* outCopyId)

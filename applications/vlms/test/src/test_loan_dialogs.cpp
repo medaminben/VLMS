@@ -15,7 +15,8 @@
 #include <gtest/gtest.h>
 
 using VLMS::Clock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 class test_ui_LoanDialogs : public ::testing::Test {
 protected:

@@ -9,7 +9,8 @@
 #include <string>
 #include <vector>
 
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 /// A number is free when no book_copies row holds it -- live or archived.
 /// Computed, never stored: a permanently removed number rejoins the list by

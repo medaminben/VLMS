@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace VLMS;
+
 using VLMS::applicationPalette;
 using VLMS::applicationStylesheet;
 using VLMS::Theme;

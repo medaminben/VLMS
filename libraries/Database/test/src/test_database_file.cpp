@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <string>
 
+using namespace VLMS;
+
 using VLMS::SqliteSession;
 
 namespace fs = std::filesystem;

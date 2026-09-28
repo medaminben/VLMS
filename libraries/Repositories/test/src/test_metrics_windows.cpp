@@ -19,7 +19,8 @@
 using VLMS::Clock;
 using VLMS::Date;
 using VLMS::ScopedClock;
-using namespace VLMS::Test;
+using namespace VLMS;
+using namespace Test;
 
 /**
  * The three metrics windows -- today, this week, this month.

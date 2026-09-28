@@ -10,7 +10,7 @@
 #include <sstream>
 #include <system_error>
 
-namespace VLMS::Test {
+namespace Test {
 
 namespace {
 
@@ -25,7 +25,7 @@ std::filesystem::path makeTempRoot()
     return error ? std::filesystem::path{} : root;
 }
 
-bool bindValue(SqliteStatement& stmt, const std::string& key, const SqlValue& value)
+bool bindValue(VLMS::SqliteStatement& stmt, const std::string& key, const SqlValue& value)
 {
     const std::string name = (!key.empty() && key.front() == ':') ? key : (":" + key);
     if (value.isNull()) {
@@ -37,9 +37,9 @@ bool bindValue(SqliteStatement& stmt, const std::string& key, const SqlValue& va
     return static_cast<bool>(stmt.bind(name, value.toString()));
 }
 
-bool runScript(SqliteSession& session, const std::string& script, std::string* error)
+bool runScript(VLMS::SqliteSession& session, const std::string& script, std::string* error)
 {
-    for (const std::string& statement : SqlText::splitStatements(script)) {
+    for (const std::string& statement : VLMS::SqlText::splitStatements(script)) {
         if (!session.exec(statement)) {
             if (error != nullptr) {
                 *error = session.lastError() + "\nSQL: " + statement.substr(0, 200);
@@ -148,7 +148,7 @@ bool TestDatabase::materialiseFromSqlFile(const std::string& scriptPath)
         return false;
     }
 
-    auto opened = SqliteSession::open(databasePath());
+    auto opened = VLMS::SqliteSession::open(databasePath());
     if (!opened) {
         m_lastError = "Could not open the seed database: " + opened.error().detail;
         return false;
@@ -280,4 +280,4 @@ int TestDatabase::userVersion() const
     return scalar("PRAGMA user_version").toInt();
 }
 
-}  // namespace VLMS::Test
+}  // namespace Test
