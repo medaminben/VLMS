@@ -5,12 +5,12 @@ the dirty-data fixtures the Phase D migration tests need.
 
 These are not snapshots taken from git: `database/schema.sql` has only ever had
 one commit, so the historical shapes are reconstructed from what the
-`migrateXIfNeeded` detectors in `libraries/Database/src/Database.cpp` look for. Each
+`migrateXIfNeeded` detectors in `libraries/Database/src/Connection.cpp` look for. Each
 file is named for the single migration it is meant to trigger and is written so
 that the other three detectors find nothing to do — that is what makes a failure
 in `tst_database_migrations` point at one migration rather than at the chain.
 
-Two consequences of `Database::applySchema()` worth knowing before adding a
+Two consequences of `Connection::applySchema()` worth knowing before adding a
 fixture:
 
 - It gates on the `members` table existing, so any fixture containing `members`
@@ -21,7 +21,7 @@ fixture:
   `legacyDatabaseDoesNotGainTablesItNeverHad`, not something Phase D changes.
 
 `TestDatabase::Mode::FromSqlFile` runs these through a throwaway connection
-before `Database::open()` takes the file over, so a fixture must be plain SQL
+before `Connection::open()` takes the file over, so a fixture must be plain SQL
 with no semicolons inside string literals.
 
 One file is not a database: `dirty_dates.sql` is a fragment of INSERTs applied
