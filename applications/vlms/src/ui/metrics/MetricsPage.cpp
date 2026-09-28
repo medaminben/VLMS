@@ -347,7 +347,7 @@ void MetricsPage::refreshMetrics() {
     }
 
     m_categoriesTable->setRowCount(metrics.topCategories.size());
-    for (int row = 0; row < metrics.topCategories.size(); ++row) {
+    for (int row = 0; row < static_cast<int>(metrics.topCategories.size()); ++row) {
         const MetricsCategoryCount& category = metrics.topCategories.at(row);
         m_categoriesTable->setItem(row, 0, makeCenteredTableItem(qs(category.label)));
         m_categoriesTable->setItem(row, 1, makeCenteredTableItem(category.bookCount));

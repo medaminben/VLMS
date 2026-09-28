@@ -349,7 +349,7 @@ void CirculationPage::refreshLoans() {
     const auto& loans = loansResult.value();
     m_loansTable->setRowCount(loans.size());
 
-    for (int row = 0; row < loans.size(); ++row) {
+    for (int row = 0; row < static_cast<int>(loans.size()); ++row) {
         const LoanRecord& loan = loans.at(row);
 
         auto* memberItem = new QTableWidgetItem(qs(loan.memberName));

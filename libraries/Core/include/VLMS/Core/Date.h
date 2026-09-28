@@ -32,10 +32,10 @@ public:
 
     [[nodiscard]] friend bool operator==(const Date&, const Date&) = default;
     [[nodiscard]] friend bool operator!=(const Date&, const Date&) = default;
-    [[nodiscard]] friend bool operator<(const Date& left, const Date& right);
-    [[nodiscard]] friend bool operator>(const Date& left, const Date& right);
-    [[nodiscard]] friend bool operator<=(const Date& left, const Date& right);
-    [[nodiscard]] friend bool operator>=(const Date& left, const Date& right);
+    friend bool operator<(const Date& left, const Date& right);
+    friend bool operator>(const Date& left, const Date& right);
+    friend bool operator<=(const Date& left, const Date& right);
+    friend bool operator>=(const Date& left, const Date& right);
 
 private:
     int m_year = 0;

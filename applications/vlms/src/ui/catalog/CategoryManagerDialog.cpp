@@ -98,7 +98,7 @@ void CategoryManagerDialog::refresh() {
     const auto& categories = categoriesResult.value();
     m_table->setRowCount(categories.size());
 
-    for (int row = 0; row < categories.size(); ++row) {
+    for (int row = 0; row < static_cast<int>(categories.size()); ++row) {
         const CategoryRecord& category = categories.at(row);
         auto* codeItem = new QTableWidgetItem(qs(category.code));
         codeItem->setData(Qt::UserRole, QVariant::fromValue(category.id));

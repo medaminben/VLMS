@@ -1,3 +1,4 @@
+#include "SqliteSession.h"
 #include "TestDatabase.h"
 
 #include <VLMS/Core/Database.h>
@@ -30,6 +31,33 @@ std::unique_ptr<TestDatabase> openFixture(const std::string& name)
     }
     auto db = std::make_unique<TestDatabase>(TestDatabase::Mode::FromSqlFile, path);
     return db;
+}
+
+/// The vlms.db.bak-* files in `directory`: what open() set aside before it
+/// migrated.
+std::vector<std::filesystem::path> backupsIn(const std::string& directory)
+{
+    std::vector<std::filesystem::path> found;
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (entry.path().filename().string().rfind("vlms.db.bak-", 0) == 0) {
+            found.push_back(entry.path());
+        }
+    }
+    return found;
+}
+
+/// One text value read straight from a database file, outside Database.
+std::string readText(const std::filesystem::path& path, const std::string& sql)
+{
+    auto opened = VLMS::SqliteSession::open(path.string());
+    if (!opened) {
+        return {};
+    }
+    auto stmt = opened.value()->prepare(sql);
+    if (!stmt || !stmt.value().next()) {
+        return {};
+    }
+    return stmt.value().text(0);
 }
 
 std::string simplified(const std::string& text)
@@ -257,6 +285,93 @@ TEST_F(test_core_DatabaseMigrations, BookLanguageMigrationRemovesTheConstraint)
     EXPECT_TRUE(db->exec("INSERT INTO books (title, author_id, publisher_id, language) "
                          "VALUES ('An English Title', 1, 1, 'en')"))
         << db->lastError();
+}
+
+TEST_F(test_core_DatabaseMigrations, BookLanguageMigrationThatFailsLeavesBooksAsTheyWere)
+{
+    // Any view on books makes the final RENAME fail, and it fails after
+    // DROP TABLE books has already run. Statement by statement, that left
+    // only books_new behind: the catalog under a name nothing reads, and a
+    // books_new that blocked every later launch. The rebuild is one
+    // transaction, so the failure has to put everything back.
+    const std::string fixture = fixtureWith("legacy_book_language_check.sql",
+                                            "CREATE VIEW book_titles AS SELECT title FROM books;");
+    ASSERT_FALSE(fixture.empty());
+    const TestDatabase db(TestDatabase::Mode::FromSqlFile, fixture);
+    ASSERT_FALSE(db.isValid());
+
+    const std::filesystem::path file = db.databasePath();
+    EXPECT_EQ(readText(file, "SELECT count(*) FROM books"), "2");
+    EXPECT_EQ(readText(file, "SELECT count(*) FROM book_copies"), "3");
+    EXPECT_EQ(readText(file, "SELECT count(*) FROM sqlite_master WHERE name = 'books_new'"), "0");
+}
+
+// ---------------------------------------------------------------------------
+// The copy set aside before a migration
+// ---------------------------------------------------------------------------
+
+TEST_F(test_core_DatabaseMigrations, AnOlderDatabaseIsCopiedAsideBeforeItIsMigrated)
+{
+    const auto db = openFixture("legacy_book_language_check.sql");
+    ASSERT_TRUE(db != nullptr && db->isValid()) << (db ? db->lastError() : "");
+
+    const auto backups = backupsIn(db->dataDirectory());
+    ASSERT_EQ(backups.size(), 1u);
+
+    // The copy is the database as it was: old version, old constraint, every row.
+    EXPECT_EQ(readText(backups.front(), "PRAGMA user_version"), "0");
+    EXPECT_NE(readText(backups.front(),
+                       "SELECT sql FROM sqlite_master WHERE type='table' AND name='books'")
+                  .find("language IN ('ar', 'fr')"),
+              std::string::npos);
+    EXPECT_EQ(readText(backups.front(), "SELECT count(*) FROM books"), "2");
+}
+
+TEST_F(test_core_DatabaseMigrations, AMigrationThatFailsStillLeavesTheCopy)
+{
+    const std::string fixture = fixtureWith("legacy_book_language_check.sql",
+                                            "CREATE VIEW book_titles AS SELECT title FROM books;");
+    ASSERT_FALSE(fixture.empty());
+    const TestDatabase db(TestDatabase::Mode::FromSqlFile, fixture);
+    ASSERT_FALSE(db.isValid());
+
+    const auto backups = backupsIn(db.dataDirectory());
+    ASSERT_EQ(backups.size(), 1u);
+    EXPECT_EQ(readText(backups.front(), "SELECT count(*) FROM books"), "2");
+}
+
+TEST_F(test_core_DatabaseMigrations, ADatabaseThatStaysOnItsVersionIsCopiedOnce)
+{
+    // Rows that break the date constraints stop the upgrade short of a
+    // version stamp, and the app starts anyway. Every launch then finds the
+    // same old version; a copy per launch would fill the disk.
+    const TestDatabase db(TestDatabase::Mode::FromSqlFile, dirtyFixture());
+    ASSERT_TRUE(db.isValid()) << db.lastError();
+    ASSERT_EQ(db.userVersion(), 0);
+
+    Database again(db.dataDirectory());
+    ASSERT_TRUE(again.open()) << again.lastError();
+
+    EXPECT_EQ(backupsIn(db.dataDirectory()).size(), 1u);
+}
+
+TEST_F(test_core_DatabaseMigrations, ANewDatabaseIsNotCopied)
+{
+    const TestDatabase db;
+    ASSERT_TRUE(db.isValid()) << db.lastError();
+
+    EXPECT_TRUE(backupsIn(db.dataDirectory()).empty());
+}
+
+TEST_F(test_core_DatabaseMigrations, ACurrentDatabaseIsNotCopiedOnTheNextLaunch)
+{
+    const std::string directory = (m_scratch / "current").string();
+    for (int launch = 0; launch < 2; ++launch) {
+        Database database(directory);
+        ASSERT_TRUE(database.open()) << database.lastError();
+    }
+
+    EXPECT_TRUE(backupsIn(directory).empty());
 }
 
 TEST_F(test_core_DatabaseMigrations, BookLanguageMigrationPreservesEveryRowAndItsId)
