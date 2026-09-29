@@ -101,3 +101,29 @@ set_target_properties(test_vlms_workflows PROPERTIES
     AUTORCC ON
 )
 target_sources(test_vlms_workflows PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+
+# Presentation ListSpec adapters (Member/Book/Loan/Archive). Kept separate from
+# the large widget suite so discovery and -L ui stay fast as specs grow.
+build_gtest_executable(
+    NAME test_vlms_presentation
+    SRC
+        src/test_main.cpp
+        src/test_member_list_spec.cpp
+    DEPENDS
+        vlms_testsupport
+        vlms_ui
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Test
+    DISCOVER ON
+    NO_GTEST_MAIN
+    LABELS ui
+)
+target_include_directories(test_vlms_presentation PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+set_target_properties(test_vlms_presentation PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+)
+target_sources(test_vlms_presentation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
