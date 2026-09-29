@@ -1,10 +1,9 @@
 #include "ui/views/ReuseNumberFlow.h"
 
-#include <VLMS/Repositories/CatalogRepository.h>
+#include "ui/presentation/CatalogLookups.h"
 
 #include "QtBridge.h"
 #include "ui/views/UiHelpers.h"
-#include "ui/views/BookEditorDialog.h"
 
 #include <QDialogButtonBox>
 #include <QLabel>
@@ -12,19 +11,17 @@
 #include <QListWidget>
 #include <QVBoxLayout>
 
-#include <algorithm>
-#include <memory>
 
 using VLMS::T;
 using VLMS::qs;
 using VLMS::ss;
 
-ReuseBookChooser::ReuseBookChooser(VLMS::Repositories::CatalogRepository& catalog,
+ReuseBookChooser::ReuseBookChooser(VLMS::CatalogLookups& lookups,
                                    const VLMS::Repositories::BookCopyRecord& archivedCopy,
                                    QWidget* parent)
     : QDialog(parent),
-      m_catalog(catalog),
-      m_source(archivedCopy.source)
+      m_lookups(lookups),
+      m_source(qs(archivedCopy.source))
 {
     setWindowTitle(T("archive.reuse.title"));
     auto* layout = new QVBoxLayout(this);
@@ -55,18 +52,8 @@ void ReuseBookChooser::refreshBooks()
     auto* fresh = new QListWidgetItem(T("archive.reuse.newBook"), m_books);
     fresh->setData(Qt::UserRole, QVariant::fromValue<qint64>(0));
 
-    VLMS::Repositories::BookQuery query;
-    query.search = ss(m_search->text());
-    query.limit = 200;
-    const auto books = m_catalog.listBooks(query);
-    if (!books) {
-        VLMS::showRepoError(this, books.error());
-        return;
-    }
-    for (const VLMS::Repositories::BookRecord& book : books.value()) {
-        if (VLMS::Repositories::CatalogRepository::copySourceForLanguage(book.language) != m_source) {
-            continue;
-        }
+    for (const VLMS::Repositories::BookRecord& book :
+         m_lookups.booksForCopySource(m_search->text(), m_source)) {
         const QString author =
             book.authorName.empty() ? QString() : QStringLiteral(" — ") + qs(book.authorName);
         auto* item = new QListWidgetItem(qs(book.title) + author, m_books);
@@ -80,68 +67,3 @@ qint64 ReuseBookChooser::chosenBookId() const
     const QListWidgetItem* item = m_books->currentItem();
     return item == nullptr ? -1 : item->data(Qt::UserRole).toLongLong();
 }
-
-namespace VLMS {
-
-bool runReuseNumberFlow(QWidget* parent,
-                        Repositories::CatalogRepository& catalog,
-                        CatalogLookups& lookups,
-                        OcrService& ocr,
-                        DialogFactory* dialogs,
-                        const Repositories::BookCopyRecord& archivedCopy)
-{
-    ReuseBookChooser chooser(catalog, archivedCopy, parent);
-    if (chooser.exec() != QDialog::Accepted || chooser.chosenBookId() < 0) {
-        return false;
-    }
-    const qint64 bookId = chooser.chosenBookId();
-
-    std::unique_ptr<BookEditorDialog> editor;
-    if (bookId > 0) {
-        const auto book = catalog.getBook(bookId);
-        if (!book) {
-            showRepoError(parent, book.error());
-            return false;
-        }
-        editor = std::make_unique<BookEditorDialog>(lookups, ocr, book.value(), parent);
-    } else {
-        editor = std::make_unique<BookEditorDialog>(lookups, ocr, parent);
-    }
-    editor->setDialogFactory(dialogs);
-    editor->reserveCopyNumber(archivedCopy);
-    if (editor->exec() != QDialog::Accepted) {
-        return false;
-    }
-
-    Repositories::BookWrite write;
-    write.book = editor->bookInput();
-    write.copies = editor->copyInputs();
-    if (editor->coverChanged()) {
-        write.coverSourcePath = ss(editor->coverSourcePath());
-    }
-    const bool stillHoldsNumber = std::any_of(
-        write.copies.begin(),
-        write.copies.end(),
-        [&archivedCopy](const Repositories::BookCopyInput& copy) {
-            return copy.localId == archivedCopy.localId
-                && copy.globalCopyId == archivedCopy.globalCopyId;
-        });
-    if (stillHoldsNumber) {
-        write.releaseFromCopyId = archivedCopy.id;
-    }
-
-    // The release lives inside the save's own transaction: a refused save or
-    // an SQL error leaves the archived copy holding its number.
-    if (bookId > 0) {
-        if (const auto saved = catalog.saveExistingBook(bookId, write); !saved) {
-            showRepoError(parent, saved.error());
-            return false;
-        }
-    } else if (const auto created = catalog.saveNewBook(write); !created) {
-        showRepoError(parent, created.error());
-        return false;
-    }
-    return true;
-}
-
-}  // namespace VLMS

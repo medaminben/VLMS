@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
@@ -230,7 +231,8 @@ protected:
         QObject::connect(m_loanFilter, &QListWidget::itemSelectionChanged, m_page.get(),
                          [this]() { applyFacets(); });
 
-        m_memberFilters = new MemberFacetFilters(*m_memberRepo, Repositories::ArchiveScope::Any,
+        m_memberFacets = std::make_unique<RepositoryMemberFacets>(*m_memberRepo);
+        m_memberFilters = new MemberFacetFilters(*m_memberFacets, Repositories::ArchiveScope::Any,
                                                  m_page->filterColumn());
         m_memberFilters->useLoanYears([this]() {
             return m_circulation->listLoanYears(Repositories::ArchiveScope::Live);
@@ -286,6 +288,7 @@ protected:
     std::unique_ptr<LoanListSpec> m_spec;
     std::unique_ptr<ListPage> m_page;
     QListWidget* m_loanFilter = nullptr;
+    std::unique_ptr<RepositoryMemberFacets> m_memberFacets;
     MemberFacetFilters* m_memberFilters = nullptr;
     std::int64_t m_memberId = 0;
     std::int64_t m_openId = 0;

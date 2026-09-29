@@ -24,6 +24,8 @@ public:
                                 QString* outGlobalCopyId) const override;
     std::vector<Repositories::BookCopyRecord> copiesForBook(std::int64_t bookId) const override;
     QString resolveCoverPath(const QString& storedPath) const override;
+    std::vector<Repositories::BookRecord> booksForCopySource(const QString& search,
+                                                             const QString& source) const override;
 
 private:
     Repositories::CatalogRepository& m_catalog;

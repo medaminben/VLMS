@@ -31,6 +31,10 @@ public:
     /// Live copies for a book (empty on error / unknown id).
     virtual std::vector<Repositories::BookCopyRecord> copiesForBook(std::int64_t bookId) const = 0;
     virtual QString resolveCoverPath(const QString& storedPath) const = 0;
+    /// Live books whose language numbers copies in `source` (Archive -> Reuse
+    /// number), first 200 matching `search`. Empty on error.
+    virtual std::vector<Repositories::BookRecord> booksForCopySource(const QString& search,
+                                                                     const QString& source) const = 0;
 };
 
 }  // namespace VLMS

@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
@@ -127,6 +128,7 @@ struct CirculationListHarness {
     LoanWorkflowHarness workflows;
     std::unique_ptr<LoanListSpec> spec;
     std::unique_ptr<ListPage> page;
+    std::unique_ptr<RepositoryMemberFacets> memberFacets;
     MemberFacetFilters* memberFilters = nullptr;
 
     explicit CirculationListHarness(Repositories::CirculationRepository& circulation,
@@ -136,7 +138,8 @@ struct CirculationListHarness {
     {
         spec = std::make_unique<LoanListSpec>(circulation, catalog, members, *workflows.loans);
         page = std::make_unique<ListPage>(spec.get(), workflows.events, circulationConfig());
-        memberFilters = new MemberFacetFilters(members, Repositories::ArchiveScope::Any,
+        memberFacets = std::make_unique<RepositoryMemberFacets>(members);
+        memberFilters = new MemberFacetFilters(*memberFacets, Repositories::ArchiveScope::Any,
                                                page->filterColumn());
         memberFilters->useLoanYears([&circulation]() {
             return circulation.listLoanYears(Repositories::ArchiveScope::Live);
@@ -165,7 +168,9 @@ struct ArchiveListHarness {
     std::unique_ptr<ArchivedLoanSpec> loans;
     std::unique_ptr<ListPage> page;
     QListWidget* typeList = nullptr;
+    std::unique_ptr<RepositoryMemberFacets> memberFacets;
     MemberFacetFilters* memberFilters = nullptr;
+    std::unique_ptr<RepositoryBookFacets> bookFacets;
     BookFacetFilters* bookFilters = nullptr;
     ArchiveType type = ArchiveType::Members;
 
@@ -192,10 +197,12 @@ struct ArchiveListHarness {
         typeList->item(0)->setSelected(true);
         page->addFilterWidget(typeList, 0);
 
-        memberFilters = new MemberFacetFilters(memberRepo, Repositories::ArchiveScope::Archived,
+        memberFacets = std::make_unique<RepositoryMemberFacets>(memberRepo);
+        memberFilters = new MemberFacetFilters(*memberFacets, Repositories::ArchiveScope::Archived,
                                                page->filterColumn());
         page->addFilterWidget(memberFilters, 1);
-        bookFilters = new BookFacetFilters(catalog, Repositories::ArchiveScope::Archived,
+        bookFacets = std::make_unique<RepositoryBookFacets>(catalog);
+        bookFilters = new BookFacetFilters(*bookFacets, Repositories::ArchiveScope::Archived,
                                            page->filterColumn());
         page->addFilterWidget(bookFilters, 1);
 
@@ -363,7 +370,8 @@ protected:
 
 TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 {
-    MemberFacetFilters filters(*m_members, Repositories::ArchiveScope::Live);
+    RepositoryMemberFacets source(*m_members);
+    MemberFacetFilters filters(source, Repositories::ArchiveScope::Live);
     filters.refresh();
     EXPECT_TRUE(filters.findChildren<QLabel*>().isEmpty())
         << "each list's own All row names it";
@@ -603,7 +611,8 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
 
 TEST_F(test_ui_PageFacets, MembersYearIsStillTheYearOfRegistration)
 {
-    MemberFacetFilters filters(*m_members, Repositories::ArchiveScope::Live);
+    RepositoryMemberFacets source(*m_members);
+    MemberFacetFilters filters(source, Repositories::ArchiveScope::Live);
     filters.refresh();
     auto* years = named<QListWidget>(&filters, "yearFilter");
     ASSERT_NE(years, nullptr);

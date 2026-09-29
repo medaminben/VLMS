@@ -1,15 +1,11 @@
 #include "ui/workflows/ArchiveWorkflow.h"
 
-#include "ui/views/BulkAction.h"
-#include "ui/views/LoanHistoryDialog.h"
-#include "ui/views/UiHelpers.h"
-#include "ui/views/ReuseNumberFlow.h"
-#include "ui/presentation/LoanListSpec.h"
+#include "QtBridge.h"
+#include "ui/workflows/BookWorkflow.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
-#include "ui/workflows/LoanWorkflow.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -17,6 +13,8 @@
 #include <VLMS/Repositories/MemberRepository.h>
 
 #include <QWidget>
+
+#include <algorithm>
 
 using VLMS::T;
 
@@ -143,30 +141,22 @@ Core::Status purgeOne(Repositories::MemberRepository& members,
 ArchiveWorkflow::ArchiveWorkflow(Repositories::MemberRepository& members,
                                  Repositories::CatalogRepository& catalog,
                                  Repositories::CirculationRepository& circulation,
-                                 CatalogLookups& catalogLookups,
-                                 OcrService& ocr,
                                  DialogFactory& dialogs,
                                  ErrorPresenter& errors,
                                  DataEvents& events,
-                                 Navigator& navigator,
                                  BulkRunner& bulk,
                                  LoanListSpec& loanHistorySpec,
                                  LoanWorkflow& loans)
     : m_members(members)
     , m_catalog(catalog)
     , m_circulation(circulation)
-    , m_catalogLookups(catalogLookups)
-    , m_ocr(ocr)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
-    , m_navigator(navigator)
     , m_bulk(bulk)
     , m_loanHistorySpec(loanHistorySpec)
     , m_loanWorkflow(loans)
 {
-    (void)m_dialogs;
-    (void)m_navigator;
 }
 
 Core::Status ArchiveWorkflow::restore(QWidget* parent,
@@ -180,7 +170,7 @@ Core::Status ArchiveWorkflow::restore(QWidget* parent,
 
     const QList<BulkRow> rows = toBulkRows(ids, labels);
     if (rows.size() == 1) {
-        if (!askYesNo(parent, T("archive.restore"), T("archive.restoreConfirm"))) {
+        if (!m_dialogs.askYesNo(parent, T("archive.restore"), T("archive.restoreConfirm"))) {
             return Core::Status::ok();
         }
         const qint64 id = rows.first().id;
@@ -219,7 +209,7 @@ Core::Status ArchiveWorkflow::purge(QWidget* parent,
 
     const QList<BulkRow> rows = toBulkRows(ids, labels);
     if (rows.size() == 1) {
-        if (!askYesNo(parent, T("archive.purge"), T(purgeConfirmKey(type)))) {
+        if (!m_dialogs.askYesNo(parent, T("archive.purge"), T(purgeConfirmKey(type)))) {
             return Core::Status::ok();
         }
         const qint64 id = rows.first().id;
@@ -283,10 +273,52 @@ Core::Status ArchiveWorkflow::reuseNumber(QWidget* parent, qint64 copyId)
         return Core::Status::ok();
     }
 
-    if (!runReuseNumberFlow(parent, m_catalog, m_catalogLookups, m_ocr, &m_dialogs, found)) {
+    const auto target = m_dialogs.chooseReuseTarget(parent, found);
+    if (!target || *target < 0) {
         return Core::Status::ok();
     }
-    m_events.emitChanged(Entity::Copies | Entity::Books, {copyId});
+    const qint64 bookId = *target;
+
+    BookEditRequest request;
+    request.reserveNumberFrom = found;
+    if (bookId > 0) {
+        const auto book = m_catalog.getBook(bookId);
+        if (!book) {
+            m_errors.show(parent, book.error());
+            return Core::asStatus(book);
+        }
+        request.book = book.value();
+    }
+    const auto form = m_dialogs.editBook(parent, request);
+    if (!form) {
+        return Core::Status::ok();
+    }
+
+    Repositories::BookWrite write = BookWorkflow::writeFor(*form);
+    const bool stillHoldsNumber = std::any_of(
+        write.copies.begin(), write.copies.end(), [&found](const Repositories::BookCopyInput& copy) {
+            return copy.localId == found.localId && copy.globalCopyId == found.globalCopyId;
+        });
+    if (stillHoldsNumber) {
+        write.releaseFromCopyId = found.id;
+    }
+
+    // The release lives inside the save's own transaction: a refused save or
+    // an SQL error leaves the archived copy holding its number.
+    Core::Status saved = Core::Status::ok();
+    qint64 savedBookId = bookId;
+    if (bookId > 0) {
+        saved = m_catalog.saveExistingBook(bookId, write);
+    } else {
+        const auto created = m_catalog.saveNewBook(write);
+        saved = Core::asStatus(created);
+        savedBookId = created ? created.value() : 0;
+    }
+    if (!saved) {
+        m_errors.show(parent, saved.error());
+        return saved;
+    }
+    m_events.emitChanged(Entity::Copies | Entity::Books, {copyId, savedBookId});
     return Core::Status::ok();
 }
 
@@ -295,27 +327,30 @@ Core::Status ArchiveWorkflow::showLoans(QWidget* parent,
                                         qint64 id,
                                         const QString& displayName)
 {
-    if (id <= 0 || type == ArchiveType::Loans) {
+    if (id <= 0) {
         return Core::Status::ok();
     }
 
-    LoanHistoryDialog::Kind kind = LoanHistoryDialog::Kind::ArchivedMember;
+    LoanHistoryRequest request;
     switch (type) {
     case ArchiveType::Members:
-        kind = LoanHistoryDialog::Kind::ArchivedMember;
+        request.kind = LoanHistoryKind::ArchivedMember;
         break;
     case ArchiveType::Books:
-        kind = LoanHistoryDialog::Kind::ArchivedBook;
+        request.kind = LoanHistoryKind::ArchivedBook;
         break;
     case ArchiveType::Copies:
-        kind = LoanHistoryDialog::Kind::ArchivedCopy;
+        request.kind = LoanHistoryKind::ArchivedCopy;
         break;
     case ArchiveType::Loans:
         return Core::Status::ok();
     }
-    LoanHistoryDialog dialog(m_loanHistorySpec, m_loanWorkflow, m_events, kind, id, displayName,
-                             Repositories::ArchiveScope::Any, parent);
-    dialog.exec();
+    request.id = id;
+    request.title = displayName;
+    request.spec = &m_loanHistorySpec;
+    request.loans = &m_loanWorkflow;
+    request.events = &m_events;
+    m_dialogs.showLoanHistory(parent, request);
     return Core::Status::ok();
 }
 

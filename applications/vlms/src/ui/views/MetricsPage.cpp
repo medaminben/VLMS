@@ -94,9 +94,9 @@ void configureMetricTable(QTableWidget* table)
 
 }  // namespace
 
-MetricsPage::MetricsPage(VLMS::Repositories::MetricsRepository& repository, QWidget* parent)
+MetricsPage::MetricsPage(VLMS::MetricsSource& source, QWidget* parent)
     : QWidget(parent),
-      m_repository(repository) {
+      m_source(source) {
     buildUi();
     applyLabels();
     refreshMetrics();
@@ -292,7 +292,7 @@ void MetricsPage::setMetricValue(QLabel* label, const int value) {
 }
 
 void MetricsPage::refreshMetrics() {
-    const auto metricsResult = m_repository.fetchMetrics();
+    const auto metricsResult = m_source.fetch();
     if (!metricsResult) {
         VLMS::showRepoError(this, metricsResult.error());
         return;

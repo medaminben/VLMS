@@ -1,35 +1,37 @@
 #pragma once
 
+#include "ui/workflows/BulkFlow.h"
+
 #include <VLMS/Core/Result.h>
 
 #include <QList>
-#include <QString>
 
 #include <functional>
 
 class QWidget;
 
-struct BulkRow {
-    qint64 id = 0;
-    int row = -1;
-    QString label;
-};
-
-/// Words already translated. The shared prompt templates live in Strings.cpp
-/// (`bulk.confirm`, `bulk.confirmOne`, `bulk.blockedIntro`, `bulk.andMore`, `bulk.confirmRest`,
-/// `bulk.summary`).
-struct BulkActionTexts {
-    QString title;
-    QString verb;
-    QString passive;
-    QString noun;
-};
-
-/// Sorts `rows` into passes and blocked, asks, then runs `act` on the passes.
-/// Returns how many calls to `act` succeeded. Zero means the caller should
-/// leave the ticks alone: the librarian said no, or every row was blocked.
+/// runBulkFlow over Qt message boxes and a progress dialog, for widgets that
+/// act on rows in their own memory (the book editor's copies table).
+/// Returns how many calls to `act` succeeded.
 int runBulkAction(QWidget* parent,
                   const BulkActionTexts& texts,
                   const QList<BulkRow>& rows,
                   const std::function<VLMS::Core::Status(const BulkRow&)>& check,
                   const std::function<VLMS::Core::Status(const BulkRow&)>& act);
+
+namespace VLMS {
+
+/// Qt message boxes and progress dialog for a bulk action.
+class QtBulkUi final : public BulkUi {
+public:
+    explicit QtBulkUi(QWidget* parent) : m_parent(parent) {}
+
+    bool confirm(const QString& title, const QString& text) override;
+    void inform(const QString& title, const QString& text) override;
+    std::unique_ptr<BulkProgress> startProgress(const QString& title, int total) override;
+
+private:
+    QWidget* m_parent = nullptr;
+};
+
+}  // namespace VLMS

@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
@@ -87,7 +88,8 @@ TEST_F(test_ui_MetricsActivitySort, RefreshKeepsCountsOnSortedPeriodRows)
     const Repositories::LibraryMetrics expected = VLMS_UNWRAP(m_metrics->fetchMetrics());
     ASSERT_GT(expected.thisWeek.checkouts, expected.today.checkouts);
 
-    MetricsPage page(*m_metrics);
+    RepositoryMetrics source(*m_metrics);
+    MetricsPage page(source);
     auto* table = page.findChild<QTableWidget*>(QStringLiteral("metricsActivityTable"));
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 3);

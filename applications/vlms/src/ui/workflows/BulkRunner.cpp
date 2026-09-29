@@ -2,17 +2,38 @@
 
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
-#include "ui/workflows/ErrorPresenter.h"
 
 namespace VLMS {
+namespace {
 
-BulkRunner::BulkRunner(DialogFactory& dialogs, ErrorPresenter& errors, DataEvents& events)
+class FactoryBulkUi final : public BulkUi {
+public:
+    FactoryBulkUi(DialogFactory& dialogs, QWidget* parent) : m_dialogs(dialogs), m_parent(parent) {}
+
+    bool confirm(const QString& title, const QString& text) override
+    {
+        return m_dialogs.confirmBulk(m_parent, BulkPlan{title, text});
+    }
+    void inform(const QString& title, const QString& text) override
+    {
+        m_dialogs.inform(m_parent, title, text);
+    }
+    std::unique_ptr<BulkProgress> startProgress(const QString& title, int total) override
+    {
+        return m_dialogs.startProgress(m_parent, title, total);
+    }
+
+private:
+    DialogFactory& m_dialogs;
+    QWidget* m_parent = nullptr;
+};
+
+}  // namespace
+
+BulkRunner::BulkRunner(DialogFactory& dialogs, DataEvents& events)
     : m_dialogs(dialogs)
-    , m_errors(errors)
     , m_events(events)
 {
-    (void)m_dialogs;
-    (void)m_errors;
 }
 
 int BulkRunner::run(QWidget* parent,
@@ -22,22 +43,12 @@ int BulkRunner::run(QWidget* parent,
                     const std::function<Core::Status(const BulkRow&)>& act,
                     EntitySet emitWhat)
 {
-    // Phase 2: reuse today's runBulkAction (own Yes/No confirm). Phase 5 moves
-    // the confirm prompt onto DialogFactory::confirmBulk.
-    QList<qint64> succeeded;
-    const int done = runBulkAction(
-        parent, texts, rows, check,
-        [&](const BulkRow& row) -> Core::Status {
-            const Core::Status status = act(row);
-            if (status) {
-                succeeded.append(row.id);
-            }
-            return status;
-        });
-    if (done > 0 && emitWhat != EntitySet{}) {
-        m_events.emitChanged(emitWhat, succeeded);
+    FactoryBulkUi ui(m_dialogs, parent);
+    const BulkOutcome outcome = runBulkFlow(ui, texts, rows, check, act);
+    if (outcome.done > 0 && emitWhat != EntitySet{}) {
+        m_events.emitChanged(emitWhat, outcome.succeeded);
     }
-    return done;
+    return outcome.done;
 }
 
 }  // namespace VLMS

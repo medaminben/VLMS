@@ -227,7 +227,7 @@ TEST_F(test_ui_ArchiveCatalog, ChooserOffersANewBookAndOnlyBooksOfTheSameSource)
     Repositories::BookCopyRecord copy;
     copy.source = "arabic";
     copy.localId = "7";
-    ReuseBookChooser chooser(*m_catalog, copy);
+    ReuseBookChooser chooser(*m_lookups, copy);
     auto* books = chooser.findChild<QListWidget*>(QStringLiteral("reuseBooks"));
     ASSERT_NE(books, nullptr);
     ASSERT_EQ(books->count(), 2);
@@ -242,8 +242,10 @@ TEST_F(test_ui_ArchiveCatalog, CancellingReuseLeavesTheArchivedNumberInPlace)
     const Repositories::BookCopyRecord copy = archivedCopy(copyIdsOf(*m_db, bookId).front());
     ASSERT_FALSE(copy.localId.empty());
 
+    ArchiveWorkflowHarness workflows(*m_members, *m_catalog, *m_circulation);
     rejectNextDialog();
-    EXPECT_FALSE(VLMS::runReuseNumberFlow(nullptr, *m_catalog, *m_lookups, *m_ocr, nullptr, copy));
+    EXPECT_TRUE(workflows.archive->reuseNumber(nullptr, copy.id));
+    EXPECT_TRUE(workflows.errors.calls.empty());
     EXPECT_EQ(m_db->scalar("SELECT local_id FROM book_copies WHERE id = " + std::to_string(copy.id))
                   .toString(),
               copy.localId);

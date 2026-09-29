@@ -146,8 +146,10 @@ Application::Application(int& argc, char** argv)
     m_memberLookups = std::make_unique<VLMS::QtMemberLookups>(*m_memberRepository);
     m_circulationLookups = std::make_unique<VLMS::QtCirculationLookups>(*m_circulationRepository);
     m_ocr = std::make_unique<VLMS::OcrService>();
-    m_dialogs = std::make_unique<VLMS::QtDialogFactory>(*m_catalogRepository,
-                                                        *m_catalogLookups,
+    m_bookFacets = std::make_unique<VLMS::RepositoryBookFacets>(*m_catalogRepository);
+    m_memberFacets = std::make_unique<VLMS::RepositoryMemberFacets>(*m_memberRepository);
+    m_metricsSource = std::make_unique<VLMS::RepositoryMetrics>(*m_metricsRepository);
+    m_dialogs = std::make_unique<VLMS::QtDialogFactory>(*m_catalogLookups,
                                                         *m_memberLookups,
                                                         *m_circulationLookups,
                                                         *m_ocr);
@@ -158,6 +160,9 @@ Application::~Application() {
     // then repositories, then Connection. DataEvents and ErrorPresenter
     // outlive the window.
     m_dialogs.reset();
+    m_metricsSource.reset();
+    m_memberFacets.reset();
+    m_bookFacets.reset();
     m_ocr.reset();
     m_circulationLookups.reset();
     m_memberLookups.reset();

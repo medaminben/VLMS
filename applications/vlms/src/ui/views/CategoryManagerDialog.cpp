@@ -1,5 +1,7 @@
 #include "ui/views/CategoryManagerDialog.h"
 
+#include "ui/workflows/CategoryEditor.h"
+
 #include <VLMS/Core/Strings.h>
 #include "ui/views/WidgetTableSort.h"
 #include "ui/views/UiHelpers.h"
@@ -26,9 +28,9 @@ namespace {
 
 }  // namespace
 
-CategoryManagerDialog::CategoryManagerDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
+CategoryManagerDialog::CategoryManagerDialog(VLMS::CategoryEditor& editor, QWidget* parent)
     : QDialog(parent),
-      m_repository(repository) {
+      m_editor(editor) {
     resize(640, 420);
     buildUi();
     applyLabels();
@@ -97,12 +99,7 @@ void CategoryManagerDialog::applyLabels()
 }
 
 void CategoryManagerDialog::refresh() {
-    const auto categoriesResult = m_repository.listAllCategories();
-    if (!categoriesResult) {
-        VLMS::showRepoError(this, categoriesResult.error());
-        return;
-    }
-    const auto& categories = categoriesResult.value();
+    const auto categories = m_editor.categories();
     m_table->setRowCount(categories.size());
 
     for (int row = 0; row < static_cast<int>(categories.size()); ++row) {
@@ -147,8 +144,7 @@ void CategoryManagerDialog::addCategory() {
         return;
     }
 
-    if (const auto created = m_repository.createCategory(ss(code), ss(label)); !created) {
-        VLMS::showRepoError(this, created.error());
+    if (!m_editor.create(this, code, label)) {
         return;
     }
 
@@ -190,8 +186,7 @@ void CategoryManagerDialog::editCategory() {
         return;
     }
 
-    if (const auto updated = m_repository.updateCategory(categoryId, ss(code), ss(label)); !updated) {
-        VLMS::showRepoError(this, updated.error());
+    if (!m_editor.update(this, categoryId, code, label)) {
         return;
     }
 
@@ -214,8 +209,7 @@ void CategoryManagerDialog::deleteCategory() {
         return;
     }
 
-    if (const auto removed = m_repository.deleteCategory(categoryId); !removed) {
-        VLMS::showRepoError(this, removed.error());
+    if (!m_editor.remove(this, categoryId)) {
         return;
     }
 

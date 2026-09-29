@@ -253,27 +253,22 @@ void MainWindow::buildUi() {
 
     m_stack = new QStackedWidget(mainHost);
     if (m_app.isDatabaseReady()) {
-        m_bulk = std::make_unique<VLMS::BulkRunner>(
-            *m_app.dialogs(), m_app.errors(), m_app.dataEvents());
+        m_bulk = std::make_unique<VLMS::BulkRunner>(*m_app.dialogs(), m_app.dataEvents());
         m_loanWorkflow = std::make_unique<VLMS::LoanWorkflow>(
-            m_app.circulation(), m_app.circulationLookups(), *m_app.dialogs(), m_app.errors(),
-            m_app.dataEvents(), *this, *m_bulk);
+            m_app.circulation(), *m_app.dialogs(), m_app.errors(), m_app.dataEvents(), *this,
+            *m_bulk);
         // Dedicated LoanListSpec for history dialogs — never shares QueryState with Circulation.
         m_loanHistorySpec = std::make_unique<VLMS::LoanListSpec>(
             m_app.circulation(), m_app.catalog(), m_app.members(), *m_loanWorkflow);
         m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
-            m_app.catalog(), m_app.circulation(), m_app.catalogLookups(), m_app.ocr(),
-            *m_app.dialogs(), m_app.errors(),
-            m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow, *m_loanHistorySpec);
+            m_app.catalog(), *m_app.dialogs(), m_app.errors(), m_app.dataEvents(), *m_bulk,
+            *m_loanWorkflow, *m_loanHistorySpec);
         m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
-            m_app.members(), m_app.circulation(), m_app.memberLookups(), *m_app.dialogs(),
-            m_app.errors(), m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow,
-            *m_loanHistorySpec);
+            m_app.members(), *m_app.dialogs(), m_app.errors(), m_app.dataEvents(), *this,
+            *m_bulk, *m_loanWorkflow, *m_loanHistorySpec);
         m_archiveWorkflow = std::make_unique<VLMS::ArchiveWorkflow>(
-            m_app.members(), m_app.catalog(), m_app.circulation(),
-            m_app.catalogLookups(), m_app.ocr(), *m_app.dialogs(),
-            m_app.errors(), m_app.dataEvents(), *this, *m_bulk, *m_loanHistorySpec,
-            *m_loanWorkflow);
+            m_app.members(), m_app.catalog(), m_app.circulation(), *m_app.dialogs(),
+            m_app.errors(), m_app.dataEvents(), *m_bulk, *m_loanHistorySpec, *m_loanWorkflow);
         m_memberListSpec =
             std::make_unique<VLMS::MemberListSpec>(m_app.members(), *m_memberWorkflow);
         VLMS::ListPage::Config membersCfg;
@@ -285,7 +280,7 @@ void MainWindow::buildUi() {
         m_membersPage = new VLMS::ListPage(m_memberListSpec.get(), m_app.dataEvents(),
                                            membersCfg, m_stack);
         m_memberFilters = new VLMS::MemberFacetFilters(
-            m_app.members(), VLMS::Repositories::ArchiveScope::Live,
+            m_app.memberFacets(), VLMS::Repositories::ArchiveScope::Live,
             m_membersPage->filterColumn());
         m_memberFilters->refresh();
         m_membersPage->addFilterWidget(m_memberFilters, 1);
@@ -313,7 +308,7 @@ void MainWindow::buildUi() {
         m_catalogPage = new VLMS::ListPage(m_bookListSpec.get(), m_app.dataEvents(),
                                            catalogCfg, m_stack);
         m_bookFilters = new VLMS::BookFacetFilters(
-            m_app.catalog(), VLMS::Repositories::ArchiveScope::Live,
+            m_app.bookFacets(), VLMS::Repositories::ArchiveScope::Live,
             m_catalogPage->filterColumn());
         m_bookFilters->refresh();
         m_catalogPage->addFilterWidget(m_bookFilters, 1);
@@ -353,7 +348,7 @@ void MainWindow::buildUi() {
         // Loans of members since archived are still listed here, so years and
         // cities include them. The year is the year of the loan, not registration.
         m_loanMemberFilters = new VLMS::MemberFacetFilters(
-            m_app.members(), VLMS::Repositories::ArchiveScope::Any,
+            m_app.memberFacets(), VLMS::Repositories::ArchiveScope::Any,
             m_circulationPage->filterColumn());
         m_loanMemberFilters->useLoanYears([this]() {
             return m_app.circulation().listLoanYears(VLMS::Repositories::ArchiveScope::Live);
@@ -395,14 +390,14 @@ void MainWindow::buildUi() {
                 &MainWindow::onArchiveTypeChanged);
         m_archivePage->addFilterWidget(m_archiveTypeList, 0);
         m_archiveMemberFilters = new VLMS::MemberFacetFilters(
-            m_app.members(), VLMS::Repositories::ArchiveScope::Archived,
+            m_app.memberFacets(), VLMS::Repositories::ArchiveScope::Archived,
             m_archivePage->filterColumn());
         m_archivePage->addFilterWidget(m_archiveMemberFilters, 1);
         connect(m_archiveMemberFilters, &VLMS::MemberFacetFilters::changed, this, [this]() {
             applyArchiveFacets();
         });
         m_archiveBookFilters = new VLMS::BookFacetFilters(
-            m_app.catalog(), VLMS::Repositories::ArchiveScope::Archived,
+            m_app.bookFacets(), VLMS::Repositories::ArchiveScope::Archived,
             m_archivePage->filterColumn());
         m_archivePage->addFilterWidget(m_archiveBookFilters, 1);
         connect(m_archiveBookFilters, &VLMS::BookFacetFilters::changed, this, [this]() {
@@ -412,7 +407,7 @@ void MainWindow::buildUi() {
         refreshArchiveTypeList();
         applyArchiveFilterVisibility();
         applyArchiveFacets();
-        m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
+        m_metricsPage = new MetricsPage(m_app.metricsSource(), m_stack);
     } else {
         m_membersPage = nullptr;
         m_memberFilters = nullptr;

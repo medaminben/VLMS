@@ -1,166 +1,177 @@
-#include "ModalTest.h"
-#include "TestDatabase.h"
-#include "TestSeed.h"
-#include "UiTest.h"
 #include "WorkflowTestSupport.h"
 
-#include <VLMS/Core/Locale.h>
-#include <VLMS/Core/Strings.h>
-#include <VLMS/Repositories/CirculationRepository.h>
-#include <VLMS/Repositories/CatalogRepository.h>
-#include <VLMS/Repositories/MemberRepository.h>
-
-#include <QApplication>
 #include <QDate>
-#include <QDialog>
-#include <QSignalSpy>
-#include <QTimer>
-#include <QWidget>
-
-#include <gtest/gtest.h>
-
-#include <memory>
 
 using namespace Test;
 
-namespace {
-
-void rejectNextDialog()
-{
-    auto* poll = new QTimer;
-    poll->setInterval(10);
-    QObject::connect(poll, &QTimer::timeout, [poll] {
-        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
-        if (dialog == nullptr || !dialog->isVisible()) {
-            return;
-        }
-        poll->stop();
-        poll->deleteLater();
-        dialog->reject();
-    });
-    poll->start();
-}
-
-}  // namespace
-
-class MemberWorkflow : public ::testing::Test {
+class MemberWorkflow : public WorkflowFixture {
 protected:
-    static void SetUpTestSuite() { VLMS::Core::Locale::setCode("en"); }
-    static void TearDownTestSuite() { VLMS::Core::Locale::setCode(VLMS::Core::Locale::kDefaultCode); }
-
-    void SetUp() override
+    VLMS::MemberForm memberForm(int index) const
     {
-        m_db = std::make_unique<TestDatabase>();
-        ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_members =
-            std::make_unique<VLMS::Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_circulation = std::make_unique<VLMS::Repositories::CirculationRepository>(m_db->session());
-        m_catalog = std::make_unique<VLMS::Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
-        m_harness = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
-        m_changed = std::make_unique<QSignalSpy>(&m_harness->events, &VLMS::DataEvents::changed);
+        VLMS::MemberForm form;
+        form.member = uniqueMemberSeed(index).toInput();
+        return form;
     }
 
-    void TearDown() override
+    std::string memberColumn(qint64 memberId, const std::string& column) const
     {
-        m_changed.reset();
-        m_harness.reset();
-        m_circulation.reset();
-        m_catalog.reset();
-        m_members.reset();
-        m_db.reset();
+        return scalarText("SELECT " + column + " FROM members WHERE id = " + std::to_string(memberId));
     }
 
-    qint64 seedMemberWithOpenLoan()
+    bool archived(qint64 memberId) const
     {
-        MemberSeed member = uniqueMemberSeed(1);
-        member.status = VLMS::Repositories::MemberStatus::kActive;
-        const qint64 memberId = seedMember(*m_db, member);
-        const qint64 bookId = seedBook(*m_db, uniqueBookSeed(1));
+        return !scalarIsNull("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId));
+    }
+
+    void lendOneBookTo(qint64 memberId, int index)
+    {
         const QDate today = QDate::currentDate();
-        EXPECT_GT(rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
-                                today.addDays(-10).toString(Qt::ISODate).toStdString(),
-                                today.addDays(4).toString(Qt::ISODate).toStdString()),
+        ASSERT_GT(rawInsertLoan(*db, memberId,
+                                copyIdsOf(*db, seedBook(*db, uniqueBookSeed(index))).front(),
+                                today.addDays(-2).toString(Qt::ISODate).toStdString(),
+                                today.addDays(12).toString(Qt::ISODate).toStdString()),
                   0);
-        return memberId;
     }
-
-    qint64 seedArchivableMember()
-    {
-        MemberSeed member = uniqueMemberSeed(2);
-        member.status = VLMS::Repositories::MemberStatus::kActive;
-        return seedMember(*m_db, member);
-    }
-
-    std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<VLMS::Repositories::CatalogRepository> m_catalog;
-    std::unique_ptr<VLMS::Repositories::MemberRepository> m_members;
-    std::unique_ptr<VLMS::Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<MemberWorkflowHarness> m_harness;
-    std::unique_ptr<QSignalSpy> m_changed;
-    QWidget m_parent;
 };
 
 TEST_F(MemberWorkflow, AddCancelEmitsNothing)
 {
-    rejectNextDialog();
-    const auto status = m_harness->members->add(&m_parent);
+    const auto status = members->add(&parent);
 
     EXPECT_TRUE(status);
-    EXPECT_EQ(m_changed->count(), 0);
-    EXPECT_TRUE(m_harness->errors.calls.empty());
-    EXPECT_EQ(m_db->count("members"), 0);
+    ASSERT_EQ(dialogs.memberRequests.size(), 1U);
+    EXPECT_FALSE(dialogs.memberRequests.front().has_value());
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(db->count("members"), 0);
+}
+
+TEST_F(MemberWorkflow, AddSuccessSavesAndEmitsMembers)
+{
+    dialogs.nextMember = memberForm(1);
+
+    const auto status = members->add(&parent);
+
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(errors.calls.empty());
+    ASSERT_EQ(db->count("members"), 1);
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Members);
+}
+
+TEST_F(MemberWorkflow, AddWithABadEmailShowsTheErrorOnceAndSavesNothing)
+{
+    VLMS::MemberForm form = memberForm(2);
+    form.member.email = "not-an-email";
+    dialogs.nextMember = form;
+
+    const auto status = members->add(&parent);
+
+    EXPECT_FALSE(status);
+    EXPECT_EQ(errorKeys(), std::vector<std::string>{"error.member.invalidEmail"});
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(db->count("members"), 0);
+}
+
+TEST_F(MemberWorkflow, EditOpensTheFullRecord)
+{
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(3));
+
+    ASSERT_TRUE(members->edit(&parent, memberId));
+
+    ASSERT_EQ(dialogs.memberRequests.size(), 1U);
+    ASSERT_TRUE(dialogs.memberRequests.front().has_value());
+    EXPECT_EQ(dialogs.memberRequests.front()->id, memberId);
 }
 
 TEST_F(MemberWorkflow, EditCancelEmitsNothing)
 {
-    const qint64 memberId = seedArchivableMember();
-    ASSERT_GT(memberId, 0);
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(4));
 
-    rejectNextDialog();
-    const auto status = m_harness->members->edit(&m_parent, memberId);
+    ASSERT_TRUE(members->edit(&parent, memberId));
 
-    EXPECT_TRUE(status);
-    EXPECT_EQ(m_changed->count(), 0);
-    EXPECT_TRUE(m_harness->errors.calls.empty());
+    EXPECT_EQ(changed->count(), 0);
+}
+
+TEST_F(MemberWorkflow, EditSuccessSavesAndEmitsTheMember)
+{
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(5));
+    VLMS::MemberForm form = memberForm(5);
+    form.member.membershipNumber = memberColumn(memberId, "membership_number");
+    form.member.city = "Tunis";
+    dialogs.nextMember = form;
+
+    const auto status = members->edit(&parent, memberId);
+
+    EXPECT_TRUE(status) << (errors.calls.empty() ? "" : errors.calls.front().key);
+    EXPECT_EQ(memberColumn(memberId, "city"), "Tunis");
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedIds(0), QList<qint64>({memberId}));
 }
 
 TEST_F(MemberWorkflow, ArchiveBlockedByOpenLoansOffersGoToLoansAndDoesNotArchive)
 {
-    const qint64 memberId = seedMemberWithOpenLoan();
-    ASSERT_GT(memberId, 0);
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(6));
+    lendOneBookTo(memberId, 6);
+    dialogs.warnWithActionResult = true;
 
-    const ModalOutcome outcome = runAndAnswerModal(
-        [this, memberId]() {
-            ASSERT_TRUE(m_harness->members->archive(&m_parent, {memberId}, {QStringLiteral("Amina")}));
-        },
-        qs(VLMS::Core::Strings::t("members.goToLoans")));
+    ASSERT_TRUE(members->archive(&parent, {memberId}, {QStringLiteral("Amina")}));
 
-    ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(VLMS::Core::Strings::t("members.deleteBlockedByLoans")));
-    EXPECT_EQ(m_harness->navigator.showMemberLoansCount, 1);
-    EXPECT_EQ(m_harness->navigator.lastMembershipNumber,
-              QString::fromStdString(m_members->getMember(memberId)->membershipNumber));
-    EXPECT_EQ(m_changed->count(), 0);
-    EXPECT_TRUE(m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId))
-                    .isNull());
+    EXPECT_EQ(dialogs.count(QStringLiteral("warnWithAction")), 1);
+    EXPECT_EQ(navigator.showMemberLoansCount, 1);
+    EXPECT_EQ(navigator.lastMembershipNumber.toStdString(), memberColumn(memberId, "membership_number"));
+    EXPECT_FALSE(archived(memberId));
+    EXPECT_EQ(changed->count(), 0);
+}
+
+TEST_F(MemberWorkflow, ArchiveBlockedAndDismissedDoesNotNavigate)
+{
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(7));
+    lendOneBookTo(memberId, 7);
+    dialogs.warnWithActionResult = false;
+
+    ASSERT_TRUE(members->archive(&parent, {memberId}, {QStringLiteral("Amina")}));
+
+    EXPECT_EQ(navigator.showMemberLoansCount, 0);
+    EXPECT_FALSE(archived(memberId));
 }
 
 TEST_F(MemberWorkflow, ArchiveConfirmEmitsMembersChanged)
 {
-    const qint64 memberId = seedArchivableMember();
-    ASSERT_GT(memberId, 0);
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(8));
+    dialogs.askYesNoResult = true;
 
-    const ModalOutcome outcome = runAndAnswerModal(
-        [this, memberId]() {
-            ASSERT_TRUE(m_harness->members->archive(&m_parent, {memberId}, {QStringLiteral("Amina")}));
-        },
-        qs(VLMS::Core::Strings::t("common.yes")));
+    ASSERT_TRUE(members->archive(&parent, {memberId}, {QStringLiteral("Amina")}));
 
-    ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(VLMS::Core::Strings::t("members.deleteConfirm")));
-    ASSERT_EQ(m_changed->count(), 1);
-    EXPECT_EQ(m_changed->at(0).at(0).value<VLMS::EntitySet>(), VLMS::Entity::Members);
-    EXPECT_EQ(m_changed->at(0).at(1).value<QList<qint64>>(), QList<qint64>({memberId}));
-    EXPECT_FALSE(
-        m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId)).isNull());
+    EXPECT_TRUE(archived(memberId));
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Members);
+}
+
+TEST_F(MemberWorkflow, ArchiveManySkipsMembersWithLoans)
+{
+    const qint64 free = seedMember(*db, uniqueMemberSeed(9));
+    const qint64 borrowing = seedMember(*db, uniqueMemberSeed(10));
+    lendOneBookTo(borrowing, 10);
+    dialogs.confirmBulkResult = true;
+
+    ASSERT_TRUE(members->archive(&parent, {free, borrowing},
+                                 {QStringLiteral("Free"), QStringLiteral("Borrowing")}));
+
+    ASSERT_EQ(dialogs.plans.size(), 1U);
+    EXPECT_TRUE(dialogs.plans.front().text.contains(QStringLiteral("Borrowing")));
+    EXPECT_TRUE(archived(free));
+    EXPECT_FALSE(archived(borrowing));
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedIds(0), QList<qint64>({free}));
+}
+
+TEST_F(MemberWorkflow, ShowLoansOpensTheHistoryPinnedToTheMember)
+{
+    const qint64 memberId = seedMember(*db, uniqueMemberSeed(11));
+
+    ASSERT_TRUE(members->showLoans(&parent, memberId));
+
+    ASSERT_EQ(dialogs.historyRequests.size(), 1U);
+    EXPECT_EQ(dialogs.historyRequests.front().kind, VLMS::LoanHistoryKind::Member);
+    EXPECT_EQ(dialogs.historyRequests.front().id, memberId);
 }

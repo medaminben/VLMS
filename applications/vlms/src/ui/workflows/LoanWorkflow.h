@@ -12,7 +12,6 @@ class QWidget;
 namespace VLMS {
 
 class BulkRunner;
-class CirculationLookups;
 class DataEvents;
 class DialogFactory;
 class ErrorPresenter;
@@ -30,7 +29,6 @@ struct LoanCheckoutPrefill {
 class LoanWorkflow {
 public:
     LoanWorkflow(Repositories::CirculationRepository& circulation,
-                 CirculationLookups& lookups,
                  DialogFactory& dialogs,
                  ErrorPresenter& errors,
                  DataEvents& events,
@@ -44,7 +42,6 @@ public:
 
 private:
     Repositories::CirculationRepository& m_circulation;
-    CirculationLookups& m_lookups;
     DialogFactory& m_dialogs;
     ErrorPresenter& m_errors;
     DataEvents& m_events;

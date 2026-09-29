@@ -1,17 +1,11 @@
 #include "ui/workflows/LoanWorkflow.h"
 
 #include "QtBridge.h"
-#include "ui/views/BulkAction.h"
-#include "ui/views/LoanCheckoutDialog.h"
-#include "ui/views/LoanExtendDialog.h"
-#include "ui/views/LoanReturnDialog.h"
-#include "ui/presentation/CirculationLookups.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
 #include "ui/shell/Navigator.h"
-#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -24,37 +18,31 @@ using VLMS::ss;
 namespace VLMS {
 
 LoanWorkflow::LoanWorkflow(Repositories::CirculationRepository& circulation,
-                           CirculationLookups& lookups,
                            DialogFactory& dialogs,
                            ErrorPresenter& errors,
                            DataEvents& events,
                            Navigator& navigator,
                            BulkRunner& bulk)
     : m_circulation(circulation)
-    , m_lookups(lookups)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
     , m_navigator(navigator)
     , m_bulk(bulk)
 {
-    (void)m_dialogs;
     (void)m_navigator;
 }
 
 Core::Status LoanWorkflow::checkout(QWidget* parent, const LoanCheckoutPrefill& prefill)
 {
-    LoanScope scope;
-    scope.bookId = prefill.bookId;
-    scope.memberId = prefill.memberId;
-    LoanCheckoutDialog dialog(m_lookups, scope, parent);
-    if (!dialog.hasLendableCopy()) {
+    LoanForm request;
+    request.bookId = prefill.bookId;
+    request.memberId = prefill.memberId;
+    const auto form = m_dialogs.checkout(parent, request);
+    if (!form) {
         return Core::Status::ok();
     }
-    if (dialog.exec() != QDialog::Accepted) {
-        return Core::Status::ok();
-    }
-    const auto created = m_circulation.createLoan(dialog.loanInput());
+    const auto created = m_circulation.createLoan(form->loan);
     if (!created) {
         m_errors.show(parent, created.error());
         return Core::asStatus(created);
@@ -66,7 +54,7 @@ Core::Status LoanWorkflow::checkout(QWidget* parent, const LoanCheckoutPrefill& 
 Core::Status LoanWorkflow::returnLoan(QWidget* parent, qint64 loanId)
 {
     if (loanId <= 0) {
-        showInformation(parent, T("circulation.return"), T("circulation.selectLoanFirst"));
+        m_dialogs.inform(parent, T("circulation.return"), T("circulation.selectLoanFirst"));
         return Core::Status::ok();
     }
     const auto loan = m_circulation.getLoan(loanId);
@@ -75,15 +63,14 @@ Core::Status LoanWorkflow::returnLoan(QWidget* parent, qint64 loanId)
         return Core::asStatus(loan);
     }
     if (!loan->returnedAt.empty()) {
-        showInformation(parent, T("circulation.return"), T("circulation.alreadyReturned"));
+        m_dialogs.inform(parent, T("circulation.return"), T("circulation.alreadyReturned"));
         return Core::Status::ok();
     }
-    LoanReturnDialog dialog(loan.value(), parent);
-    if (dialog.exec() != QDialog::Accepted) {
+    const auto form = m_dialogs.returnLoan(parent, loan.value());
+    if (!form) {
         return Core::Status::ok();
     }
-    const auto returned =
-        m_circulation.returnLoan(loanId, ss(dialog.returnedAt()), ss(dialog.notes()));
+    const auto returned = m_circulation.returnLoan(loanId, ss(form->returnedAt), ss(form->notes));
     if (!returned) {
         m_errors.show(parent, returned.error());
         return returned;
@@ -95,7 +82,7 @@ Core::Status LoanWorkflow::returnLoan(QWidget* parent, qint64 loanId)
 Core::Status LoanWorkflow::extend(QWidget* parent, qint64 loanId)
 {
     if (loanId <= 0) {
-        showInformation(parent, T("circulation.extend"), T("circulation.selectLoanFirst"));
+        m_dialogs.inform(parent, T("circulation.extend"), T("circulation.selectLoanFirst"));
         return Core::Status::ok();
     }
     const auto loan = m_circulation.getLoan(loanId);
@@ -104,14 +91,14 @@ Core::Status LoanWorkflow::extend(QWidget* parent, qint64 loanId)
         return Core::asStatus(loan);
     }
     if (!loan->returnedAt.empty()) {
-        showInformation(parent, T("circulation.extend"), T("circulation.alreadyReturned"));
+        m_dialogs.inform(parent, T("circulation.extend"), T("circulation.alreadyReturned"));
         return Core::Status::ok();
     }
-    LoanExtendDialog dialog(loan.value(), parent);
-    if (dialog.exec() != QDialog::Accepted) {
+    const auto form = m_dialogs.extendLoan(parent, loan.value());
+    if (!form) {
         return Core::Status::ok();
     }
-    const auto extended = m_circulation.extendLoan(loanId, ss(dialog.dueAt()));
+    const auto extended = m_circulation.extendLoan(loanId, ss(form->dueAt));
     if (!extended) {
         m_errors.show(parent, extended.error());
         return extended;
@@ -125,7 +112,7 @@ Core::Status LoanWorkflow::archive(QWidget* parent,
                                    const QList<QString>& labels)
 {
     if (ids.isEmpty()) {
-        showInformation(parent, T("circulation.delete"), T("circulation.selectLoanFirst"));
+        m_dialogs.inform(parent, T("circulation.delete"), T("circulation.selectLoanFirst"));
         return Core::Status::ok();
     }
 
@@ -139,7 +126,7 @@ Core::Status LoanWorkflow::archive(QWidget* parent,
     }
 
     if (rows.size() == 1) {
-        if (!askYesNo(parent, T("circulation.delete"), T("circulation.archiveLoan"))) {
+        if (!m_dialogs.askYesNo(parent, T("circulation.delete"), T("circulation.archiveLoan"))) {
             return Core::Status::ok();
         }
         const auto archived = m_circulation.archiveLoan(rows.first().id);

@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "ModalTest.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
@@ -139,7 +140,9 @@ struct ArchiveListHarness {
     std::unique_ptr<ArchivedLoanSpec> loans;
     std::unique_ptr<ListPage> page;
     QListWidget* typeList = nullptr;
+    std::unique_ptr<RepositoryMemberFacets> memberFacets;
     MemberFacetFilters* memberFilters = nullptr;
+    std::unique_ptr<RepositoryBookFacets> bookFacets;
     BookFacetFilters* bookFilters = nullptr;
     ArchiveType type = ArchiveType::Members;
 
@@ -169,10 +172,12 @@ struct ArchiveListHarness {
         page->addFilterWidget(typeList, 0);
         sizeTypeList();
 
-        memberFilters = new MemberFacetFilters(memberRepo, Repositories::ArchiveScope::Archived,
+        memberFacets = std::make_unique<RepositoryMemberFacets>(memberRepo);
+        memberFilters = new MemberFacetFilters(*memberFacets, Repositories::ArchiveScope::Archived,
                                                page->filterColumn());
         page->addFilterWidget(memberFilters, 1);
-        bookFilters = new BookFacetFilters(catalog, Repositories::ArchiveScope::Archived,
+        bookFacets = std::make_unique<RepositoryBookFacets>(catalog);
+        bookFilters = new BookFacetFilters(*bookFacets, Repositories::ArchiveScope::Archived,
                                            page->filterColumn());
         page->addFilterWidget(bookFilters, 1);
 

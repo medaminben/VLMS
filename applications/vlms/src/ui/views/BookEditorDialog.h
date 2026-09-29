@@ -4,13 +4,14 @@
 
 #include <QDialog>
 
+#include <functional>
+
 class QEvent;
 #include <QString>
 #include <QStringList>
 
 namespace VLMS {
 class CatalogLookups;
-class DialogFactory;
 class OcrService;
 }
 
@@ -41,7 +42,8 @@ public:
 
     /// Lets the Categories button open CategoryManagerDialog through the factory
     /// (the only place still allowed to hold CatalogRepository for category CRUD).
-    void setDialogFactory(VLMS::DialogFactory* dialogs);
+    /// What the Categories button runs. Without it the button only re-reads the list.
+    void setManageCategories(std::function<void(QWidget*)> manageCategories);
 
     [[nodiscard]] VLMS::Repositories::BookInput bookInput() const;
 
@@ -95,7 +97,7 @@ private:
 
     VLMS::CatalogLookups& m_lookups;
     VLMS::OcrService& m_ocr;
-    VLMS::DialogFactory* m_dialogs = nullptr;
+    std::function<void(QWidget*)> m_manageCategories;
     bool m_isEdit = false;
     qint64 m_bookId = 0;
     QString m_coverSourcePath;

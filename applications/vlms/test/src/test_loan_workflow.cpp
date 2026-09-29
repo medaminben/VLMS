@@ -1,144 +1,240 @@
-#include "ModalTest.h"
-#include "TestDatabase.h"
-#include "TestSeed.h"
-#include "UiTest.h"
 #include "WorkflowTestSupport.h"
 
-#include <VLMS/Core/Locale.h>
-#include <VLMS/Core/Strings.h>
-#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
 
-#include <QApplication>
 #include <QDate>
-#include <QDialog>
-#include <QSignalSpy>
-#include <QTimer>
-#include <QWidget>
-
-#include <gtest/gtest.h>
-
-#include <memory>
 
 using namespace Test;
 
 namespace {
 
-void rejectNextDialog()
+std::string isoDaysFromToday(int days)
 {
-    auto* poll = new QTimer;
-    poll->setInterval(10);
-    QObject::connect(poll, &QTimer::timeout, [poll] {
-        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
-        if (dialog == nullptr || !dialog->isVisible()) {
-            return;
-        }
-        poll->stop();
-        poll->deleteLater();
-        dialog->reject();
-    });
-    poll->start();
+    return QDate::currentDate().addDays(days).toString(Qt::ISODate).toStdString();
 }
 
 }  // namespace
 
-class LoanWorkflow : public ::testing::Test {
+class LoanWorkflow : public WorkflowFixture {
 protected:
-    static void SetUpTestSuite() { VLMS::Core::Locale::setCode("en"); }
-    static void TearDownTestSuite() { VLMS::Core::Locale::setCode(VLMS::Core::Locale::kDefaultCode); }
+    struct Seeded {
+        qint64 memberId = 0;
+        qint64 copyId = 0;
+    };
 
-    void SetUp() override
+    Seeded seedMemberAndCopy(int index)
     {
-        m_db = std::make_unique<TestDatabase>();
-        ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_circulation = std::make_unique<VLMS::Repositories::CirculationRepository>(m_db->session());
-        m_harness = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-        m_changed = std::make_unique<QSignalSpy>(&m_harness->events, &VLMS::DataEvents::changed);
-    }
-
-    void TearDown() override
-    {
-        m_changed.reset();
-        m_harness.reset();
-        m_circulation.reset();
-        m_db.reset();
+        MemberSeed member = uniqueMemberSeed(index);
+        member.status = VLMS::Repositories::MemberStatus::kActive;
+        Seeded seeded;
+        seeded.memberId = seedMember(*db, member);
+        seeded.copyId = copyIdsOf(*db, seedBook(*db, uniqueBookSeed(index))).front();
+        return seeded;
     }
 
     qint64 seedOpenLoan()
     {
-        MemberSeed member = uniqueMemberSeed(1);
-        member.status = VLMS::Repositories::MemberStatus::kActive;
-        const qint64 memberId = seedMember(*m_db, member);
-        const qint64 bookId = seedBook(*m_db, uniqueBookSeed(1));
-        const QDate today = QDate::currentDate();
-        return rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
-                             today.addDays(-5).toString(Qt::ISODate).toStdString(),
-                             today.addDays(9).toString(Qt::ISODate).toStdString());
+        const Seeded seeded = seedMemberAndCopy(1);
+        return rawInsertLoan(*db, seeded.memberId, seeded.copyId, isoDaysFromToday(-5),
+                             isoDaysFromToday(9));
     }
 
-    std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<VLMS::Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<LoanWorkflowHarness> m_harness;
-    std::unique_ptr<QSignalSpy> m_changed;
-    QWidget m_parent;
+    VLMS::LoanForm loanForm(const Seeded& seeded) const
+    {
+        VLMS::LoanForm form;
+        form.loan.memberId = seeded.memberId;
+        form.loan.bookCopyId = seeded.copyId;
+        form.loan.borrowedAt = isoDaysFromToday(0);
+        form.loan.dueAt = isoDaysFromToday(14);
+        return form;
+    }
+
+    std::string loanColumn(qint64 loanId, const std::string& column) const
+    {
+        return scalarText("SELECT " + column + " FROM loans WHERE id = " + std::to_string(loanId));
+    }
 };
+
+TEST_F(LoanWorkflow, CheckoutCancelEmitsNothing)
+{
+    const auto status = loans->checkout(&parent, {});
+
+    EXPECT_TRUE(status);
+    EXPECT_EQ(dialogs.count(QStringLiteral("checkout")), 1);
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(db->count("loans"), 0);
+}
+
+TEST_F(LoanWorkflow, CheckoutPassesThePrefillToTheDialog)
+{
+    VLMS::LoanCheckoutPrefill prefill;
+    prefill.bookId = 7;
+    prefill.memberId = 9;
+
+    ASSERT_TRUE(loans->checkout(&parent, prefill));
+
+    ASSERT_EQ(dialogs.checkoutPrefills.size(), 1U);
+    EXPECT_EQ(dialogs.checkoutPrefills.front().bookId, 7);
+    EXPECT_EQ(dialogs.checkoutPrefills.front().memberId, 9);
+}
+
+TEST_F(LoanWorkflow, CheckoutSuccessCreatesLoanAndEmitsLoansAndCopies)
+{
+    const Seeded seeded = seedMemberAndCopy(2);
+    dialogs.nextLoan = loanForm(seeded);
+
+    const auto status = loans->checkout(&parent, {});
+
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(errors.calls.empty());
+    ASSERT_EQ(db->count("loans"), 1);
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Loans | VLMS::Entity::Copies);
+}
+
+TEST_F(LoanWorkflow, CheckoutOfALentCopyShowsTheErrorOnceAndEmitsNothing)
+{
+    const Seeded seeded = seedMemberAndCopy(3);
+    ASSERT_GT(rawInsertLoan(*db, seeded.memberId, seeded.copyId, isoDaysFromToday(-2),
+                            isoDaysFromToday(12)),
+              0);
+    dialogs.nextLoan = loanForm(seeded);
+
+    const auto status = loans->checkout(&parent, {});
+
+    EXPECT_FALSE(status);
+    EXPECT_EQ(errorKeys(), std::vector<std::string>{"error.loan.copyOnLoan"});
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(db->count("loans"), 1);
+}
 
 TEST_F(LoanWorkflow, ReturnCancelEmitsNothing)
 {
     const qint64 loanId = seedOpenLoan();
-    ASSERT_GT(loanId, 0);
 
-    rejectNextDialog();
-    const auto status = m_harness->loans->returnLoan(&m_parent, loanId);
+    const auto status = loans->returnLoan(&parent, loanId);
 
     EXPECT_TRUE(status);
-    EXPECT_EQ(m_changed->count(), 0);
-    EXPECT_TRUE(m_harness->errors.calls.empty());
-    EXPECT_TRUE(m_db->scalar("SELECT returned_at FROM loans WHERE id = " + std::to_string(loanId))
-                    .isNull());
+    EXPECT_EQ(dialogs.count(QStringLiteral("returnLoan")), 1);
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_TRUE(loanColumn(loanId, "returned_at").empty());
 }
 
-TEST_F(LoanWorkflow, CheckoutCancelEmitsNothing)
+TEST_F(LoanWorkflow, ReturnSuccessRecordsTheDateAndEmitsLoansAndCopies)
 {
-    MemberSeed member = uniqueMemberSeed(2);
-    member.status = VLMS::Repositories::MemberStatus::kActive;
-    ASSERT_GT(seedMember(*m_db, member), 0);
-    ASSERT_GT(seedBook(*m_db, uniqueBookSeed(2)), 0);
+    const qint64 loanId = seedOpenLoan();
+    dialogs.nextReturn = VLMS::ReturnForm{QString::fromStdString(isoDaysFromToday(0)),
+                                          QStringLiteral("fine")};
 
-    rejectNextDialog();
-    const auto status = m_harness->loans->checkout(&m_parent);
+    const auto status = loans->returnLoan(&parent, loanId);
 
     EXPECT_TRUE(status);
-    EXPECT_EQ(m_changed->count(), 0);
-    EXPECT_TRUE(m_harness->errors.calls.empty());
-    EXPECT_EQ(m_db->count("loans"), 0);
+    EXPECT_TRUE(errors.calls.empty());
+    EXPECT_EQ(loanColumn(loanId, "substr(returned_at, 1, 10)"), isoDaysFromToday(0));
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Loans | VLMS::Entity::Copies);
+    EXPECT_EQ(changedIds(0), QList<qint64>({loanId}));
+}
+
+TEST_F(LoanWorkflow, ReturnOfAReturnedLoanInformsAndOpensNoForm)
+{
+    const qint64 loanId = seedOpenLoan();
+    ASSERT_TRUE(circulation->returnLoan(loanId));
+
+    const auto status = loans->returnLoan(&parent, loanId);
+
+    EXPECT_TRUE(status);
+    EXPECT_EQ(dialogs.count(QStringLiteral("returnLoan")), 0);
+    EXPECT_EQ(dialogs.count(QStringLiteral("inform")), 1);
+    EXPECT_EQ(changed->count(), 0);
+}
+
+TEST_F(LoanWorkflow, ExtendCancelEmitsNothing)
+{
+    const qint64 loanId = seedOpenLoan();
+    const std::string dueBefore = loanColumn(loanId, "due_at");
+
+    const auto status = loans->extend(&parent, loanId);
+
+    EXPECT_TRUE(status);
+    EXPECT_EQ(dialogs.count(QStringLiteral("extendLoan")), 1);
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(loanColumn(loanId, "due_at"), dueBefore);
+}
+
+TEST_F(LoanWorkflow, ExtendSuccessMovesTheDueDateAndEmitsLoans)
+{
+    const qint64 loanId = seedOpenLoan();
+    dialogs.nextExtend = VLMS::ExtendForm{QString::fromStdString(isoDaysFromToday(30))};
+
+    const auto status = loans->extend(&parent, loanId);
+
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(errors.calls.empty());
+    EXPECT_EQ(loanColumn(loanId, "due_at"), isoDaysFromToday(30));
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Loans);
+    EXPECT_EQ(changedIds(0), QList<qint64>({loanId}));
+}
+
+TEST_F(LoanWorkflow, ExtendToAnEarlierDateShowsTheErrorOnceAndKeepsTheDueDate)
+{
+    const qint64 loanId = seedOpenLoan();
+    const std::string dueBefore = loanColumn(loanId, "due_at");
+    dialogs.nextExtend = VLMS::ExtendForm{QString::fromStdString(isoDaysFromToday(1))};
+
+    const auto status = loans->extend(&parent, loanId);
+
+    EXPECT_FALSE(status);
+    EXPECT_EQ(errorKeys(), std::vector<std::string>{"error.loan.extendNotAfter"});
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_EQ(loanColumn(loanId, "due_at"), dueBefore);
 }
 
 TEST_F(LoanWorkflow, ArchiveSingleConfirmEmitsLoansChanged)
 {
-    MemberSeed member = uniqueMemberSeed(3);
-    member.status = VLMS::Repositories::MemberStatus::kActive;
-    const qint64 memberId = seedMember(*m_db, member);
-    const qint64 bookId = seedBook(*m_db, uniqueBookSeed(3));
-    const QDate today = QDate::currentDate();
-    const qint64 loanId =
-        rawInsertLoan(*m_db, memberId, copyIdsOf(*m_db, bookId).front(),
-                      today.addDays(-20).toString(Qt::ISODate).toStdString(),
-                      today.addDays(-6).toString(Qt::ISODate).toStdString(),
-                      today.addDays(-5).toString(Qt::ISODate).toStdString());
-    ASSERT_GT(loanId, 0);
+    const qint64 loanId = seedOpenLoan();
+    ASSERT_TRUE(circulation->returnLoan(loanId));
+    dialogs.askYesNoResult = true;
 
-    const ModalOutcome outcome = runAndAnswerModal(
-        [this, loanId]() {
-            ASSERT_TRUE(m_harness->loans->archive(&m_parent, {loanId}, {QStringLiteral("loan")}));
-        },
-        qs(VLMS::Core::Strings::t("common.yes")));
+    ASSERT_TRUE(loans->archive(&parent, {loanId}, {QStringLiteral("loan")}));
 
-    ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(VLMS::Core::Strings::t("circulation.archiveLoan")));
-    ASSERT_EQ(m_changed->count(), 1);
-    EXPECT_EQ(m_changed->at(0).at(0).value<VLMS::EntitySet>(), VLMS::Entity::Loans);
-    EXPECT_EQ(m_changed->at(0).at(1).value<QList<qint64>>(), QList<qint64>({loanId}));
-    EXPECT_FALSE(m_db->scalar("SELECT archived_at FROM loans WHERE id = " + std::to_string(loanId))
-                     .isNull());
+    EXPECT_EQ(dialogs.count(QStringLiteral("askYesNo")), 1);
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedWhat(0), VLMS::Entity::Loans);
+    EXPECT_FALSE(scalarIsNull("SELECT archived_at FROM loans WHERE id = " + std::to_string(loanId)));
+}
+
+TEST_F(LoanWorkflow, ArchiveSingleDeclinedEmitsNothing)
+{
+    const qint64 loanId = seedOpenLoan();
+    ASSERT_TRUE(circulation->returnLoan(loanId));
+    dialogs.askYesNoResult = false;
+
+    ASSERT_TRUE(loans->archive(&parent, {loanId}, {QStringLiteral("loan")}));
+
+    EXPECT_EQ(changed->count(), 0);
+    EXPECT_TRUE(scalarIsNull("SELECT archived_at FROM loans WHERE id = " + std::to_string(loanId)));
+}
+
+TEST_F(LoanWorkflow, ArchiveManySkipsOpenLoansAndArchivesTheRest)
+{
+    const Seeded a = seedMemberAndCopy(4);
+    const Seeded b = seedMemberAndCopy(5);
+    const qint64 returned = rawInsertLoan(*db, a.memberId, a.copyId, isoDaysFromToday(-9),
+                                          isoDaysFromToday(5));
+    ASSERT_TRUE(circulation->returnLoan(returned));
+    const qint64 open = rawInsertLoan(*db, b.memberId, b.copyId, isoDaysFromToday(-3),
+                                      isoDaysFromToday(11));
+    dialogs.confirmBulkResult = true;
+
+    ASSERT_TRUE(loans->archive(&parent, {returned, open},
+                               {QStringLiteral("returned"), QStringLiteral("open")}));
+
+    ASSERT_EQ(dialogs.plans.size(), 1U);
+    EXPECT_TRUE(dialogs.plans.front().text.contains(QStringLiteral("open")));
+    ASSERT_EQ(changed->count(), 1);
+    EXPECT_EQ(changedIds(0), QList<qint64>({returned}));
+    EXPECT_FALSE(scalarIsNull("SELECT archived_at FROM loans WHERE id = " + std::to_string(returned)));
+    EXPECT_TRUE(scalarIsNull("SELECT archived_at FROM loans WHERE id = " + std::to_string(open)));
 }

@@ -11,7 +11,6 @@
 #include "ui/views/BookCopiesTable.h"
 #include "ui/presentation/CatalogLookups.h"
 #include "ui/services/OcrService.h"
-#include "ui/workflows/DialogFactory.h"
 
 #include <QAbstractSpinBox>
 #include <QAction>
@@ -157,9 +156,9 @@ BookEditorDialog::~BookEditorDialog()
     disconnect(&m_ocr, nullptr, this, nullptr);
 }
 
-void BookEditorDialog::setDialogFactory(VLMS::DialogFactory* dialogs)
+void BookEditorDialog::setManageCategories(std::function<void(QWidget*)> manageCategories)
 {
-    m_dialogs = dialogs;
+    m_manageCategories = std::move(manageCategories);
 }
 
 void BookEditorDialog::buildUi() {
@@ -468,8 +467,8 @@ void BookEditorDialog::applyLabels()
 }
 
 void BookEditorDialog::manageCategories() {
-    if (m_dialogs != nullptr) {
-        (void)m_dialogs->manageCategories(this);
+    if (m_manageCategories) {
+        m_manageCategories(this);
     }
     // The list the combo shows may have grown or lost an entry; the current
     // pick is read and restored by populateCategories itself.

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <VLMS/Repositories/ArchiveTypes.h>
-#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
+
+#include "ui/presentation/ReadSources.h"
 
 #include <QScrollArea>
 #include <QStringList>
@@ -27,7 +28,7 @@ class MemberFacetFilters final : public QScrollArea {
     Q_OBJECT
 
 public:
-    MemberFacetFilters(Repositories::MemberRepository& repository,
+    MemberFacetFilters(MemberFacetSource& source,
                        Repositories::ArchiveScope valueScope,
                        QWidget* parent = nullptr);
 
@@ -50,7 +51,7 @@ signals:
     void changed();
 
 private:
-    Repositories::MemberRepository& m_repository;
+    MemberFacetSource& m_source;
     Repositories::ArchiveScope m_valueScope;
     YearSource m_loanYearSource;
     FacetList* m_status = nullptr;

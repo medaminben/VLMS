@@ -4,28 +4,21 @@
 
 #include <QDialog>
 
-#include <string>
-
 namespace VLMS {
 class CatalogLookups;
-class DialogFactory;
-class OcrService;
 }
 
-namespace VLMS::Repositories {
-class CatalogRepository;
-}  // namespace VLMS::Repositories
 class QLineEdit;
 class QListWidget;
 
 /// Archive -> Reuse local number, step 1: which book takes the number.
 /// "New book" first, then live books whose language numbers copies in the
-/// archived copy's source.
+/// archived copy's source. ArchiveWorkflow runs the rest of the flow.
 class ReuseBookChooser final : public QDialog {
     Q_OBJECT
 
 public:
-    ReuseBookChooser(VLMS::Repositories::CatalogRepository& catalog,
+    ReuseBookChooser(VLMS::CatalogLookups& lookups,
                      const VLMS::Repositories::BookCopyRecord& archivedCopy,
                      QWidget* parent = nullptr);
 
@@ -35,23 +28,8 @@ public:
 private:
     void refreshBooks();
 
-    VLMS::Repositories::CatalogRepository& m_catalog;
-    std::string m_source;
+    VLMS::CatalogLookups& m_lookups;
+    QString m_source;
     QLineEdit* m_search = nullptr;
     QListWidget* m_books = nullptr;
 };
-
-namespace VLMS {
-
-/// The whole Reuse flow: chooser, book editor with the number locked in, and a
-/// save that releases the archived copy's number in the same transaction.
-/// Returns true when a save committed; on cancel or failure the archived copy
-/// still holds its number.
-bool runReuseNumberFlow(QWidget* parent,
-                        Repositories::CatalogRepository& catalog,
-                        CatalogLookups& lookups,
-                        OcrService& ocr,
-                        DialogFactory* dialogs,
-                        const Repositories::BookCopyRecord& archivedCopy);
-
-}  // namespace VLMS

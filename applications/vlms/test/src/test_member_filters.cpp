@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
@@ -130,7 +131,8 @@ protected:
         m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
         m_spec = std::make_unique<MemberListSpec>(*m_members, *m_memberWorkflows->members);
         m_page = std::make_unique<ListPage>(m_spec.get(), m_memberWorkflows->events, membersConfig());
-        m_filters = new MemberFacetFilters(*m_members, Repositories::ArchiveScope::Live,
+        m_memberFacets = std::make_unique<RepositoryMemberFacets>(*m_members);
+        m_filters = new MemberFacetFilters(*m_memberFacets, Repositories::ArchiveScope::Live,
                                            m_page->filterColumn());
         m_filters->refresh();
         m_page->addFilterWidget(m_filters, 1);
@@ -163,6 +165,7 @@ protected:
     std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
     std::unique_ptr<MemberListSpec> m_spec;
     std::unique_ptr<ListPage> m_page;
+    std::unique_ptr<RepositoryMemberFacets> m_memberFacets;
     MemberFacetFilters* m_filters = nullptr;
     qint64 m_maleId = 0;
     qint64 m_femaleId = 0;

@@ -21,11 +21,11 @@ QString withCount(const QString& label, const int count, const bool showCount)
 
 }  // namespace
 
-BookFacetFilters::BookFacetFilters(Repositories::CatalogRepository& repository,
+BookFacetFilters::BookFacetFilters(BookFacetSource& source,
                                    const Repositories::ArchiveScope scope,
                                    QWidget* parent)
     : QWidget(parent),
-      m_repository(repository),
+      m_source(source),
       m_scope(scope)
 {
     setObjectName(QStringLiteral("bookFilters"));
@@ -48,7 +48,7 @@ void BookFacetFilters::refresh()
 {
     const bool showCounts = m_scope == Repositories::ArchiveScope::Live;
 
-    if (const auto languages = m_repository.listBookLanguages(m_scope); !languages) {
+    if (const auto languages = m_source.bookLanguages(m_scope); !languages) {
         showRepoError(this, languages.error());
     } else {
         QList<FacetList::Entry> entries;
@@ -60,7 +60,7 @@ void BookFacetFilters::refresh()
         m_language->setEntries(T("catalog.allLanguages"), entries);
     }
 
-    if (const auto categories = m_repository.listAllCategories(); !categories) {
+    if (const auto categories = m_source.categories(); !categories) {
         showRepoError(this, categories.error());
     } else {
         QList<FacetList::Entry> entries;

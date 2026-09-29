@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/views/BulkAction.h"
+#include "ui/workflows/BulkFlow.h"
 #include "ui/workflows/DataEvents.h"
 
 #include <VLMS/Core/Result.h>
@@ -13,13 +13,13 @@ class QWidget;
 namespace VLMS {
 
 class DialogFactory;
-class ErrorPresenter;
 
-/// Keeps runBulkAction's check-then-act logic and emits DataEvents for
-/// successful ids. Confirmation still uses runBulkAction's Yes/No for now.
+/// runBulkFlow for workflows: confirmation, progress and the failure summary
+/// go through DialogFactory, and one `changed` event carries every id that
+/// succeeded.
 class BulkRunner {
 public:
-    BulkRunner(DialogFactory& dialogs, ErrorPresenter& errors, DataEvents& events);
+    BulkRunner(DialogFactory& dialogs, DataEvents& events);
 
     int run(QWidget* parent,
             const BulkActionTexts& texts,
@@ -30,7 +30,6 @@ public:
 
 private:
     DialogFactory& m_dialogs;
-    ErrorPresenter& m_errors;
     DataEvents& m_events;
 };
 

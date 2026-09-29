@@ -1,5 +1,7 @@
 #include "ui/views/MemberFacetFilters.h"
 
+#include <VLMS/Repositories/MemberRepository.h>
+
 #include <VLMS/Core/Strings.h>
 
 #include "QtBridge.h"
@@ -31,11 +33,11 @@ QStringList codesOf(const FacetList* list)
 
 }  // namespace
 
-MemberFacetFilters::MemberFacetFilters(Repositories::MemberRepository& repository,
+MemberFacetFilters::MemberFacetFilters(MemberFacetSource& source,
                                        const Repositories::ArchiveScope valueScope,
                                        QWidget* parent)
     : QScrollArea(parent),
-      m_repository(repository),
+      m_source(source),
       m_valueScope(valueScope)
 {
     setObjectName(QStringLiteral("memberFilters"));
@@ -95,9 +97,9 @@ void MemberFacetFilters::refresh()
         fillValues(m_year, T("circulation.allLoanYears"), m_loanYearSource());
     } else {
         fillValues(m_year, T("members.allYears"),
-                   m_repository.listInscriptionYears(m_valueScope));
+                   m_source.inscriptionYears(m_valueScope));
     }
-    fillValues(m_city, T("members.allCities"), m_repository.listCities(m_valueScope));
+    fillValues(m_city, T("members.allCities"), m_source.cities(m_valueScope));
 }
 
 Repositories::MemberFacets MemberFacetFilters::facets() const

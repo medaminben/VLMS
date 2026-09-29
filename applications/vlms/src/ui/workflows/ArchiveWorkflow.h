@@ -14,13 +14,11 @@ class QWidget;
 namespace VLMS {
 
 class BulkRunner;
-class CatalogLookups;
 class DataEvents;
 class DialogFactory;
 class ErrorPresenter;
 class LoanListSpec;
 class LoanWorkflow;
-class OcrService;
 
 namespace Repositories {
 class CatalogRepository;
@@ -33,12 +31,9 @@ public:
     ArchiveWorkflow(Repositories::MemberRepository& members,
                     Repositories::CatalogRepository& catalog,
                     Repositories::CirculationRepository& circulation,
-                    CatalogLookups& catalogLookups,
-                    OcrService& ocr,
                     DialogFactory& dialogs,
                     ErrorPresenter& errors,
                     DataEvents& events,
-                    Navigator& navigator,
                     BulkRunner& bulk,
                     LoanListSpec& loanHistorySpec,
                     LoanWorkflow& loans);
@@ -55,12 +50,9 @@ private:
     Repositories::MemberRepository& m_members;
     Repositories::CatalogRepository& m_catalog;
     Repositories::CirculationRepository& m_circulation;
-    CatalogLookups& m_catalogLookups;
-    OcrService& m_ocr;
     DialogFactory& m_dialogs;
     ErrorPresenter& m_errors;
     DataEvents& m_events;
-    Navigator& m_navigator;
     BulkRunner& m_bulk;
     LoanListSpec& m_loanHistorySpec;
     LoanWorkflow& m_loanWorkflow;

@@ -1,4 +1,4 @@
-#include "ui/shell/Navigator.h"
+#include "Fakes.h"
 
 #include <gtest/gtest.h>
 

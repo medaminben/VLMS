@@ -1,3 +1,4 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
@@ -38,7 +39,8 @@ protected:
 
 TEST_F(test_ui_MetricsMemberTiles, OnlyActiveAndNotActiveAreCounted)
 {
-    MetricsPage page(*m_metrics);
+    RepositoryMetrics source(*m_metrics);
+    MetricsPage page(source);
     page.refreshMetrics();
 
     QStringList labels;
@@ -65,7 +67,8 @@ TEST(MetricsPage, RefreshPopulatesOverviewLabels)
     ASSERT_TRUE(db.isValid()) << db.lastError();
     Repositories::MetricsRepository metrics(db.session());
 
-    MetricsPage page(metrics);
+    RepositoryMetrics source(metrics);
+    MetricsPage page(source);
     page.refreshMetrics();
 
     QStringList labels;

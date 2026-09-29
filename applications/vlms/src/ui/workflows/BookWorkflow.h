@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/workflows/Forms.h"
+
 #include <VLMS/Core/Result.h>
 #include <VLMS/Repositories/CatalogTypes.h>
 
@@ -12,30 +14,22 @@ class QWidget;
 namespace VLMS {
 
 class BulkRunner;
-class CatalogLookups;
 class DataEvents;
 class LoanListSpec;
 class LoanWorkflow;
 class DialogFactory;
 class ErrorPresenter;
-class Navigator;
-class OcrService;
 
 namespace Repositories {
 class CatalogRepository;
-class CirculationRepository;
 }  // namespace Repositories
 
 class BookWorkflow {
 public:
     BookWorkflow(Repositories::CatalogRepository& catalog,
-                 Repositories::CirculationRepository& circulation,
-                 CatalogLookups& lookups,
-                 OcrService& ocr,
                  DialogFactory& dialogs,
                  ErrorPresenter& errors,
                  DataEvents& events,
-                 Navigator& navigator,
                  BulkRunner& bulk,
                  LoanWorkflow& loans,
                  LoanListSpec& loanHistorySpec);
@@ -44,17 +38,18 @@ public:
     Core::Status edit(QWidget* parent, qint64 bookId);
     Core::Status archive(QWidget* parent, const QList<qint64>& ids, const QList<QString>& labels);
     Core::Status showLoans(QWidget* parent, qint64 bookId);
+    /// Opens the category manager. Emits Categories once if anything changed.
     Core::Status manageCategories(QWidget* parent);
+
+    /// What the book editor opens on, with Categories wired to this workflow.
+    [[nodiscard]] BookEditRequest editRequest(std::optional<Repositories::BookRecord> book = {});
+    [[nodiscard]] static Repositories::BookWrite writeFor(const BookForm& form);
 
 private:
     Repositories::CatalogRepository& m_catalog;
-    Repositories::CirculationRepository& m_circulation;
-    CatalogLookups& m_lookups;
-    OcrService& m_ocr;
     DialogFactory& m_dialogs;
     ErrorPresenter& m_errors;
     DataEvents& m_events;
-    Navigator& m_navigator;
     BulkRunner& m_bulk;
     LoanWorkflow& m_loanWorkflow;
     LoanListSpec& m_loanHistorySpec;

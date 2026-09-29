@@ -1,8 +1,9 @@
 #pragma once
 
 #include <VLMS/Repositories/ArchiveTypes.h>
-#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CatalogTypes.h>
+
+#include "ui/presentation/ReadSources.h"
 
 #include <QStringList>
 #include <QWidget>
@@ -22,7 +23,7 @@ class BookFacetFilters final : public QWidget {
     Q_OBJECT
 
 public:
-    BookFacetFilters(Repositories::CatalogRepository& repository, Repositories::ArchiveScope scope, QWidget* parent = nullptr);
+    BookFacetFilters(BookFacetSource& source, Repositories::ArchiveScope scope, QWidget* parent = nullptr);
 
     /// Re-reads the labels, languages and categories; keeps the picks.
     void refresh();
@@ -38,7 +39,7 @@ signals:
     void changed();
 
 private:
-    Repositories::CatalogRepository& m_repository;
+    BookFacetSource& m_source;
     Repositories::ArchiveScope m_scope;
     FacetList* m_language = nullptr;
     FacetList* m_category = nullptr;

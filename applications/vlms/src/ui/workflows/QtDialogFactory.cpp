@@ -1,119 +1,100 @@
 #include "ui/workflows/QtDialogFactory.h"
 
-#include "ui/views/UiHelpers.h"
 #include "ui/views/BookEditorDialog.h"
+#include "ui/views/BulkAction.h"
 #include "ui/views/CategoryManagerDialog.h"
 #include "ui/views/LoanCheckoutDialog.h"
 #include "ui/views/LoanExtendDialog.h"
+#include "ui/views/LoanHistoryDialog.h"
 #include "ui/views/LoanReturnDialog.h"
 #include "ui/views/MemberEditorDialog.h"
+#include "ui/views/ReuseNumberFlow.h"
+#include "ui/views/UiHelpers.h"
 #include "ui/presentation/CatalogLookups.h"
 #include "ui/presentation/CirculationLookups.h"
 #include "ui/presentation/MemberLookups.h"
 #include "ui/services/OcrService.h"
 
-#include <VLMS/Repositories/CatalogRepository.h>
-
 #include <QDialog>
+
+#include <memory>
 
 namespace VLMS {
 namespace {
 
-BookForm bookFormFromDialog(const BookEditorDialog& dialog)
+LoanHistoryDialog::Kind dialogKind(const LoanHistoryKind kind)
 {
-    BookForm form;
-    form.book = dialog.bookInput();
-    form.copies = dialog.copyInputs();
-    form.coverSourcePath = dialog.coverSourcePath();
-    form.coverChanged = dialog.coverChanged();
-    return form;
+    switch (kind) {
+    case LoanHistoryKind::Book:
+        return LoanHistoryDialog::Kind::Book;
+    case LoanHistoryKind::Member:
+        return LoanHistoryDialog::Kind::Member;
+    case LoanHistoryKind::ArchivedMember:
+        return LoanHistoryDialog::Kind::ArchivedMember;
+    case LoanHistoryKind::ArchivedBook:
+        return LoanHistoryDialog::Kind::ArchivedBook;
+    case LoanHistoryKind::ArchivedCopy:
+        return LoanHistoryDialog::Kind::ArchivedCopy;
+    }
+    return LoanHistoryDialog::Kind::Book;
 }
 
 }  // namespace
 
-QtDialogFactory::QtDialogFactory(Repositories::CatalogRepository& catalog,
-                                 CatalogLookups& catalogLookups,
+QtDialogFactory::QtDialogFactory(CatalogLookups& catalogLookups,
                                  MemberLookups& memberLookups,
                                  CirculationLookups& circulationLookups,
                                  OcrService& ocr)
-    : m_catalog(catalog)
-    , m_catalogLookups(catalogLookups)
+    : m_catalogLookups(catalogLookups)
     , m_memberLookups(memberLookups)
     , m_circulationLookups(circulationLookups)
     , m_ocr(ocr)
 {
 }
 
-std::optional<BookForm> QtDialogFactory::addBook(QWidget* parent)
+std::optional<BookForm> QtDialogFactory::editBook(QWidget* parent, const BookEditRequest& request)
 {
-    BookEditorDialog dialog(m_catalogLookups, m_ocr, parent);
-    dialog.setDialogFactory(this);
-    if (dialog.exec() != QDialog::Accepted) {
+    std::unique_ptr<BookEditorDialog> dialog =
+        request.book ? std::make_unique<BookEditorDialog>(m_catalogLookups, m_ocr, *request.book, parent)
+                     : std::make_unique<BookEditorDialog>(m_catalogLookups, m_ocr, parent);
+    dialog->setManageCategories(request.manageCategories);
+    if (request.reserveNumberFrom) {
+        dialog->reserveCopyNumber(*request.reserveNumberFrom);
+    }
+    if (dialog->exec() != QDialog::Accepted) {
         return std::nullopt;
     }
-    return bookFormFromDialog(dialog);
+    BookForm form;
+    form.book = dialog->bookInput();
+    form.copies = dialog->copyInputs();
+    form.coverSourcePath = dialog->coverSourcePath();
+    form.coverChanged = dialog->coverChanged();
+    return form;
 }
 
-std::optional<BookForm> QtDialogFactory::editBook(QWidget* parent, const BookForm& initial)
+std::optional<MemberForm> QtDialogFactory::editMember(
+    QWidget* parent, const std::optional<Repositories::MemberRecord>& member)
 {
-    // Phase 1 wraps today's editor, which loads from a BookRecord. Callers that
-    // only have BookInput rebuild a minimal record; workflows (Phase 2) will
-    // pass the full record into a richer factory method.
-    Repositories::BookRecord book;
-    book.title = initial.book.title;
-    book.authorName = initial.book.authorName;
-    book.publisherName = initial.book.publisherName;
-    book.categoryId = initial.book.categoryId;
-    book.isbn = initial.book.isbn;
-    book.publicationDate = initial.book.publicationDate;
-    book.placeOfPublication = initial.book.placeOfPublication;
-    book.pages = initial.book.pages;
-    book.dimensions = initial.book.dimensions;
-    book.language = initial.book.language;
-    book.description = initial.book.description;
-    BookEditorDialog dialog(m_catalogLookups, m_ocr, book, parent);
-    dialog.setDialogFactory(this);
-    if (dialog.exec() != QDialog::Accepted) {
+    std::unique_ptr<MemberEditorDialog> dialog =
+        member ? std::make_unique<MemberEditorDialog>(m_memberLookups, *member, parent)
+               : std::make_unique<MemberEditorDialog>(m_memberLookups, parent);
+    if (dialog->exec() != QDialog::Accepted) {
         return std::nullopt;
     }
-    return bookFormFromDialog(dialog);
-}
-
-std::optional<MemberForm> QtDialogFactory::addMember(QWidget* parent)
-{
-    MemberEditorDialog dialog(m_memberLookups, parent);
-    if (dialog.exec() != QDialog::Accepted) {
-        return std::nullopt;
-    }
-    return MemberForm{dialog.memberInput()};
-}
-
-std::optional<MemberForm> QtDialogFactory::editMember(QWidget* parent, const MemberForm& initial)
-{
-    Repositories::MemberRecord member;
-    member.membershipNumber = initial.member.membershipNumber;
-    member.firstName = initial.member.firstName;
-    member.lastName = initial.member.lastName;
-    member.sex = initial.member.sex;
-    member.dateOfBirth = initial.member.dateOfBirth;
-    member.email = initial.member.email;
-    member.phone = initial.member.phone;
-    member.address = initial.member.address;
-    member.city = initial.member.city;
-    member.status = initial.member.status;
-    member.notes = initial.member.notes;
-    member.occupation = initial.member.occupation;
-    member.fullName = initial.member.fullName;
-    MemberEditorDialog dialog(m_memberLookups, member, parent);
-    if (dialog.exec() != QDialog::Accepted) {
-        return std::nullopt;
-    }
-    return MemberForm{dialog.memberInput()};
+    MemberForm form;
+    form.member = dialog->memberInput();
+    form.photoSourcePath = dialog->photoSourcePath();
+    form.idImageSourcePath = dialog->idImageSourcePath();
+    form.photoChanged = dialog->photoChanged();
+    form.idImageChanged = dialog->idImageChanged();
+    form.photoRemoved = dialog->photoRemoved();
+    form.idImageRemoved = dialog->idImageRemoved();
+    return form;
 }
 
 std::optional<LoanForm> QtDialogFactory::checkout(QWidget* parent, const LoanForm& prefill)
 {
-    LoanScope scope;
+    ::LoanScope scope;
     scope.bookId = prefill.bookId;
     scope.memberId = prefill.memberId;
     LoanCheckoutDialog dialog(m_circulationLookups, scope, parent);
@@ -150,20 +131,48 @@ std::optional<ExtendForm> QtDialogFactory::extendLoan(QWidget* parent,
     return ExtendForm{dialog.dueAt()};
 }
 
-std::optional<CategoryEdits> QtDialogFactory::manageCategories(QWidget* parent)
+void QtDialogFactory::manageCategories(QWidget* parent, CategoryEditor& editor)
 {
-    // CategoryManagerDialog applies edits as it goes and closes with Rejected
-    // (Close). Running it is the success; cancel is Escape before any useful
-    // work, which still leaves applied=true for Phase 1 — callers treat empty
-    // optional as "factory declined to open", not "user closed".
-    CategoryManagerDialog dialog(m_catalog, parent);
+    CategoryManagerDialog dialog(editor, parent);
     dialog.exec();
-    return CategoryEdits{true};
+}
+
+std::optional<qint64> QtDialogFactory::chooseReuseTarget(
+    QWidget* parent, const Repositories::BookCopyRecord& archivedCopy)
+{
+    ReuseBookChooser chooser(m_catalogLookups, archivedCopy, parent);
+    if (chooser.exec() != QDialog::Accepted || chooser.chosenBookId() < 0) {
+        return std::nullopt;
+    }
+    return chooser.chosenBookId();
+}
+
+void QtDialogFactory::showLoanHistory(QWidget* parent, const LoanHistoryRequest& request)
+{
+    if (request.spec == nullptr || request.loans == nullptr || request.events == nullptr) {
+        return;
+    }
+    LoanHistoryDialog dialog(*request.spec, *request.loans, *request.events,
+                             dialogKind(request.kind), request.id, request.title, request.scope,
+                             parent);
+    dialog.exec();
 }
 
 bool QtDialogFactory::confirmBulk(QWidget* parent, const BulkPlan& plan)
 {
-    return askYesNo(parent, plan.title, plan.text);
+    return VLMS::askYesNo(parent, plan.title, plan.text);
+}
+
+std::unique_ptr<BulkProgress> QtDialogFactory::startProgress(QWidget* parent,
+                                                             const QString& title,
+                                                             int total)
+{
+    return QtBulkUi(parent).startProgress(title, total);
+}
+
+void QtDialogFactory::inform(QWidget* parent, const QString& title, const QString& text)
+{
+    showInformation(parent, title, text);
 }
 
 bool QtDialogFactory::askYesNo(QWidget* parent, const QString& title, const QString& text)

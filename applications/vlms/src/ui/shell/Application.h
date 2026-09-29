@@ -9,6 +9,7 @@
 #include "ui/presentation/QtCatalogLookups.h"
 #include "ui/presentation/QtCirculationLookups.h"
 #include "ui/presentation/QtMemberLookups.h"
+#include "ui/presentation/ReadSources.h"
 #include "ui/services/OcrService.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
@@ -46,6 +47,9 @@ public:
     [[nodiscard]] VLMS::MemberLookups& memberLookups() { return *m_memberLookups; }
     [[nodiscard]] VLMS::CirculationLookups& circulationLookups() { return *m_circulationLookups; }
     [[nodiscard]] VLMS::OcrService& ocr() { return *m_ocr; }
+    [[nodiscard]] VLMS::BookFacetSource& bookFacets() { return *m_bookFacets; }
+    [[nodiscard]] VLMS::MemberFacetSource& memberFacets() { return *m_memberFacets; }
+    [[nodiscard]] VLMS::MetricsSource& metricsSource() { return *m_metricsSource; }
     [[nodiscard]] VLMS::DataEvents& dataEvents() { return *m_dataEvents; }
     [[nodiscard]] VLMS::ErrorPresenter& errors() { return *m_errors; }
     /// Null when the database is not ready (no repositories to back dialogs).
@@ -79,5 +83,8 @@ private:
     std::unique_ptr<VLMS::QtMemberLookups> m_memberLookups;
     std::unique_ptr<VLMS::QtCirculationLookups> m_circulationLookups;
     std::unique_ptr<VLMS::OcrService> m_ocr;
+    std::unique_ptr<VLMS::RepositoryBookFacets> m_bookFacets;
+    std::unique_ptr<VLMS::RepositoryMemberFacets> m_memberFacets;
+    std::unique_ptr<VLMS::RepositoryMetrics> m_metricsSource;
     std::unique_ptr<VLMS::QtDialogFactory> m_dialogs;
 };

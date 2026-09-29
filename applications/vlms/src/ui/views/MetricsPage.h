@@ -1,6 +1,6 @@
 #pragma once
 
-#include <VLMS/Repositories/MetricsRepository.h>
+#include "ui/presentation/ReadSources.h"
 
 #include <QVector>
 #include <QWidget>
@@ -14,7 +14,7 @@ class MetricsPage final : public QWidget {
     Q_OBJECT
 
 public:
-    explicit MetricsPage(VLMS::Repositories::MetricsRepository& repository, QWidget* parent = nullptr);
+    explicit MetricsPage(VLMS::MetricsSource& source, QWidget* parent = nullptr);
 
     void refreshMetrics();
 
@@ -39,7 +39,7 @@ private:
     void refreshActivityTable();
     void refreshTopCategoriesTable();
 
-    VLMS::Repositories::MetricsRepository& m_repository;
+    VLMS::MetricsSource& m_source;
 
     QPushButton* m_refreshButton = nullptr;
     QVector<MetricCard> m_overviewCards;

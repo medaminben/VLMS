@@ -40,6 +40,8 @@ add_library(vlms_ui STATIC
     src/ui/workflows/DataEvents.cpp
     src/ui/workflows/QtErrorPresenter.cpp
     src/ui/workflows/QtDialogFactory.cpp
+    src/ui/presentation/ReadSources.cpp
+    src/ui/workflows/BulkFlow.cpp
     src/ui/workflows/BulkRunner.cpp
     src/ui/workflows/BookWorkflow.cpp
     src/ui/workflows/MemberWorkflow.cpp
@@ -95,11 +97,12 @@ add_library(vlms_ui STATIC
     src/ui/workflows/DataEvents.h
     src/ui/workflows/ErrorPresenter.h
     src/ui/workflows/QtErrorPresenter.h
-    src/ui/workflows/FakeErrorPresenter.h
     src/ui/workflows/Forms.h
     src/ui/workflows/DialogFactory.h
     src/ui/workflows/QtDialogFactory.h
-    src/ui/workflows/FakeDialogFactory.h
+    src/ui/presentation/ReadSources.h
+    src/ui/workflows/BulkFlow.h
+    src/ui/workflows/CategoryEditor.h
     src/ui/workflows/BulkRunner.h
     src/ui/workflows/BookWorkflow.h
     src/ui/workflows/MemberWorkflow.h

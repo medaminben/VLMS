@@ -1,20 +1,13 @@
 #include "ui/workflows/MemberWorkflow.h"
 
 #include "QtBridge.h"
-#include "ui/views/LoanHistoryDialog.h"
-#include "ui/views/MemberEditorDialog.h"
-#include "ui/presentation/LoanListSpec.h"
-#include "ui/presentation/MemberLookups.h"
 #include "ui/workflows/BulkRunner.h"
-#include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
 #include "ui/shell/Navigator.h"
-#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
-#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 
 #include <QWidget>
@@ -24,10 +17,26 @@ using VLMS::qs;
 using VLMS::ss;
 
 namespace VLMS {
+namespace {
+
+Repositories::MemberWrite writeFor(const MemberForm& form)
+{
+    Repositories::MemberWrite write;
+    write.member = form.member;
+    if (form.photoChanged) {
+        write.photoSourcePath = ss(form.photoSourcePath);
+    }
+    if (form.idImageChanged) {
+        write.idImageSourcePath = ss(form.idImageSourcePath);
+    }
+    write.clearPhoto = form.photoRemoved;
+    write.clearIdImage = form.idImageRemoved;
+    return write;
+}
+
+}  // namespace
 
 MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
-                               Repositories::CirculationRepository& circulation,
-                               MemberLookups& lookups,
                                DialogFactory& dialogs,
                                ErrorPresenter& errors,
                                DataEvents& events,
@@ -36,8 +45,6 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
                                LoanWorkflow& loans,
                                LoanListSpec& loanHistorySpec)
     : m_members(members)
-    , m_circulation(circulation)
-    , m_lookups(lookups)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
@@ -46,27 +53,15 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
     , m_loanWorkflow(loans)
     , m_loanHistorySpec(loanHistorySpec)
 {
-    (void)m_dialogs;
 }
 
 Core::Status MemberWorkflow::add(QWidget* parent)
 {
-    MemberEditorDialog dialog(m_lookups, parent);
-    if (dialog.exec() != QDialog::Accepted) {
+    const auto form = m_dialogs.editMember(parent, std::nullopt);
+    if (!form) {
         return Core::Status::ok();
     }
-
-    Repositories::MemberWrite write;
-    write.member = dialog.memberInput();
-    if (dialog.photoChanged()) {
-        write.photoSourcePath = ss(dialog.photoSourcePath());
-    }
-    if (dialog.idImageChanged()) {
-        write.idImageSourcePath = ss(dialog.idImageSourcePath());
-    }
-    write.clearPhoto = dialog.photoRemoved();
-    write.clearIdImage = dialog.idImageRemoved();
-    const auto created = m_members.saveNewMember(write);
+    const auto created = m_members.saveNewMember(writeFor(*form));
     if (!created) {
         m_errors.show(parent, created.error());
         return Core::asStatus(created);
@@ -78,32 +73,19 @@ Core::Status MemberWorkflow::add(QWidget* parent)
 Core::Status MemberWorkflow::edit(QWidget* parent, qint64 memberId)
 {
     if (memberId <= 0) {
-        showInformation(parent, T("members.editMember"), T("members.selectMemberFirst"));
+        m_dialogs.inform(parent, T("members.editMember"), T("members.selectMemberFirst"));
         return Core::Status::ok();
     }
-
     const auto member = m_members.getMember(memberId);
     if (!member) {
         m_errors.show(parent, member.error());
         return Core::asStatus(member);
     }
-
-    MemberEditorDialog dialog(m_lookups, member.value(), parent);
-    if (dialog.exec() != QDialog::Accepted) {
+    const auto form = m_dialogs.editMember(parent, member.value());
+    if (!form) {
         return Core::Status::ok();
     }
-
-    Repositories::MemberWrite write;
-    write.member = dialog.memberInput();
-    if (dialog.photoChanged()) {
-        write.photoSourcePath = ss(dialog.photoSourcePath());
-    }
-    if (dialog.idImageChanged()) {
-        write.idImageSourcePath = ss(dialog.idImageSourcePath());
-    }
-    write.clearPhoto = dialog.photoRemoved();
-    write.clearIdImage = dialog.idImageRemoved();
-    const auto saved = m_members.saveExistingMember(memberId, write);
+    const auto saved = m_members.saveExistingMember(memberId, writeFor(*form));
     if (!saved) {
         m_errors.show(parent, saved.error());
         return saved;
@@ -117,7 +99,7 @@ Core::Status MemberWorkflow::archive(QWidget* parent,
                                      const QList<QString>& labels)
 {
     if (ids.isEmpty()) {
-        showInformation(parent, T("members.deleteMember"), T("members.selectMemberFirst"));
+        m_dialogs.inform(parent, T("members.deleteMember"), T("members.selectMemberFirst"));
         return Core::Status::ok();
     }
 
@@ -139,14 +121,14 @@ Core::Status MemberWorkflow::archive(QWidget* parent,
             return Core::asStatus(block);
         }
         if (block.value() == Repositories::MemberRepository::MemberRemovalBlock::OpenLoans) {
-            if (showWarningWithAction(parent, title, T("members.deleteBlockedByLoans"),
-                                      T("members.goToLoans"))) {
+            if (m_dialogs.warnWithAction(parent, title, T("members.deleteBlockedByLoans"),
+                                         T("members.goToLoans"))) {
                 const auto member = m_members.getMember(memberId);
                 m_navigator.showMemberLoans(member ? qs(member->membershipNumber) : QString());
             }
             return Core::Status::ok();
         }
-        if (!askYesNo(parent, title, T("members.deleteConfirm"))) {
+        if (!m_dialogs.askYesNo(parent, title, T("members.deleteConfirm"))) {
             return Core::Status::ok();
         }
         const auto archived = m_members.archiveMember(memberId);
@@ -181,13 +163,15 @@ Core::Status MemberWorkflow::showLoans(QWidget* parent, qint64 memberId)
         m_errors.show(parent, member.error());
         return Core::asStatus(member);
     }
-    const QString fullName = qs(member->fullName.empty()
-                                    ? member->firstName + " " + member->lastName
-                                    : member->fullName);
-    LoanHistoryDialog dialog(m_loanHistorySpec, m_loanWorkflow, m_events,
-                             LoanHistoryDialog::Kind::Member, memberId, fullName,
-                             Repositories::ArchiveScope::Any, parent);
-    dialog.exec();
+    LoanHistoryRequest request;
+    request.kind = LoanHistoryKind::Member;
+    request.id = memberId;
+    request.title = qs(member->fullName.empty() ? member->firstName + " " + member->lastName
+                                                : member->fullName);
+    request.spec = &m_loanHistorySpec;
+    request.loans = &m_loanWorkflow;
+    request.events = &m_events;
+    m_dialogs.showLoanHistory(parent, request);
     return Core::Status::ok();
 }
 

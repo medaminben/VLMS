@@ -75,4 +75,24 @@ QString QtCatalogLookups::resolveCoverPath(const QString& storedPath) const
     return qs(m_catalog.resolveCoverPath(ss(storedPath)));
 }
 
+std::vector<Repositories::BookRecord> QtCatalogLookups::booksForCopySource(const QString& search,
+                                                                             const QString& source) const
+{
+    Repositories::BookQuery query;
+    query.search = ss(search);
+    query.limit = 200;
+    const auto books = m_catalog.listBooks(query);
+    std::vector<Repositories::BookRecord> matching;
+    if (!books) {
+        return matching;
+    }
+    const std::string wanted = ss(source);
+    for (const Repositories::BookRecord& book : books.value()) {
+        if (Repositories::CatalogRepository::copySourceForLanguage(book.language) == wanted) {
+            matching.push_back(book);
+        }
+    }
+    return matching;
+}
+
 }  // namespace VLMS

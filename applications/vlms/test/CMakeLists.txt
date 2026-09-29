@@ -108,6 +108,7 @@ build_gtest_executable(
         src/test_member_workflow.cpp
         src/test_loan_workflow.cpp
         src/test_archive_workflow.cpp
+        src/test_bulk_runner.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui
@@ -193,3 +194,11 @@ set_target_properties(test_vlms_bench PROPERTIES
     AUTORCC ON
 )
 target_sources(test_vlms_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+
+# Layer rules from the frontend redesign spec, checked on the sources.
+find_program(VLMS_BASH bash)
+if(VLMS_BASH)
+    add_test(NAME ui_layer_deps
+             COMMAND ${VLMS_BASH} ${CMAKE_CURRENT_SOURCE_DIR}/check_ui_layer_deps.sh)
+    set_tests_properties(ui_layer_deps PROPERTIES LABELS ui)
+endif()
