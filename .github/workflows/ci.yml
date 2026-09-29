@@ -84,7 +84,14 @@ jobs:
         # Job env already sets QT_QPA_PLATFORM=offscreen for discovery and ctest.
         # build_gtest_executable() also sets it per-test (and via TEST_LAUNCHER)
         # so a local `ctest` without that env still starts QApplication.
-        run: ctest --output-on-failure --no-tests=error -LE realdb
+        # Sanitizers: skip the Catalog Show-All bench (label `bench`) — ASan
+        # inflates timings past the 300 ms budget. test_vlms_bench also
+        # GTEST_SKIPs when VLMS_SKIP_BENCH is set.
+        run: |
+          if [ "${{ matrix.name }}" = "sanitizers" ]; then
+            export VLMS_SKIP_BENCH=1
+          fi
+          ctest --output-on-failure --no-tests=error -LE realdb
 
       - name: Release tool tests
         if: matrix.name == 'default'

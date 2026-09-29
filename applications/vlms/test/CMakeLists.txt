@@ -131,3 +131,34 @@ set_target_properties(test_vlms_presentation PROPERTIES
     AUTORCC ON
 )
 target_sources(test_vlms_presentation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+
+# Catalog Show-All timing against the bundled production DB. Labelled `bench`
+# (not `ui`) so CI can exclude or skip it under sanitizers without slowing the
+# main widget suite. Runtime also honours VLMS_SKIP_BENCH.
+build_gtest_executable(
+    NAME test_vlms_bench
+    SRC src/test_main.cpp src/test_vlms_bench.cpp
+    DEPENDS
+        vlms_testsupport
+        vlms_ui
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Test
+    DISCOVER ON
+    NO_GTEST_MAIN
+    LABELS bench
+    TIMEOUT 120
+)
+target_include_directories(test_vlms_bench PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+# Absolute path: discovered-test ENVIRONMENT is truncated (semicolon list bug),
+# so the bench cannot rely on VLMS_SCHEMA_PATH at runtime.
+target_compile_definitions(test_vlms_bench PRIVATE
+    VLMS_BENCH_DB_PATH="${CMAKE_SOURCE_DIR}/database/vlms.db"
+)
+set_target_properties(test_vlms_bench PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+)
+target_sources(test_vlms_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
