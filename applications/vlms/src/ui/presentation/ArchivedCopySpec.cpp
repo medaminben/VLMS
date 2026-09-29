@@ -77,7 +77,7 @@ QList<ColumnSpec> ArchivedCopySpec::columns() const
 
 QList<FacetSpec> ArchivedCopySpec::facets() const
 {
-    // ArchivePage uses Any for copy language/category value lists (live titles
+    // archive page uses Any for copy language/category value lists (live titles
     // can still own archived copies).
     FacetSpec language;
     language.key = QStringLiteral("language");

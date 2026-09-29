@@ -18,13 +18,16 @@
 #include "ui/ManualLocation.h"
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
-#include "ui/archive/ArchivePage.h"
 #include "ui/catalog/BookFacetFilters.h"
 #include "ui/catalog/LocalNumberDelegate.h"
 #include "ui/LanguageSelector.h"
 #include "ui/ListPage.h"
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/metrics/MetricsPage.h"
+#include "ui/presentation/ArchivedBookSpec.h"
+#include "ui/presentation/ArchivedCopySpec.h"
+#include "ui/presentation/ArchivedLoanSpec.h"
+#include "ui/presentation/ArchivedMemberSpec.h"
 #include "ui/presentation/BookListSpec.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "ui/presentation/MemberListSpec.h"
@@ -53,6 +56,9 @@
 #include <QStandardPaths>
 #include <QTableView>
 #include <QVBoxLayout>
+
+#include <algorithm>
+#include <iterator>
 
 using VLMS::T;
 using VLMS::cd;
@@ -99,6 +105,19 @@ QStringList coverFacetTokens(const VLMS::Repositories::CoverFilter filter)
     }
     return {QStringLiteral("all")};
 }
+
+struct ArchiveTypeEntry {
+    VLMS::ArchiveType type;
+    const char* code;
+    const char* labelKey;
+};
+
+constexpr ArchiveTypeEntry kArchiveTypes[] = {
+    {VLMS::ArchiveType::Members, "members", "archive.type.members"},
+    {VLMS::ArchiveType::Books, "books", "archive.type.books"},
+    {VLMS::ArchiveType::Copies, "copies", "archive.type.copies"},
+    {VLMS::ArchiveType::Loans, "loans", "archive.type.loans"},
+};
 }  // namespace
 
 MainWindow::MainWindow(Application& app, QWidget* parent)
@@ -337,8 +356,54 @@ void MainWindow::buildUi() {
             applyCirculationFacets();
         });
         refreshLoanFilterList();
-        m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),
-                                        *m_archiveWorkflow, m_stack);
+        m_archivedMemberSpec = std::make_unique<VLMS::ArchivedMemberSpec>(
+            m_app.members(), *m_archiveWorkflow);
+        m_archivedBookSpec = std::make_unique<VLMS::ArchivedBookSpec>(
+            m_app.catalog(), m_app.circulation(), *m_archiveWorkflow);
+        m_archivedCopySpec = std::make_unique<VLMS::ArchivedCopySpec>(
+            m_app.catalog(), *m_archiveWorkflow);
+        m_archivedLoanSpec = std::make_unique<VLMS::ArchivedLoanSpec>(
+            m_app.circulation(), m_app.catalog(), m_app.members(), *m_archiveWorkflow);
+        VLMS::ListPage::Config archiveCfg;
+        archiveCfg.titleKey = QStringLiteral("page.archive.title");
+        archiveCfg.bodyKey = QStringLiteral("page.archive.body");
+        archiveCfg.searchPlaceholderKey = QStringLiteral("archive.searchPlaceholder");
+        archiveCfg.imageObjectName = QStringLiteral("archiveImage");
+        archiveCfg.imageBounds = VLMS::bookCoverPreviewBounds();
+        archiveCfg.secondImageObjectName = QStringLiteral("archiveMemberPhoto");
+        archiveCfg.secondImageBounds = VLMS::bookCoverPreviewBounds();
+        m_archivePage = new VLMS::ListPage(m_archivedMemberSpec.get(), m_app.dataEvents(),
+                                           archiveCfg, m_stack);
+        m_archiveTypeList = new QListWidget(m_archivePage->filterColumn());
+        m_archiveTypeList->setObjectName(QStringLiteral("archiveType"));
+        m_archiveTypeList->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_archiveTypeList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        for (const ArchiveTypeEntry& entry : kArchiveTypes) {
+            auto* item = new QListWidgetItem(m_archiveTypeList);
+            item->setData(Qt::UserRole, QString::fromLatin1(entry.code));
+        }
+        m_archiveTypeList->item(0)->setSelected(true);
+        connect(m_archiveTypeList, &QListWidget::itemSelectionChanged, this,
+                &MainWindow::onArchiveTypeChanged);
+        m_archivePage->addFilterWidget(m_archiveTypeList, 0);
+        m_archiveMemberFilters = new VLMS::MemberFacetFilters(
+            m_app.members(), VLMS::Repositories::ArchiveScope::Archived,
+            m_archivePage->filterColumn());
+        m_archivePage->addFilterWidget(m_archiveMemberFilters, 1);
+        connect(m_archiveMemberFilters, &VLMS::MemberFacetFilters::changed, this, [this]() {
+            applyArchiveFacets();
+        });
+        m_archiveBookFilters = new VLMS::BookFacetFilters(
+            m_app.catalog(), VLMS::Repositories::ArchiveScope::Archived,
+            m_archivePage->filterColumn());
+        m_archivePage->addFilterWidget(m_archiveBookFilters, 1);
+        connect(m_archiveBookFilters, &VLMS::BookFacetFilters::changed, this, [this]() {
+            applyArchiveFacets();
+        });
+        m_archiveType = VLMS::ArchiveType::Members;
+        refreshArchiveTypeList();
+        applyArchiveFilterVisibility();
+        applyArchiveFacets();
         m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
     } else {
         m_membersPage = nullptr;
@@ -352,6 +417,13 @@ void MainWindow::buildUi() {
         m_loanMemberFilters = nullptr;
         m_loanListSpec.reset();
         m_archivePage = nullptr;
+        m_archiveTypeList = nullptr;
+        m_archiveMemberFilters = nullptr;
+        m_archiveBookFilters = nullptr;
+        m_archivedMemberSpec.reset();
+        m_archivedBookSpec.reset();
+        m_archivedCopySpec.reset();
+        m_archivedLoanSpec.reset();
         m_metricsPage = nullptr;
     }
 
@@ -494,7 +566,10 @@ void MainWindow::showPage(Page page)
     }
     m_stack->setCurrentIndex(index);
     if (page == Page::Archive && m_archivePage != nullptr) {
-        m_archivePage->refresh();
+        applyArchiveFilterVisibility();
+        if (VLMS::PagedQueryModel* model = m_archivePage->model()) {
+            model->reload();
+        }
     }
     if (page == Page::Metrics && m_metricsPage != nullptr) {
         m_metricsPage->refreshMetrics();
@@ -639,6 +714,8 @@ void MainWindow::retranslateUi()
     }
     if (m_archivePage != nullptr) {
         m_archivePage->retranslateUi();
+        refreshArchiveTypeList();
+        applyArchiveFilterVisibility();
     } else {
         retranslatePlaceholder(m_stack->widget(3));
     }
@@ -714,25 +791,7 @@ void MainWindow::showBook(qint64 bookId)
 void MainWindow::showArchive(VLMS::ArchiveType type)
 {
     showPage(Page::Archive);
-    if (m_archivePage == nullptr) {
-        return;
-    }
-    ArchivePage::Type pageType = ArchivePage::Type::Members;
-    switch (type) {
-    case VLMS::ArchiveType::Members:
-        pageType = ArchivePage::Type::Members;
-        break;
-    case VLMS::ArchiveType::Books:
-        pageType = ArchivePage::Type::Books;
-        break;
-    case VLMS::ArchiveType::Copies:
-        pageType = ArchivePage::Type::Copies;
-        break;
-    case VLMS::ArchiveType::Loans:
-        pageType = ArchivePage::Type::Loans;
-        break;
-    }
-    m_archivePage->setType(pageType);
+    selectArchiveType(type);
 }
 
 void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
@@ -740,6 +799,9 @@ void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
     if ((what & VLMS::Entity::Books) || (what & VLMS::Entity::Copies)) {
         if (m_bookFilters != nullptr) {
             m_bookFilters->refresh();
+        }
+        if (m_archiveBookFilters != nullptr) {
+            m_archiveBookFilters->refresh();
         }
     }
     if (what & VLMS::Entity::Members) {
@@ -749,10 +811,17 @@ void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
         if (m_loanMemberFilters != nullptr) {
             m_loanMemberFilters->refresh();
         }
+        if (m_archiveMemberFilters != nullptr) {
+            m_archiveMemberFilters->refresh();
+        }
     }
     if (what & VLMS::Entity::Loans) {
         if (m_loanMemberFilters != nullptr) {
             m_loanMemberFilters->refresh();
+        }
+        if (m_archiveMemberFilters != nullptr
+            && currentArchiveType() == VLMS::ArchiveType::Loans) {
+            m_archiveMemberFilters->refresh();
         }
     }
     if (m_metricsPage != nullptr) {
@@ -858,3 +927,179 @@ void MainWindow::selectLoanFilterAll()
         }
     }
 }
+
+void MainWindow::refreshArchiveTypeList()
+{
+    if (m_archiveTypeList == nullptr) {
+        return;
+    }
+    for (int row = 0; row < m_archiveTypeList->count()
+                      && row < static_cast<int>(std::size(kArchiveTypes));
+         ++row) {
+        m_archiveTypeList->item(row)->setText(T(kArchiveTypes[row].labelKey));
+    }
+    sizeArchiveTypeList();
+}
+
+void MainWindow::sizeArchiveTypeList()
+{
+    if (m_archiveTypeList == nullptr) {
+        return;
+    }
+    m_archiveTypeList->ensurePolished();
+    int rows = 0;
+    for (int row = 0; row < m_archiveTypeList->count(); ++row) {
+        rows += std::max(m_archiveTypeList->sizeHintForRow(row), 20);
+    }
+    const QMargins margins = m_archiveTypeList->contentsMargins();
+    m_archiveTypeList->setFixedHeight(rows + 2 * m_archiveTypeList->frameWidth() + margins.top()
+                                      + margins.bottom());
+}
+
+VLMS::ArchiveType MainWindow::currentArchiveType() const
+{
+    return m_archiveType;
+}
+
+VLMS::ListSpec* MainWindow::archiveSpecFor(VLMS::ArchiveType type) const
+{
+    switch (type) {
+    case VLMS::ArchiveType::Members:
+        return m_archivedMemberSpec.get();
+    case VLMS::ArchiveType::Books:
+        return m_archivedBookSpec.get();
+    case VLMS::ArchiveType::Copies:
+        return m_archivedCopySpec.get();
+    case VLMS::ArchiveType::Loans:
+        return m_archivedLoanSpec.get();
+    }
+    return m_archivedMemberSpec.get();
+}
+
+void MainWindow::applyArchiveFilterVisibility()
+{
+    if (m_archiveMemberFilters == nullptr || m_archiveBookFilters == nullptr) {
+        return;
+    }
+    const bool memberType =
+        m_archiveType == VLMS::ArchiveType::Members || m_archiveType == VLMS::ArchiveType::Loans;
+    m_archiveMemberFilters->setVisible(memberType);
+    m_archiveBookFilters->setVisible(!memberType);
+    // A loan's borrower can be live or archived, and an archived copy can
+    // belong to a live title, so those two read their values from every row.
+    m_archiveMemberFilters->setValueScope(
+        m_archiveType == VLMS::ArchiveType::Loans ? VLMS::Repositories::ArchiveScope::Any
+                                                  : VLMS::Repositories::ArchiveScope::Archived);
+    if (m_archiveType == VLMS::ArchiveType::Loans) {
+        m_archiveMemberFilters->useLoanYears([this]() {
+            return m_app.circulation().listLoanYears(VLMS::Repositories::ArchiveScope::Archived);
+        });
+    } else {
+        m_archiveMemberFilters->useLoanYears({});
+    }
+    m_archiveBookFilters->setScope(m_archiveType == VLMS::ArchiveType::Copies
+                                       ? VLMS::Repositories::ArchiveScope::Any
+                                       : VLMS::Repositories::ArchiveScope::Archived);
+    if (memberType) {
+        m_archiveMemberFilters->refresh();
+    } else {
+        m_archiveBookFilters->refresh();
+    }
+}
+
+void MainWindow::applyArchiveFacets()
+{
+    if (m_archivePage == nullptr) {
+        return;
+    }
+    QHash<QString, QStringList> mapped;
+    const bool memberType =
+        m_archiveType == VLMS::ArchiveType::Members || m_archiveType == VLMS::ArchiveType::Loans;
+    if (memberType && m_archiveMemberFilters != nullptr) {
+        const VLMS::Repositories::MemberFacets facets = m_archiveMemberFilters->facets();
+        mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+        mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+        mapped.insert(QStringLiteral("year"),
+                      m_archiveType == VLMS::ArchiveType::Loans
+                          ? m_archiveMemberFilters->loanYears()
+                          : qsl(facets.inscriptionYears));
+        mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+        mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+    } else if (!memberType && m_archiveBookFilters != nullptr) {
+        mapped.insert(QStringLiteral("language"), m_archiveBookFilters->languages());
+        mapped.insert(QStringLiteral("category"), m_archiveBookFilters->categoryCodes());
+        mapped.insert(QStringLiteral("cover"),
+                      coverFacetTokens(m_archiveBookFilters->coverFilter()));
+    }
+    m_archivePage->setFacets(mapped);
+}
+
+void MainWindow::onArchiveTypeChanged()
+{
+    if (m_archiveTypeList == nullptr || m_archivePage == nullptr) {
+        return;
+    }
+    const auto selected = m_archiveTypeList->selectedItems();
+    if (selected.isEmpty()) {
+        const QSignalBlocker blocker(m_archiveTypeList);
+        for (int row = 0; row < m_archiveTypeList->count()
+                          && row < static_cast<int>(std::size(kArchiveTypes));
+             ++row) {
+            if (kArchiveTypes[row].type == m_archiveType) {
+                m_archiveTypeList->item(row)->setSelected(true);
+                break;
+            }
+        }
+        return;
+    }
+    const int row = m_archiveTypeList->row(selected.first());
+    if (row < 0 || row >= static_cast<int>(std::size(kArchiveTypes))) {
+        return;
+    }
+    m_archiveType = kArchiveTypes[row].type;
+    if (m_archiveMemberFilters != nullptr) {
+        m_archiveMemberFilters->reset();
+    }
+    if (m_archiveBookFilters != nullptr) {
+        m_archiveBookFilters->reset();
+    }
+    applyArchiveFilterVisibility();
+    if (VLMS::ListSpec* spec = archiveSpecFor(m_archiveType)) {
+        m_archivePage->setSpec(spec);
+    }
+    applyArchiveFacets();
+}
+
+void MainWindow::selectArchiveType(VLMS::ArchiveType type)
+{
+    if (m_archivePage == nullptr) {
+        m_archiveType = type;
+        return;
+    }
+    if (m_archiveTypeList != nullptr) {
+        for (int row = 0; row < m_archiveTypeList->count()
+                          && row < static_cast<int>(std::size(kArchiveTypes));
+             ++row) {
+            if (kArchiveTypes[row].type == type) {
+                const QSignalBlocker blocker(m_archiveTypeList);
+                m_archiveTypeList->clearSelection();
+                m_archiveTypeList->item(row)->setSelected(true);
+                break;
+            }
+        }
+    }
+    // Drive the same path as a click so columns and filters update.
+    m_archiveType = type;
+    if (m_archiveMemberFilters != nullptr) {
+        m_archiveMemberFilters->reset();
+    }
+    if (m_archiveBookFilters != nullptr) {
+        m_archiveBookFilters->reset();
+    }
+    applyArchiveFilterVisibility();
+    if (VLMS::ListSpec* spec = archiveSpecFor(type)) {
+        m_archivePage->setSpec(spec);
+    }
+    applyArchiveFacets();
+}
+

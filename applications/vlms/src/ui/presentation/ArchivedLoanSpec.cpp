@@ -137,7 +137,7 @@ QList<PageAction> ArchivedLoanSpec::actions() const
     purge.id = QStringLiteral("purge");
     purge.labelKey = QStringLiteral("archive.purge");
     purge.needs = PageAction::Needs::Some;
-    // ArchivePage: loans may always be purged when selected / ticked.
+    // archive page: loans may always be purged when selected / ticked.
     purge.enabled = [](const ActionContext& ctx) { return !ctx.ids.isEmpty(); };
     purge.run = [this](const ActionContext& ctx) {
         QList<QString> labels;

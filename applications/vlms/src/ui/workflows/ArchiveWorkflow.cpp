@@ -218,7 +218,8 @@ Core::Status ArchiveWorkflow::purge(QWidget* parent,
             m_errors.show(parent, removed.error());
             return removed;
         }
-        // Single purge does not emit DataEvents (nothing returned to a live page).
+        // ListPage reloads from DataEvents; the old archive page used to refresh itself.
+        m_events.emitChanged(entityFor(type), {id});
         return Core::Status::ok();
     }
 

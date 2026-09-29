@@ -173,11 +173,17 @@ QList<PageAction> ArchivedBookSpec::actions() const
         if (ctx.ids.isEmpty()) {
             return false;
         }
-        if (ctx.ids.size() > 1) {
+        if (ctx.fromChecks || ctx.ids.size() > 1) {
             return true;
         }
-        const auto book = m_catalog.getBook(ctx.ids.first());
-        return book && book->totalCopies == 0;
+        // Highlight only: getBook() counts live copies; use the archived list
+        // row so the Copies column and the Purge gate stay in agreement.
+        for (const Repositories::BookRecord& book : m_records) {
+            if (book.id == ctx.ids.first()) {
+                return book.totalCopies == 0;
+            }
+        }
+        return false;
     };
     purge.run = [this](const ActionContext& ctx) {
         QList<QString> labels;

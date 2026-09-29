@@ -15,6 +15,10 @@ namespace VLMS {
 struct ActionContext {
     QList<qint64> ids;
     QWidget* parent = nullptr;
+    /// True when ids came from row ticks rather than the highlight alone.
+    /// Archive purge mirrors the old page: any tick enables the button so the
+    /// workflow can refuse a blocked row.
+    bool fromChecks = false;
 };
 
 struct PageAction {

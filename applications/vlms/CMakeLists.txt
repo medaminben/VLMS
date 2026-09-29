@@ -38,7 +38,6 @@ add_library(vlms_ui STATIC
     src/ui/circulation/LoanReturnDialog.cpp
     src/ui/circulation/LoanHistoryActions.cpp
     src/ui/metrics/MetricsPage.cpp
-    src/ui/archive/ArchivePage.cpp
     src/ui/archive/ArchiveLoansDialog.cpp
     src/ui/archive/ReuseNumberFlow.cpp
     src/ui/workflows/DataEvents.cpp
@@ -93,7 +92,6 @@ add_library(vlms_ui STATIC
     src/ui/circulation/LoanReturnDialog.h
     src/ui/circulation/LoanHistoryActions.h
     src/ui/metrics/MetricsPage.h
-    src/ui/archive/ArchivePage.h
     src/ui/archive/ArchiveLoansDialog.h
     src/ui/archive/ReuseNumberFlow.h
     src/ui/workflows/DataEvents.h

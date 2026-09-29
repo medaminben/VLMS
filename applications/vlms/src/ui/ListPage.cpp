@@ -36,7 +36,8 @@ constexpr int kDebounceMs = 250;
 
 bool isPrimaryAction(const QString& id)
 {
-    return id == QStringLiteral("add") || id == QStringLiteral("checkout");
+    return id == QStringLiteral("add") || id == QStringLiteral("checkout")
+        || id == QStringLiteral("restore");
 }
 
 }  // namespace
@@ -69,7 +70,27 @@ void ListPage::setSpec(ListSpec* spec)
         return;
     }
     m_spec = spec;
-    m_model->setSpec(spec);
+    if (m_model != nullptr) {
+        // Archive type switch: previous sort/facets are meaningless on the new
+        // list. Keep search text and page size.
+        QueryState state = m_model->query();
+        state.sortKey.clear();
+        state.ascending = true;
+        state.page = 1;
+        state.facets.clear();
+        m_model->setSpec(spec);
+        m_model->setQuery(state);
+    }
+    if (m_pager != nullptr) {
+        m_pager->resetToFirstPage();
+    }
+    if (QTableView* view = table()) {
+        view->setSortingEnabled(false);
+        if (QHeaderView* header = view->horizontalHeader()) {
+            header->setSortIndicator(-1, Qt::AscendingOrder);
+        }
+        view->setSortingEnabled(true);
+    }
     rebuildChrome();
 }
 
@@ -457,6 +478,7 @@ void ListPage::rebuildActions()
     }
     for (QPushButton* button : m_actionButtons) {
         padLayout->removeWidget(button);
+        button->setParent(nullptr);
         button->deleteLater();
     }
     m_actionButtons.clear();
@@ -678,6 +700,7 @@ ActionContext ListPage::currentContext() const
     if (m_model != nullptr) {
         ctx.ids = m_model->checkedIds();
     }
+    ctx.fromChecks = !ctx.ids.isEmpty();
     if (ctx.ids.isEmpty()) {
         const qint64 id = selectedId();
         if (id > 0) {
@@ -692,17 +715,15 @@ qint64 ListPage::selectedId() const
     if (m_table == nullptr || m_model == nullptr || m_spec == nullptr) {
         return 0;
     }
-    const QModelIndex current = m_table->currentIndex();
-    if (!current.isValid()) {
-        const auto indexes = m_table->selectionModel() != nullptr
-            ? m_table->selectionModel()->selectedRows()
-            : QModelIndexList{};
-        if (indexes.isEmpty()) {
-            return 0;
+    // Prefer an explicitly selected row. currentIndex can linger after
+    // clearSelection(), which would keep Needs::Some actions wrongly enabled.
+    if (m_table->selectionModel() != nullptr) {
+        const auto indexes = m_table->selectionModel()->selectedRows();
+        if (!indexes.isEmpty()) {
+            return m_spec->idAt(indexes.first().row());
         }
-        return m_spec->idAt(indexes.first().row());
     }
-    return m_spec->idAt(current.row());
+    return 0;
 }
 
 QList<PageAction> ListPage::orderedActions() const
@@ -750,6 +771,7 @@ int ListPage::actionSortRank(const QString& id)
         QStringLiteral("add"),
         QStringLiteral("edit"),
         QStringLiteral("loans"),
+        QStringLiteral("reuse"),
         QStringLiteral("archive"),
         QStringLiteral("restore"),
         QStringLiteral("purge"),

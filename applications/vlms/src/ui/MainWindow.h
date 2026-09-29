@@ -8,7 +8,6 @@
 #include <QMainWindow>
 
 class Application;
-class ArchivePage;
 class MetricsPage;
 class QLabel;
 class QListWidget;
@@ -18,11 +17,16 @@ class QVBoxLayout;
 
 namespace VLMS {
 class ArchiveWorkflow;
+class ArchivedBookSpec;
+class ArchivedCopySpec;
+class ArchivedLoanSpec;
+class ArchivedMemberSpec;
 class BookFacetFilters;
 class BookListSpec;
 class BookWorkflow;
 class BulkRunner;
 class ListPage;
+class ListSpec;
 class LoanListSpec;
 class LoanWorkflow;
 class MemberFacetFilters;
@@ -63,6 +67,14 @@ private:
     void refreshLoanFilterList();
     void applyCirculationFacets();
     void selectLoanFilterAll();
+    void refreshArchiveTypeList();
+    void sizeArchiveTypeList();
+    void applyArchiveFilterVisibility();
+    void applyArchiveFacets();
+    void onArchiveTypeChanged();
+    void selectArchiveType(VLMS::ArchiveType type);
+    [[nodiscard]] VLMS::ArchiveType currentArchiveType() const;
+    [[nodiscard]] VLMS::ListSpec* archiveSpecFor(VLMS::ArchiveType type) const;
     [[nodiscard]] static Page toPage(VLMS::PageId id);
 
     Application& m_app;
@@ -85,7 +97,7 @@ private:
     VLMS::ListPage* m_membersPage = nullptr;
     VLMS::ListPage* m_catalogPage = nullptr;
     VLMS::ListPage* m_circulationPage = nullptr;
-    ArchivePage* m_archivePage = nullptr;
+    VLMS::ListPage* m_archivePage = nullptr;
     MetricsPage* m_metricsPage = nullptr;
 
     Page m_activePage = Page::Catalog;
@@ -98,8 +110,16 @@ private:
     std::unique_ptr<VLMS::MemberListSpec> m_memberListSpec;
     std::unique_ptr<VLMS::BookListSpec> m_bookListSpec;
     std::unique_ptr<VLMS::LoanListSpec> m_loanListSpec;
+    std::unique_ptr<VLMS::ArchivedMemberSpec> m_archivedMemberSpec;
+    std::unique_ptr<VLMS::ArchivedBookSpec> m_archivedBookSpec;
+    std::unique_ptr<VLMS::ArchivedCopySpec> m_archivedCopySpec;
+    std::unique_ptr<VLMS::ArchivedLoanSpec> m_archivedLoanSpec;
     VLMS::MemberFacetFilters* m_memberFilters = nullptr;
     VLMS::BookFacetFilters* m_bookFilters = nullptr;
     VLMS::MemberFacetFilters* m_loanMemberFilters = nullptr;
     QListWidget* m_loanFilter = nullptr;
+    QListWidget* m_archiveTypeList = nullptr;
+    VLMS::MemberFacetFilters* m_archiveMemberFilters = nullptr;
+    VLMS::BookFacetFilters* m_archiveBookFilters = nullptr;
+    VLMS::ArchiveType m_archiveType = VLMS::ArchiveType::Members;
 };
