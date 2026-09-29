@@ -80,16 +80,6 @@ QWidget* makeDetailValueWidget(QWidget* parent, bool scrollable = false);
 void setDetailValueText(QWidget* widget, const QString& text);
 void clearDetailValueText(QWidget* widget);
 
-[[nodiscard]] inline QString dashIfEmpty(const QString& value)
-{
-    return value.isEmpty() ? T("common.emDash") : value;
-}
-
-[[nodiscard]] inline QString dashIfEmpty(std::string_view value)
-{
-    return value.empty() ? T("common.emDash") : qs(value);
-}
-
 [[nodiscard]] inline QString errorText(const Core::Error& error)
 {
     if (error.key.empty()) {

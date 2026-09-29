@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/presentation/LocalNumberCell.h"
+
 #include <QColor>
 #include <QPointer>
 #include <QStringList>
@@ -21,39 +23,30 @@ class LocalNumberDelegate final : public QStyledItemDelegate {
     Q_OBJECT
 
 public:
-    /// Item role holding the row's numbers as a QStringList.
-    static constexpr int kNumbersRole = Qt::UserRole + 1;
-
-    /// Item role holding the one number the cell shows, as a QString: the copy
-    /// the librarian picked from the drop-down, or the one a number search
-    /// matched. Empty, or absent from kNumbersRole, means the first number.
-    static constexpr int kSelectedRole = Qt::UserRole + 2;
-
-    /// Item role holding the subset of kNumbersRole whose copy is out on an
-    /// unreturned loan, as a QStringList. A subset rather than a flag per
-    /// number: the numbers are unique within a book, so membership answers the
-    /// question and there is no index to keep aligned with kNumbersRole.
-    /// Absent or empty means every copy is on the shelf.
-    static constexpr int kOnLoanRole = Qt::UserRole + 3;
+    /// Roles and closed-cell text live in presentation (`LocalNumberCell`);
+    /// aliases keep existing call sites compiling.
+    static constexpr int kNumbersRole = VLMS::LocalNumberCell::kNumbersRole;
+    static constexpr int kSelectedRole = VLMS::LocalNumberCell::kSelectedRole;
+    static constexpr int kOnLoanRole = VLMS::LocalNumberCell::kOnLoanRole;
 
     explicit LocalNumberDelegate(QObject* parent = nullptr);
 
-    /// What the closed cell reads: an em dash for none, the number itself for
-    /// one, and "<selected> (+<rest>)" for more — where the selected number is
-    /// `selected` when the row holds it, and the first otherwise.
     [[nodiscard]] static QString cellText(const QStringList& numbers,
-                                          const QString& selected = {});
+                                          const QString& selected = {})
+    {
+        return VLMS::LocalNumberCell::cellText(numbers, selected);
+    }
 
-    /// The part of `cellText` that names one copy, and so the only part
-    /// coloured by that copy's loan state: the em dash for none, otherwise the
-    /// selected number when the row holds it and the first otherwise.
     [[nodiscard]] static QString leadNumber(const QStringList& numbers,
-                                            const QString& selected = {});
+                                            const QString& selected = {})
+    {
+        return VLMS::LocalNumberCell::leadNumber(numbers, selected);
+    }
 
-    /// The rest of `cellText` — " (+<n>)" when the book has more copies than
-    /// the one named, empty otherwise. Stays in the table's own text colour:
-    /// it counts copies whose states are not the lead's to speak for.
-    [[nodiscard]] static QString restSuffix(const QStringList& numbers);
+    [[nodiscard]] static QString restSuffix(const QStringList& numbers)
+    {
+        return VLMS::LocalNumberCell::restSuffix(numbers);
+    }
 
     void paint(QPainter* painter,
                const QStyleOptionViewItem& option,

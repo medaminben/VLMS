@@ -76,4 +76,15 @@ namespace VLMS {
     return qs(Core::Strings::t2(key, p1, v1, p2, v2));
 }
 
+[[nodiscard]] inline QString dashIfEmpty(const QString& value)
+{
+    return value.isEmpty() ? T("common.emDash") : value;
+}
+
+[[nodiscard]] inline QString dashIfEmpty(std::string_view value)
+{
+    return value.empty() ? T("common.emDash") : qs(value);
+}
+
 }  // namespace VLMS
+

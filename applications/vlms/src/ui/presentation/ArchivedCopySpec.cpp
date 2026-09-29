@@ -1,7 +1,6 @@
 #include "ui/presentation/ArchivedCopySpec.h"
 
 #include "QtBridge.h"
-#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Repositories/ArchiveTypes.h>
 

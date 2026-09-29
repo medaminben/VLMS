@@ -18,9 +18,6 @@
 
 namespace {
 
-/// Shown when a book has no copies at all. 1,749 of the live catalogue's rows.
-const QString kNoNumbers = QString::fromUtf8("—");
-
 /// Frame margins plus the drop-down arrow, added to the text width so the
 /// closed combo has room to draw both without clipping the number(s).
 constexpr int kComboChromeWidth = 36;
@@ -95,31 +92,6 @@ QString LocalNumberDelegate::selectedOf(const QModelIndex& index)
 QStringList LocalNumberDelegate::onLoanOf(const QModelIndex& index)
 {
     return index.data(kOnLoanRole).toStringList();
-}
-
-QString LocalNumberDelegate::leadNumber(const QStringList& numbers, const QString& selected)
-{
-    if (numbers.isEmpty()) {
-        return kNoNumbers;
-    }
-    // A row whose selected number is not one of its own — a stale pick left on a
-    // reused item, say — falls back to the first rather than showing a number
-    // this book does not hold.
-    return numbers.contains(selected) ? selected : numbers.first();
-}
-
-QString LocalNumberDelegate::restSuffix(const QStringList& numbers)
-{
-    if (numbers.size() < 2) {
-        return {};
-    }
-    // Same untranslated " (+%1)" shape the filter-list counts already use.
-    return QStringLiteral(" (+%1)").arg(numbers.size() - 1);
-}
-
-QString LocalNumberDelegate::cellText(const QStringList& numbers, const QString& selected)
-{
-    return leadNumber(numbers, selected) + restSuffix(numbers);
 }
 
 void LocalNumberDelegate::drawNumberRuns(QPainter* painter,

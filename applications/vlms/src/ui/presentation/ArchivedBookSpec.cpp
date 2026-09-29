@@ -1,7 +1,6 @@
 #include "ui/presentation/ArchivedBookSpec.h"
 
 #include "QtBridge.h"
-#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Repositories/ArchiveTypes.h>
 #include <VLMS/Repositories/LoanTypes.h>

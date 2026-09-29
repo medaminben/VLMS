@@ -1,8 +1,7 @@
 #include "ui/presentation/BookListSpec.h"
 
 #include "QtBridge.h"
-#include "ui/views/UiHelpers.h"
-#include "ui/views/LocalNumberDelegate.h"
+#include "ui/presentation/LocalNumberCell.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/ArchiveTypes.h>
@@ -245,13 +244,13 @@ QVariant BookListSpec::cell(int row, int column, int role) const
         return display.id;
     }
     if (column == kLocalNumberColumn) {
-        if (role == LocalNumberDelegate::kNumbersRole) {
+        if (role == LocalNumberCell::kNumbersRole) {
             return display.localNumbers;
         }
-        if (role == LocalNumberDelegate::kSelectedRole) {
+        if (role == LocalNumberCell::kSelectedRole) {
             return display.selectedLocal;
         }
-        if (role == LocalNumberDelegate::kOnLoanRole) {
+        if (role == LocalNumberCell::kOnLoanRole) {
             return display.onLoanLocals;
         }
     }
@@ -338,7 +337,7 @@ QStringList BookListSpec::buildCells(const Repositories::BookRecord& book)
         qs(book.title),
         qs(book.authorName),
         qs(book.categoryLabel),
-        LocalNumberDelegate::cellText(localNumbers, selected),
+        LocalNumberCell::cellText(localNumbers, selected),
         QString::number(book.totalCopies),
         QString::number(book.availableCopies),
     };

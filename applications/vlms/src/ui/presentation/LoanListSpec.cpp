@@ -1,7 +1,6 @@
 #include "ui/presentation/LoanListSpec.h"
 
 #include "QtBridge.h"
-#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/ArchiveTypes.h>
