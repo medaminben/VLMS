@@ -12,9 +12,9 @@ add_library(vlms_ui STATIC
     src/ui/ImageViewerDialog.cpp
     src/ui/ManualLocation.cpp
     src/ui/UiHelpers.cpp
-    src/ui/TablePager.cpp
-    src/ui/TableHeaderSort.cpp
-    src/ui/TableRowChecks.cpp
+    src/ui/ListPagePager.cpp
+    src/ui/WidgetTableSort.cpp
+    src/ui/WidgetTableChecks.cpp
     src/ui/BulkAction.cpp
     src/ui/ListPageFrame.cpp
     src/ui/ListPage.cpp
@@ -66,9 +66,9 @@ add_library(vlms_ui STATIC
     src/ui/ImageViewerDialog.h
     src/ui/ManualLocation.h
     src/ui/UiHelpers.h
-    src/ui/TablePager.h
-    src/ui/TableHeaderSort.h
-    src/ui/TableRowChecks.h
+    src/ui/ListPagePager.h
+    src/ui/WidgetTableSort.h
+    src/ui/WidgetTableChecks.h
     src/ui/BulkAction.h
     src/ui/ListPageFrame.h
     src/ui/ListPage.h

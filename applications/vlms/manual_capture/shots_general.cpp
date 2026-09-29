@@ -7,7 +7,7 @@
 #include "ui/ClickableLabel.h"
 #include "ui/LanguageSelector.h"
 #include "ui/ListPageFrame.h"
-#include "ui/TablePager.h"
+#include "ui/ListPagePager.h"
 
 #include <QAbstractButton>
 #include <QApplication>

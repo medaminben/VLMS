@@ -1,7 +1,7 @@
 #include "ui/archive/ArchiveLoansDialog.h"
 
 #include "QtBridge.h"
-#include "ui/TableHeaderSort.h"
+#include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
 
 #include <QAbstractItemView>

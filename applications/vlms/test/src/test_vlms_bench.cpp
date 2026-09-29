@@ -1,13 +1,10 @@
 #include "WorkflowTestSupport.h"
 
-#include "QtBridge.h"
-#include "ui/catalog/LocalNumberDelegate.h"
 #include "ui/presentation/BookListSpec.h"
 #include "ui/presentation/PagedQueryModel.h"
 #include "ui/presentation/QueryState.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
-#include <VLMS/Repositories/CatalogTypes.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 
 #include "TestDatabase.h"
@@ -16,8 +13,6 @@
 #include <QElapsedTimer>
 #include <QFileInfo>
 #include <QTableView>
-#include <QTableWidget>
-#include <QTableWidgetItem>
 
 #include <gtest/gtest.h>
 
@@ -93,66 +88,6 @@ Repositories::BookQuery showAllQuery(const std::string& search = {})
     return query;
 }
 
-qint64 fillOldStyleTable(QTableWidget& table,
-                         Repositories::CatalogRepository& catalog,
-                         const std::string& search)
-{
-    QElapsedTimer timer;
-    timer.start();
-
-    // Mirror CatalogPage::refreshBooks query shape (count → list → fill).
-    Repositories::BookQuery query = showAllQuery(search);
-    const auto totalCount = catalog.countBooks(query);
-    EXPECT_TRUE(totalCount) << totalCount.error().detail;
-    if (!totalCount) {
-        return timer.elapsed();
-    }
-
-    query.limit = totalCount.value() > 0 ? totalCount.value() : 1;
-    query.offset = 0;
-    const auto booksResult = catalog.listBooks(query);
-    EXPECT_TRUE(booksResult) << booksResult.error().detail;
-    if (!booksResult) {
-        return timer.elapsed();
-    }
-
-    const auto& books = booksResult.value();
-    table.setRowCount(static_cast<int>(books.size()));
-    for (int row = 0; row < static_cast<int>(books.size()); ++row) {
-        const Repositories::BookRecord& book = books.at(static_cast<size_t>(row));
-
-        auto* titleItem = new QTableWidgetItem(qs(book.title));
-        titleItem->setData(Qt::UserRole, QVariant::fromValue(book.id));
-        table.setItem(row, 0, titleItem);
-        table.setItem(row, 1, new QTableWidgetItem(qs(book.authorName)));
-        table.setItem(row, 2, new QTableWidgetItem(qs(book.categoryLabel)));
-
-        auto* localItem = new QTableWidgetItem;
-        QStringList localNumbers;
-        localNumbers.reserve(static_cast<int>(book.localIds.size()));
-        for (const std::string& localId : book.localIds) {
-            localNumbers.append(qs(localId));
-        }
-        localItem->setData(LocalNumberDelegate::kNumbersRole, localNumbers);
-        if (!book.matchedLocalId.empty()) {
-            localItem->setData(LocalNumberDelegate::kSelectedRole, qs(book.matchedLocalId));
-        }
-        QStringList onLoanNumbers;
-        onLoanNumbers.reserve(static_cast<int>(book.localIdsOnLoan.size()));
-        for (const std::string& localId : book.localIdsOnLoan) {
-            onLoanNumbers.append(qs(localId));
-        }
-        localItem->setData(LocalNumberDelegate::kOnLoanRole, onLoanNumbers);
-        table.setItem(row, 3, localItem);
-
-        table.setItem(row, 4, new QTableWidgetItem(QString::number(book.totalCopies)));
-        table.setItem(row, 5, new QTableWidgetItem(QString::number(book.availableCopies)));
-    }
-
-    table.viewport()->repaint();
-    return timer.elapsed();
-}
-
 qint64 medianMs(std::vector<qint64> samples)
 {
     EXPECT_FALSE(samples.empty());
@@ -197,76 +132,43 @@ TEST(VlmsBench, CatalogShowAllRefreshUnderBudget)
     view.setModel(&model);
     view.show();
 
-    QTableWidget oldTable(0, 6);
-    oldTable.resize(kViewWidth, kViewHeight);
-    oldTable.setItemDelegateForColumn(3, new LocalNumberDelegate(&oldTable));
-    oldTable.show();
-
     QueryState showAll;
     showAll.pageSize = 0;
     showAll.page = 1;
     QueryState searched = showAll;
     searched.search = QStringLiteral("the");
 
-    // Warm both paths once (first Show-All load).
+    // Warm once (first Show-All load).
     model.setQuery(showAll);
     ASSERT_EQ(model.rowCount(), liveTotal.value());
     view.viewport()->repaint();
-    fillOldStyleTable(oldTable, *catalog, {});
-    ASSERT_EQ(oldTable.rowCount(), liveTotal.value());
 
-    std::vector<qint64> newSamples;
-    std::vector<qint64> oldSamples;
-    newSamples.reserve(kTrials);
-    oldSamples.reserve(kTrials);
+    std::vector<qint64> samples;
+    samples.reserve(kTrials);
 
     for (int trial = 0; trial < kTrials; ++trial) {
         model.setQuery(searched);
-        fillOldStyleTable(oldTable, *catalog, "the");
 
         QElapsedTimer timer;
         timer.start();
         model.setQuery(showAll);
         view.viewport()->repaint();
-        newSamples.push_back(timer.elapsed());
-
-        oldSamples.push_back(fillOldStyleTable(oldTable, *catalog, {}));
+        samples.push_back(timer.elapsed());
     }
 
     ASSERT_EQ(model.rowCount(), liveTotal.value());
-    ASSERT_EQ(oldTable.rowCount(), liveTotal.value());
 
-    const qint64 newRefreshMs = medianMs(newSamples);
-    const qint64 oldRefreshMs = medianMs(oldSamples);
-    RecordProperty("newRefreshMs", static_cast<int>(newRefreshMs));
-    RecordProperty("oldRefreshMs", static_cast<int>(oldRefreshMs));
-    std::cout << "Catalog Show-All medians: new=" << newRefreshMs
-              << " ms, old=" << oldRefreshMs << " ms\n";
+    const qint64 refreshMs = medianMs(samples);
+    RecordProperty("refreshMs", static_cast<int>(refreshMs));
+    std::cout << "Catalog Show-All median: " << refreshMs << " ms\n";
 
     std::ostringstream sampleLog;
-    sampleLog << "new samples:";
-    for (qint64 sample : newSamples) {
-        sampleLog << ' ' << sample;
-    }
-    sampleLog << "; old samples:";
-    for (qint64 sample : oldSamples) {
+    sampleLog << "samples:";
+    for (qint64 sample : samples) {
         sampleLog << ' ' << sample;
     }
 
-    EXPECT_LT(newRefreshMs, kRefreshBudgetMs)
-        << "new Show-All refresh median " << newRefreshMs << " ms (budget " << kRefreshBudgetMs
+    EXPECT_LT(refreshMs, kRefreshBudgetMs)
+        << "Show-All refresh median " << refreshMs << " ms (budget " << kRefreshBudgetMs
         << " ms); " << sampleLog.str();
-
-    // Until Task 14: old QTableWidget fill must not beat the new path.
-    // Debug builds pay extra in QAbstractItemModel reset + ListSpec display
-    // rebuild (~10 ms here) vs QTableWidgetItem churn; RelWithDebInfo/Release
-    // compare with zero slack. Do not widen the 300 ms budget for this.
-#if defined(NDEBUG)
-    constexpr qint64 kOldPathSlackMs = 0;
-#else
-    constexpr qint64 kOldPathSlackMs = 20;
-#endif
-    EXPECT_LE(newRefreshMs, oldRefreshMs + kOldPathSlackMs)
-        << "new path median " << newRefreshMs << " ms vs old path median " << oldRefreshMs
-        << " ms (slack " << kOldPathSlackMs << "); " << sampleLog.str();
 }

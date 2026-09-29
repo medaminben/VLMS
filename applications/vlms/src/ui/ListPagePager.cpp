@@ -1,4 +1,4 @@
-#include "ui/TablePager.h"
+#include "ui/ListPagePager.h"
 
 #include <VLMS/Core/Strings.h>
 #include "ui/UiHelpers.h"
@@ -22,7 +22,7 @@ constexpr int kPageSizeChoices[] = {20, 50, 100};
 
 }  // namespace
 
-TablePager::TablePager(QWidget* parent)
+ListPagePager::ListPagePager(QWidget* parent)
     : QWidget(parent) {
     setLayoutDirection(Qt::LayoutDirectionAuto);
 
@@ -64,14 +64,14 @@ TablePager::TablePager(QWidget* parent)
     m_pagesLabel = new QLabel(this);
     m_pagesLabel->setObjectName(QStringLiteral("pagerPages"));
 
-    connect(m_firstButton, &QPushButton::clicked, this, &TablePager::goFirst);
-    connect(m_previousButton, &QPushButton::clicked, this, &TablePager::goPrevious);
-    connect(m_nextButton, &QPushButton::clicked, this, &TablePager::goNext);
-    connect(m_lastButton, &QPushButton::clicked, this, &TablePager::goLast);
-    connect(m_pageSpin, &QSpinBox::valueChanged, this, &TablePager::goToPage);
+    connect(m_firstButton, &QPushButton::clicked, this, &ListPagePager::goFirst);
+    connect(m_previousButton, &QPushButton::clicked, this, &ListPagePager::goPrevious);
+    connect(m_nextButton, &QPushButton::clicked, this, &ListPagePager::goNext);
+    connect(m_lastButton, &QPushButton::clicked, this, &ListPagePager::goLast);
+    connect(m_pageSpin, &QSpinBox::valueChanged, this, &ListPagePager::goToPage);
 
     fillPageSizeCombo();
-    connect(m_pageSizeCombo, &QComboBox::currentIndexChanged, this, &TablePager::onPageSizeChosen);
+    connect(m_pageSizeCombo, &QComboBox::currentIndexChanged, this, &ListPagePager::onPageSizeChosen);
 
     constexpr int row = 0;
     int column = 0;
@@ -98,7 +98,7 @@ TablePager::TablePager(QWidget* parent)
     updateControls();
 }
 
-void TablePager::fillPageSizeCombo()
+void ListPagePager::fillPageSizeCombo()
 {
     const QSignalBlocker blocker(m_pageSizeCombo);
     m_pageSizeCombo->clear();
@@ -109,7 +109,7 @@ void TablePager::fillPageSizeCombo()
     syncPageSizeCombo();
 }
 
-void TablePager::syncPageSizeCombo()
+void ListPagePager::syncPageSizeCombo()
 {
     const int wanted = m_showAll ? kShowAllSize : m_pageSize;
     for (int i = 0; i < m_pageSizeCombo->count(); ++i) {
@@ -120,7 +120,7 @@ void TablePager::syncPageSizeCombo()
     }
 }
 
-void TablePager::setPageSize(int pageSize)
+void ListPagePager::setPageSize(int pageSize)
 {
     m_showAll = false;
     m_pageSize = qMax(1, pageSize);
@@ -131,7 +131,7 @@ void TablePager::setPageSize(int pageSize)
     updateControls();
 }
 
-int TablePager::pageSize() const
+int ListPagePager::pageSize() const
 {
     if (m_showAll) {
         return m_totalCount > 0 ? m_totalCount : 1;
@@ -139,7 +139,7 @@ int TablePager::pageSize() const
     return m_pageSize;
 }
 
-void TablePager::setTotalCount(int totalCount)
+void ListPagePager::setTotalCount(int totalCount)
 {
     m_totalCount = qMax(0, totalCount);
     const int pages = pageCount();
@@ -152,7 +152,7 @@ void TablePager::setTotalCount(int totalCount)
     updateControls();
 }
 
-int TablePager::pageCount() const
+int ListPagePager::pageCount() const
 {
     if (m_totalCount <= 0) {
         return 1;
@@ -161,25 +161,25 @@ int TablePager::pageCount() const
     return (m_totalCount + size - 1) / size;
 }
 
-int TablePager::offset() const
+int ListPagePager::offset() const
 {
     return (m_currentPage - 1) * pageSize();
 }
 
-void TablePager::resetToFirstPage()
+void ListPagePager::resetToFirstPage()
 {
     m_currentPage = 1;
     updateControls();
 }
 
-void TablePager::setCurrentPage(int page)
+void ListPagePager::setCurrentPage(int page)
 {
     const int pages = pageCount();
     m_currentPage = qBound(1, page, pages);
     updateControls();
 }
 
-void TablePager::retranslateUi()
+void ListPagePager::retranslateUi()
 {
     m_firstButton->setText(T("pager.first"));
     m_previousButton->setText(T("pager.previous"));
@@ -192,12 +192,12 @@ void TablePager::retranslateUi()
     updateControls();
 }
 
-void TablePager::goFirst()
+void ListPagePager::goFirst()
 {
     goToPage(1);
 }
 
-void TablePager::goPrevious()
+void ListPagePager::goPrevious()
 {
     if (m_currentPage <= 1) {
         return;
@@ -205,7 +205,7 @@ void TablePager::goPrevious()
     goToPage(m_currentPage - 1);
 }
 
-void TablePager::goNext()
+void ListPagePager::goNext()
 {
     if (m_currentPage >= pageCount()) {
         return;
@@ -213,12 +213,12 @@ void TablePager::goNext()
     goToPage(m_currentPage + 1);
 }
 
-void TablePager::goLast()
+void ListPagePager::goLast()
 {
     goToPage(pageCount());
 }
 
-void TablePager::goToPage(int page)
+void ListPagePager::goToPage(int page)
 {
     const int pages = pageCount();
     const int next = qBound(1, page, pages);
@@ -230,7 +230,7 @@ void TablePager::goToPage(int page)
     emit pageChanged(m_currentPage);
 }
 
-void TablePager::onPageSizeChosen(int index)
+void ListPagePager::onPageSizeChosen(int index)
 {
     const int size = m_pageSizeCombo->itemData(index).toInt();
     m_showAll = size <= 0;
@@ -242,7 +242,7 @@ void TablePager::onPageSizeChosen(int index)
     emit pageChanged(m_currentPage);
 }
 
-void TablePager::updateControls()
+void ListPagePager::updateControls()
 {
     const int pages = pageCount();
     setVisible(m_totalCount >= kMinVisibleCount);

@@ -9,7 +9,7 @@ class QSpinBox;
 
 namespace VLMS {
 
-class TablePager final : public QWidget {
+class ListPagePager final : public QWidget {
     Q_OBJECT
 
 public:
@@ -17,7 +17,7 @@ public:
     static constexpr int kMinVisibleCount = 20;
     static constexpr int kShowAllSize = 0;
 
-    explicit TablePager(QWidget* parent = nullptr);
+    explicit ListPagePager(QWidget* parent = nullptr);
 
     void setPageSize(int pageSize);
     [[nodiscard]] int pageSize() const;

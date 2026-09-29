@@ -1,6 +1,6 @@
 #include "ui/ListPageFrame.h"
 
-#include "ui/TablePager.h"
+#include "ui/ListPagePager.h"
 
 #include <QAbstractItemView>
 #include <QFrame>
@@ -100,7 +100,7 @@ void ListPageFrame::buildList(const ListConfig& config)
     m_table->verticalHeader()->setVisible(false);
     configureResizableColumns(m_table, config.tableColumnWidths);
 
-    m_pager = new TablePager(tablePanel);
+    m_pager = new ListPagePager(tablePanel);
     tableLayout->addWidget(m_table, 1);
     tableLayout->addWidget(m_pager);
 

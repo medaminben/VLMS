@@ -1,7 +1,7 @@
 #include "ui/ListPage.h"
 
 #include "ui/PreviewImages.h"
-#include "ui/TablePager.h"
+#include "ui/ListPagePager.h"
 #include "QtBridge.h"
 
 #include <VLMS/Core/Strings.h>
@@ -316,8 +316,8 @@ void ListPage::buildUi(const Config& config)
         }
     }
 
-    m_pager = new TablePager(tablePanel);
-    connect(m_pager, &TablePager::pageChanged, this, &ListPage::onPageChanged);
+    m_pager = new ListPagePager(tablePanel);
+    connect(m_pager, &ListPagePager::pageChanged, this, &ListPage::onPageChanged);
 
     tableLayout->addWidget(m_table, 1);
     tableLayout->addWidget(m_pager);

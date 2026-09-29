@@ -2,7 +2,7 @@
 
 #include <VLMS/Core/Strings.h>
 #include "ui/ListPageFrame.h"
-#include "ui/TableHeaderSort.h"
+#include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 

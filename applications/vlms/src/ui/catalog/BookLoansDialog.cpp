@@ -1,7 +1,7 @@
 #include "ui/catalog/BookLoansDialog.h"
 
 #include <VLMS/Core/Strings.h>
-#include "ui/TableHeaderSort.h"
+#include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/circulation/LoanHistoryActions.h"

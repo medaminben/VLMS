@@ -26,7 +26,7 @@ class QVBoxLayout;
 
 namespace VLMS {
 
-class TablePager;
+class ListPagePager;
 
 class ListPage final : public QWidget {
     Q_OBJECT
@@ -98,7 +98,7 @@ private:
     QLineEdit* m_search = nullptr;
     QTimer* m_debounce = nullptr;  // 250 ms, singleShot
     QTableView* m_table = nullptr;
-    TablePager* m_pager = nullptr;
+    ListPagePager* m_pager = nullptr;
     QWidget* m_filterColumn = nullptr;
     QVBoxLayout* m_filterLayout = nullptr;
     QWidget* m_buttonPad = nullptr;

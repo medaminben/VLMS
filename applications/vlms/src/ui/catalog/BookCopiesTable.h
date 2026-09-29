@@ -9,7 +9,7 @@ class CatalogRepository;
 }  // namespace VLMS::Repositories
 class QPushButton;
 class QTableWidget;
-class TableRowChecks;
+class WidgetTableChecks;
 
 /// Holdings table for the book editor. One row per physical copy.
 class BookCopiesTable final : public QWidget {
@@ -39,7 +39,7 @@ private:
 
     VLMS::Repositories::CatalogRepository& m_repository;
     QTableWidget* m_table = nullptr;
-    TableRowChecks* m_checks = nullptr;
+    WidgetTableChecks* m_checks = nullptr;
     QPushButton* m_addButton = nullptr;
     QPushButton* m_removeButton = nullptr;
 };

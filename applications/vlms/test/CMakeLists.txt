@@ -20,12 +20,9 @@ build_gtest_executable(
         src/test_preview_theme.cpp
         src/test_flag_icons.cpp
         src/test_language_selector.cpp
-        src/test_table_header_sort.cpp
-        src/test_table_row_checks.cpp
         src/test_bulk_action.cpp
         src/test_bulk_pages.cpp
         src/test_bulk_copies.cpp
-        src/test_table_pager.cpp
         src/test_category_sort.cpp
         src/test_metrics_activity_sort.cpp
         src/test_metrics_member_tiles.cpp

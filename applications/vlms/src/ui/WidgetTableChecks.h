@@ -11,15 +11,15 @@ class QWidget;
 
 /// Check boxes inside column 0 of a list table, plus a tri-state box at the
 /// leading edge of the header. The id stays on Qt::UserRole of that same cell,
-/// so no column index moves. Construct this before TableHeaderSort: the sort
+/// so no column index moves. Construct this before WidgetTableSort: the sort
 /// object connects to whatever header is installed at that moment.
-class TableRowChecks : public QObject {
+class WidgetTableChecks : public QObject {
     Q_OBJECT
 
     friend class CheckHeaderView;
 
 public:
-    explicit TableRowChecks(QTableWidget* table, QObject* parent = nullptr);
+    explicit WidgetTableChecks(QTableWidget* table, QObject* parent = nullptr);
 
     /// Qt::UserRole on column 0, for every ticked row, top to bottom.
     [[nodiscard]] QList<qint64> checkedIds() const;

@@ -14,7 +14,7 @@ class QVBoxLayout;
 
 namespace VLMS {
 
-class TablePager;
+class ListPagePager;
 
 /**
  * Shared shell for the four application pages.
@@ -53,7 +53,7 @@ public:
     [[nodiscard]] QLineEdit* searchEdit() const { return m_searchEdit; }
     [[nodiscard]] QWidget* buttonPad() const { return m_buttonPad; }
     [[nodiscard]] QTableWidget* table() const { return m_table; }
-    [[nodiscard]] TablePager* pager() const { return m_pager; }
+    [[nodiscard]] ListPagePager* pager() const { return m_pager; }
     [[nodiscard]] QLabel* imageLabel() const { return m_imageLabel; }
     /// Null unless ListConfig::secondImageObjectName was set.
     [[nodiscard]] QLabel* secondImageLabel() const { return m_secondImageLabel; }
@@ -73,7 +73,7 @@ private:
     QWidget* m_buttonPad = nullptr;
     QWidget* m_bodyHost = nullptr;
     QTableWidget* m_table = nullptr;
-    TablePager* m_pager = nullptr;
+    ListPagePager* m_pager = nullptr;
     QLabel* m_imageLabel = nullptr;
     QLabel* m_secondImageLabel = nullptr;
     QWidget* m_previewPanel = nullptr;

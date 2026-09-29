@@ -6,8 +6,8 @@
 #include <VLMS/Core/Result.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
-#include "ui/TableHeaderSort.h"
-#include "ui/TableRowChecks.h"
+#include "ui/WidgetTableSort.h"
+#include "ui/WidgetTableChecks.h"
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 
@@ -90,7 +90,7 @@ BookCopiesTable::BookCopiesTable(VLMS::Repositories::CatalogRepository& reposito
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    m_checks = new TableRowChecks(m_table, this);
+    m_checks = new WidgetTableChecks(m_table, this);
     VLMS::enableWidgetTableSort(m_table, kCopyLocalId, kCopyIdRole);
     m_table->setItemDelegateForColumn(kCopyLocalId, new FreeLocalNumberDelegate(m_table));
     layout->addWidget(m_table, 1);

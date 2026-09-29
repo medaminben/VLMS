@@ -7,11 +7,11 @@ class QTableWidget;
 
 namespace VLMS {
 
-class TableHeaderSort : public QObject {
+class WidgetTableSort : public QObject {
     Q_OBJECT
 
 public:
-    explicit TableHeaderSort(QTableWidget* table, QObject* parent = nullptr);
+    explicit WidgetTableSort(QTableWidget* table, QObject* parent = nullptr);
     void setColumnKeys(const QStringList& keys);
     /// Back to "no column": the caller's default order applies again. For a
     /// table whose columns change meaning, like the Archive's type switch.

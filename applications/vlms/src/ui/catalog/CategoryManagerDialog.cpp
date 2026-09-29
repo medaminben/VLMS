@@ -1,7 +1,7 @@
 #include "ui/catalog/CategoryManagerDialog.h"
 
 #include <VLMS/Core/Strings.h>
-#include "ui/TableHeaderSort.h"
+#include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 

@@ -1,4 +1,4 @@
-#include "ui/TableHeaderSort.h"
+#include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
 
 #include <QHeaderView>
@@ -7,7 +7,7 @@
 
 namespace VLMS {
 
-TableHeaderSort::TableHeaderSort(QTableWidget* table, QObject* parent)
+WidgetTableSort::WidgetTableSort(QTableWidget* table, QObject* parent)
     : QObject(parent == nullptr ? table : parent),
       m_table(table)
 {
@@ -17,15 +17,15 @@ TableHeaderSort::TableHeaderSort(QTableWidget* table, QObject* parent)
     QHeaderView* header = m_table->horizontalHeader();
     header->setSectionsClickable(true);
     header->setSortIndicatorShown(true);
-    connect(header, &QHeaderView::sectionClicked, this, &TableHeaderSort::onSectionClicked);
+    connect(header, &QHeaderView::sectionClicked, this, &WidgetTableSort::onSectionClicked);
 }
 
-void TableHeaderSort::setColumnKeys(const QStringList& keys)
+void WidgetTableSort::setColumnKeys(const QStringList& keys)
 {
     m_keys = keys;
 }
 
-void TableHeaderSort::reset()
+void WidgetTableSort::reset()
 {
     m_column = -1;
     m_ascending = true;
@@ -34,11 +34,11 @@ void TableHeaderSort::reset()
     }
 }
 
-int TableHeaderSort::column() const { return m_column; }
-bool TableHeaderSort::ascending() const { return m_ascending; }
-bool TableHeaderSort::isActive() const { return m_column >= 0; }
+int WidgetTableSort::column() const { return m_column; }
+bool WidgetTableSort::ascending() const { return m_ascending; }
+bool WidgetTableSort::isActive() const { return m_column >= 0; }
 
-QString TableHeaderSort::columnKey() const
+QString WidgetTableSort::columnKey() const
 {
     if (m_column < 0 || m_column >= m_keys.size()) {
         return {};
@@ -46,7 +46,7 @@ QString TableHeaderSort::columnKey() const
     return m_keys.at(m_column);
 }
 
-void TableHeaderSort::onSectionClicked(const int column)
+void WidgetTableSort::onSectionClicked(const int column)
 {
     if (m_column == column) {
         m_ascending = !m_ascending;
@@ -64,8 +64,8 @@ void enableWidgetTableSort(QTableWidget* table, const int idColumn, const int id
     if (table == nullptr) {
         return;
     }
-    auto* sort = new TableHeaderSort(table, table);
-    QObject::connect(sort, &TableHeaderSort::sortChanged, table,
+    auto* sort = new WidgetTableSort(table, table);
+    QObject::connect(sort, &WidgetTableSort::sortChanged, table,
                      [table, idColumn, idRole](int column, bool ascending) {
                          qint64 selected = 0;
                          if (table->selectionMode() != QAbstractItemView::NoSelection) {

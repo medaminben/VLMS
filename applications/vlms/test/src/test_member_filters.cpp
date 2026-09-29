@@ -3,7 +3,7 @@
 
 #include "QtBridge.h"
 #include "ui/ListPage.h"
-#include "ui/TablePager.h"
+#include "ui/ListPagePager.h"
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/presentation/MemberListSpec.h"
 #include "ui/workflows/Navigator.h"
@@ -272,7 +272,7 @@ TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
     m_page->show();
     QApplication::processEvents();
 
-    auto* pager = m_page->findChild<VLMS::TablePager*>();
+    auto* pager = m_page->findChild<VLMS::ListPagePager*>();
     ASSERT_NE(pager, nullptr);
     EXPECT_EQ(pager->totalCount(), 60);
     // The pager opens on ALL, so there is nothing to page through until a size

@@ -1,4 +1,4 @@
-#include "ui/TableRowChecks.h"
+#include "ui/WidgetTableChecks.h"
 
 #include <QEvent>
 #include <QHeaderView>
@@ -16,7 +16,7 @@ constexpr int kIndicatorMargin = 4;
 
 class CheckHeaderView : public QHeaderView {
 public:
-    explicit CheckHeaderView(TableRowChecks* checks, QWidget* parent)
+    explicit CheckHeaderView(WidgetTableChecks* checks, QWidget* parent)
         : QHeaderView(Qt::Horizontal, parent)
         , m_checks(checks)
     {
@@ -142,7 +142,7 @@ private:
         return QRect(sectionRect.left() + kIndicatorMargin, y, size, size);
     }
 
-    TableRowChecks* m_checks = nullptr;
+    WidgetTableChecks* m_checks = nullptr;
     Qt::CheckState m_state = Qt::Unchecked;
     bool m_pressedInBox = false;
 };
@@ -161,7 +161,7 @@ QRect cellIndicatorRect(const QTableWidget* table, const QModelIndex& index)
 
 }  // namespace
 
-TableRowChecks::TableRowChecks(QTableWidget* table, QObject* parent)
+WidgetTableChecks::WidgetTableChecks(QTableWidget* table, QObject* parent)
     : QObject(parent == nullptr ? table : parent)
     , m_table(table)
     , m_tableWidget(table)
@@ -225,7 +225,7 @@ TableRowChecks::TableRowChecks(QTableWidget* table, QObject* parent)
             [this] { noteCheckChange(); });
 }
 
-QTableWidget* TableRowChecks::liveTable() const
+QTableWidget* WidgetTableChecks::liveTable() const
 {
     // This object is a QObject, so it is destroyed from ~QObject, after
     // ~QWidget has already deleted the table. Viewport events and modelReset
@@ -235,7 +235,7 @@ QTableWidget* TableRowChecks::liveTable() const
     return dynamic_cast<QTableWidget*>(m_tableWidget);
 }
 
-QList<qint64> TableRowChecks::checkedIds() const
+QList<qint64> WidgetTableChecks::checkedIds() const
 {
     QList<qint64> ids;
     QTableWidget* table = liveTable();
@@ -251,7 +251,7 @@ QList<qint64> TableRowChecks::checkedIds() const
     return ids;
 }
 
-QList<int> TableRowChecks::checkedRows() const
+QList<int> WidgetTableChecks::checkedRows() const
 {
     QList<int> rows;
     QTableWidget* table = liveTable();
@@ -267,7 +267,7 @@ QList<int> TableRowChecks::checkedRows() const
     return rows;
 }
 
-void TableRowChecks::clear()
+void WidgetTableChecks::clear()
 {
     QTableWidget* table = liveTable();
     if (table == nullptr) {
@@ -281,7 +281,7 @@ void TableRowChecks::clear()
     noteCheckChange();
 }
 
-bool TableRowChecks::eventFilter(QObject* watched, QEvent* event)
+bool WidgetTableChecks::eventFilter(QObject* watched, QEvent* event)
 {
     QTableWidget* table = liveTable();
     if (table == nullptr || watched != table->viewport()) {
@@ -313,7 +313,7 @@ bool TableRowChecks::eventFilter(QObject* watched, QEvent* event)
     return true;
 }
 
-void TableRowChecks::toggleAll()
+void WidgetTableChecks::toggleAll()
 {
     QTableWidget* table = liveTable();
     if (table == nullptr) {
@@ -328,7 +328,7 @@ void TableRowChecks::toggleAll()
     noteCheckChange();
 }
 
-void TableRowChecks::noteCheckChange()
+void WidgetTableChecks::noteCheckChange()
 {
     QTableWidget* table = liveTable();
     if (m_adjusting || table == nullptr || m_header == nullptr) {
@@ -347,7 +347,7 @@ void TableRowChecks::noteCheckChange()
     publishCount();
 }
 
-void TableRowChecks::rememberCheckedRows()
+void WidgetTableChecks::rememberCheckedRows()
 {
     m_checkedRows.clear();
     QTableWidget* table = liveTable();
@@ -362,7 +362,7 @@ void TableRowChecks::rememberCheckedRows()
     }
 }
 
-void TableRowChecks::publishCount()
+void WidgetTableChecks::publishCount()
 {
     const int checked = countChecked();
     if (checked == m_publishedCount) {
@@ -372,18 +372,18 @@ void TableRowChecks::publishCount()
     emit checkedCountChanged(checked);
 }
 
-int TableRowChecks::countChecked() const
+int WidgetTableChecks::countChecked() const
 {
     return checkedRows().size();
 }
 
-bool TableRowChecks::everyRowChecked() const
+bool WidgetTableChecks::everyRowChecked() const
 {
     QTableWidget* table = liveTable();
     return table != nullptr && table->rowCount() > 0 && countChecked() == table->rowCount();
 }
 
-void TableRowChecks::setRowChecked(QTableWidgetItem* item, const bool checked)
+void WidgetTableChecks::setRowChecked(QTableWidgetItem* item, const bool checked)
 {
     if (item == nullptr) {
         return;
