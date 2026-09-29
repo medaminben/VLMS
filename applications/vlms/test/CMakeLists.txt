@@ -110,6 +110,7 @@ build_gtest_executable(
         src/test_archived_book_spec.cpp
         src/test_archived_copy_spec.cpp
         src/test_archived_loan_spec.cpp
+        src/test_catalog_lookups.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui
