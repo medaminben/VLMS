@@ -3,13 +3,15 @@
 
 #include "QtBridge.h"
 #include "ui/Theme.h"
+#include "ui/ListPage.h"
 #include "ui/archive/ArchivePage.h"
 #include "ui/catalog/BookFacetFilters.h"
-#include "ui/circulation/CirculationPage.h"
 #include "ui/members/MemberFacetFilters.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "ui/workflows/Navigator.h"
 #include "WorkflowTestSupport.h"
 
+#include <VLMS/Repositories/ArchiveTypes.h>
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
@@ -17,11 +19,14 @@
 #include <VLMS/Repositories/MemberTypes.h>
 
 #include <QApplication>
+#include <QHash>
 #include <QImage>
 #include <QLabel>
 #include <QListWidget>
+#include <QObject>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QTableView>
 #include <QTest>
 #include <QTimer>
 #include <QTableWidget>
@@ -57,6 +62,52 @@ T* named(QWidget* root, const char* name)
 {
     return root->findChild<T*>(QString::fromLatin1(name));
 }
+
+ListPage::Config circulationConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.circulation.title");
+    cfg.bodyKey = QStringLiteral("page.circulation.body");
+    cfg.searchPlaceholderKey = QStringLiteral("circulation.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    cfg.secondImageObjectName = QStringLiteral("loanMemberPhoto");
+    cfg.secondImageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
+struct CirculationListHarness {
+    LoanWorkflowHarness workflows;
+    std::unique_ptr<LoanListSpec> spec;
+    std::unique_ptr<ListPage> page;
+    MemberFacetFilters* memberFilters = nullptr;
+
+    explicit CirculationListHarness(Repositories::CirculationRepository& circulation,
+                                    Repositories::CatalogRepository& catalog,
+                                    Repositories::MemberRepository& members)
+        : workflows(circulation)
+    {
+        spec = std::make_unique<LoanListSpec>(circulation, catalog, members, *workflows.loans);
+        page = std::make_unique<ListPage>(spec.get(), workflows.events, circulationConfig());
+        memberFilters = new MemberFacetFilters(members, Repositories::ArchiveScope::Any,
+                                               page->filterColumn());
+        memberFilters->useLoanYears([&circulation]() {
+            return circulation.listLoanYears(Repositories::ArchiveScope::Live);
+        });
+        memberFilters->refresh();
+        page->addFilterWidget(memberFilters, 1);
+        QObject::connect(memberFilters, &MemberFacetFilters::changed, page.get(), [this]() {
+            const Repositories::MemberFacets facets = memberFilters->facets();
+            QHash<QString, QStringList> mapped;
+            mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+            mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+            mapped.insert(QStringLiteral("year"), memberFilters->loanYears());
+            mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+            mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+            page->setFacets(mapped);
+        });
+    }
+};
 
 }  // namespace
 
@@ -131,23 +182,22 @@ TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 
 TEST_F(test_ui_PageFacets, CirculationFiltersLoansByTheBorrowersSex)
 {
-    LoanWorkflowHarness workflows(*m_circulation);
-    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
-    auto* table = named<QTableWidget>(&page, "listTable");
+    CirculationListHarness harness(*m_circulation, *m_catalog, *m_members);
+    QTableView* table = harness.page->table();
     ASSERT_NE(table, nullptr);
-    ASSERT_EQ(table->rowCount(), 2);
+    ASSERT_EQ(table->model()->rowCount(), 2);
 
-    ASSERT_TRUE(pick(named<QListWidget>(&page, "sexFilter"), QString::fromLatin1(Repositories::MemberSex::kFemale)));
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_femaleLoan);
+    ASSERT_TRUE(pick(named<QListWidget>(harness.page.get(), "sexFilter"),
+                     QString::fromLatin1(Repositories::MemberSex::kFemale)));
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(table->model()->index(0, 0).data(Qt::UserRole).toLongLong(), m_femaleLoan);
 }
 
 TEST_F(test_ui_PageFacets, CirculationShowsTheCoverBesideTheBorrowersPhoto)
 {
-    LoanWorkflowHarness workflows(*m_circulation);
-    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
-    auto* cover = named<QLabel>(&page, "bookCover");
-    auto* photo = named<QLabel>(&page, "loanMemberPhoto");
+    CirculationListHarness harness(*m_circulation, *m_catalog, *m_members);
+    auto* cover = named<QLabel>(harness.page.get(), "bookCover");
+    auto* photo = named<QLabel>(harness.page.get(), "loanMemberPhoto");
     ASSERT_NE(cover, nullptr);
     ASSERT_NE(photo, nullptr);
     EXPECT_FALSE(photo->isHidden());
@@ -343,18 +393,17 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
                                              "2024-05-01", "2024-05-15", "2024-05-10");
     ASSERT_GT(older, 0);
 
-    LoanWorkflowHarness workflows(*m_circulation);
-    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
-    auto* table = named<QTableWidget>(&page, "listTable");
-    auto* years = named<QListWidget>(&page, "yearFilter");
+    CirculationListHarness harness(*m_circulation, *m_catalog, *m_members);
+    QTableView* table = harness.page->table();
+    auto* years = named<QListWidget>(harness.page.get(), "yearFilter");
     ASSERT_NE(years, nullptr);
-    ASSERT_EQ(table->rowCount(), 3);
+    ASSERT_EQ(table->model()->rowCount(), 3);
     EXPECT_EQ(years->item(0)->text(), VLMS::T("circulation.allLoanYears"));
 
     // Nobody registered in 2024; a loan was made then.
     ASSERT_TRUE(pick(years, QStringLiteral("2024")));
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), older);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(table->model()->index(0, 0).data(Qt::UserRole).toLongLong(), older);
 }
 
 TEST_F(test_ui_PageFacets, MembersYearIsStillTheYearOfRegistration)

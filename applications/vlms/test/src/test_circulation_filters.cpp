@@ -1,25 +1,33 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/circulation/CirculationPage.h"
+#include "QtBridge.h"
+#include "ui/ListPage.h"
+#include "ui/members/MemberFacetFilters.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/ArchiveTypes.h>
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Repositories/LoanTypes.h>
 
+#include <QAbstractItemView>
 #include <QApplication>
+#include <QHash>
+#include <QHeaderView>
 #include <QLayout>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QObject>
 #include <QPushButton>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include <QSignalBlocker>
+#include <QTableView>
 
 #include <gtest/gtest.h>
 
@@ -30,6 +38,11 @@ using namespace Test;
 
 namespace {
 
+bool isAllLoanFilter(const QString& code)
+{
+    return code.isEmpty() || code == QLatin1String(Repositories::LoanFilter::kAll);
+}
+
 bool selectFilterCode(QListWidget* list, const QString& code)
 {
     if (list == nullptr) {
@@ -37,7 +50,9 @@ bool selectFilterCode(QListWidget* list, const QString& code)
     }
     for (int row = 0; row < list->count(); ++row) {
         QListWidgetItem* item = list->item(row);
-        if (item->data(Qt::UserRole).toString() == code) {
+        const QString itemCode = item->data(Qt::UserRole).toString();
+        const bool matchesAll = isAllLoanFilter(code) && isAllLoanFilter(itemCode);
+        if (itemCode == code || matchesAll) {
             list->setCurrentItem(item);
             item->setSelected(true);
             QApplication::processEvents();
@@ -71,6 +86,54 @@ QStringList selectedFilterCodes(QListWidget* list)
     return codes;
 }
 
+ListPage::Config circulationConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.circulation.title");
+    cfg.bodyKey = QStringLiteral("page.circulation.body");
+    cfg.searchPlaceholderKey = QStringLiteral("circulation.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    cfg.secondImageObjectName = QStringLiteral("loanMemberPhoto");
+    cfg.secondImageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
+qint64 tableId(QTableView* table, int row)
+{
+    return table->model()->index(row, 0).data(Qt::UserRole).toLongLong();
+}
+
+void sizeLoanFilter(QListWidget* list)
+{
+    if (list == nullptr || list->count() == 0) {
+        return;
+    }
+    const int rowHeight = qMax(list->sizeHintForRow(0), 20);
+    list->setFixedHeight(rowHeight * list->count() + 4);
+    list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+}
+
+void fillLoanFilter(QListWidget* list)
+{
+    const QSignalBlocker blocker(list);
+    list->clear();
+    auto* allItem = new QListWidgetItem(T("circulation.filter.all"));
+    allItem->setData(Qt::UserRole, QString::fromLatin1(Repositories::LoanFilter::kAll));
+    list->addItem(allItem);
+    for (const std::string& code : Repositories::CirculationRepository::filterCodes()) {
+        if (code == Repositories::LoanFilter::kAll) {
+            continue;
+        }
+        auto* item = new QListWidgetItem(T("circulation.filter." + code));
+        item->setData(Qt::UserRole, qs(code));
+        list->addItem(item);
+    }
+    allItem->setSelected(true);
+    list->setCurrentItem(allItem);
+    sizeLoanFilter(list);
+}
+
 }  // namespace
 
 class test_ui_CirculationFilters : public ::testing::Test {
@@ -93,6 +156,8 @@ protected:
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_loanWorkflows.reset();
         m_circulation.reset();
         m_memberRepo.reset();
         m_catalog.reset();
@@ -127,13 +192,101 @@ protected:
         ASSERT_GT(m_returnedId, 0);
     }
 
+    void applyFacets()
+    {
+        QHash<QString, QStringList> mapped;
+        QStringList loanFilters;
+        for (const QListWidgetItem* item : m_loanFilter->selectedItems()) {
+            const QString code = item->data(Qt::UserRole).toString();
+            loanFilters.append(isAllLoanFilter(code)
+                                   ? QString::fromLatin1(Repositories::LoanFilter::kAll)
+                                   : code);
+        }
+        if (loanFilters.isEmpty()) {
+            loanFilters.append(QString::fromLatin1(Repositories::LoanFilter::kAll));
+        }
+        mapped.insert(QStringLiteral("loanFilter"), loanFilters);
+        const Repositories::MemberFacets facets = m_memberFilters->facets();
+        mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+        mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+        mapped.insert(QStringLiteral("year"), m_memberFilters->loanYears());
+        mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+        mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+        m_page->setFacets(mapped);
+    }
+
+    void openPage()
+    {
+        m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+        m_spec = std::make_unique<LoanListSpec>(*m_circulation, *m_catalog, *m_memberRepo,
+                                                *m_loanWorkflows->loans);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_loanWorkflows->events, circulationConfig());
+
+        m_loanFilter = new QListWidget(m_page->filterColumn());
+        m_loanFilter->setObjectName(QStringLiteral("loanFilter"));
+        m_loanFilter->setSelectionMode(QAbstractItemView::SingleSelection);
+        fillLoanFilter(m_loanFilter);
+        m_page->addFilterWidget(m_loanFilter, 0);
+        QObject::connect(m_loanFilter, &QListWidget::itemSelectionChanged, m_page.get(),
+                         [this]() { applyFacets(); });
+
+        m_memberFilters = new MemberFacetFilters(*m_memberRepo, Repositories::ArchiveScope::Any,
+                                                 m_page->filterColumn());
+        m_memberFilters->useLoanYears([this]() {
+            return m_circulation->listLoanYears(Repositories::ArchiveScope::Live);
+        });
+        m_memberFilters->refresh();
+        m_page->addFilterWidget(m_memberFilters, 1);
+        QObject::connect(m_memberFilters, &MemberFacetFilters::changed, m_page.get(),
+                         [this]() { applyFacets(); });
+        applyFacets();
+    }
+
+    void focusMemberLoans(const QString& membershipNumber)
+    {
+        {
+            const QSignalBlocker blocker(m_loanFilter);
+            m_loanFilter->clearSelection();
+            for (int row = 0; row < m_loanFilter->count(); ++row) {
+                QListWidgetItem* item = m_loanFilter->item(row);
+                if (isAllLoanFilter(item->data(Qt::UserRole).toString())) {
+                    item->setSelected(true);
+                    m_loanFilter->setCurrentItem(item);
+                    break;
+                }
+            }
+        }
+        m_memberFilters->reset();
+        applyFacets();
+        if (QTableView* table = m_page->table()) {
+            table->setSortingEnabled(false);
+            if (QHeaderView* header = table->horizontalHeader()) {
+                header->setSortIndicator(-1, Qt::AscendingOrder);
+            }
+        }
+        if (PagedQueryModel* model = m_page->model()) {
+            QueryState state = model->query();
+            state.sortKey.clear();
+            state.ascending = true;
+            model->setQuery(state);
+        }
+        m_page->setSearchText(membershipNumber);
+        if (QTableView* table = m_page->table()) {
+            table->setSortingEnabled(true);
+        }
+        m_page->focusSearch();
+    }
+
     std::unique_ptr<Core::ScopedClock> m_clock;
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<LoanWorkflowHarness> m_loanWorkflows;
-    std::unique_ptr<CirculationPage> m_page;
+    std::unique_ptr<LoanListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
+    QListWidget* m_loanFilter = nullptr;
+    MemberFacetFilters* m_memberFilters = nullptr;
     std::int64_t m_memberId = 0;
     std::int64_t m_openId = 0;
     std::int64_t m_overdueId = 0;
@@ -143,8 +296,7 @@ protected:
 TEST_F(test_ui_CirculationFilters, FilterListIncludesEveryStateAndDefaultsToAll)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     ASSERT_NE(list, nullptr);
@@ -152,60 +304,57 @@ TEST_F(test_ui_CirculationFilters, FilterListIncludesEveryStateAndDefaultsToAll)
     EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kOpen)));
     EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kOverdue)));
     EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kReturned)));
+    EXPECT_TRUE(codes.contains(QString::fromLatin1(Repositories::LoanFilter::kAll)));
 
-    // All is the first row and carries an empty code.
     ASSERT_EQ(list->selectedItems().size(), 1);
     EXPECT_EQ(list->row(list->selectedItems().first()), 0);
-    EXPECT_TRUE(list->selectedItems().first()->data(Qt::UserRole).toString().isEmpty());
+    EXPECT_TRUE(isAllLoanFilter(list->selectedItems().first()->data(Qt::UserRole).toString()));
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    EXPECT_EQ(table->rowCount(), 3);
+    EXPECT_EQ(table->model()->rowCount(), 3);
 }
 
 TEST_F(test_ui_CirculationFilters, SelectingOverdueShowsOnlyLoansPastTheirDueDate)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
     ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kOverdue)));
 
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_overdueId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_overdueId);
 }
 
 TEST_F(test_ui_CirculationFilters, SelectingReturnedShowsOnlyReturnedLoans)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
     ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kReturned)));
 
     EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(Repositories::LoanFilter::kReturned)});
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_returnedId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_returnedId);
 }
 
 TEST_F(test_ui_CirculationFilters, SelectingOpenAgainShowsOnlyOpenLoans)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
@@ -213,35 +362,23 @@ TEST_F(test_ui_CirculationFilters, SelectingOpenAgainShowsOnlyOpenLoans)
     ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kOpen)));
 
     EXPECT_EQ(selectedFilterCodes(list), QStringList{QString::fromLatin1(Repositories::LoanFilter::kOpen)});
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_openId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_openId);
 }
 
 TEST_F(test_ui_CirculationFilters, SelectingAllShowsEveryLoan)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(list, nullptr);
     ASSERT_NE(table, nullptr);
 
-    bool selectedAll = false;
-    for (int row = 0; row < list->count(); ++row) {
-        QListWidgetItem* item = list->item(row);
-        if (item->data(Qt::UserRole).toString().isEmpty()
-            || item->data(Qt::UserRole).toString() == QLatin1String(Repositories::LoanFilter::kAll)) {
-            list->setCurrentItem(item);
-            item->setSelected(true);
-            QApplication::processEvents();
-            selectedAll = true;
-            break;
-        }
-    }
-    ASSERT_TRUE(selectedAll);
-    EXPECT_EQ(table->rowCount(), 3);
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kReturned)));
+    ASSERT_TRUE(selectFilterCode(list, QString::fromLatin1(Repositories::LoanFilter::kAll)));
+    EXPECT_EQ(table->model()->rowCount(), 3);
 }
 
 TEST_F(test_ui_CirculationFilters, JumpingFromMembersShowsOverdueLoansToo)
@@ -249,19 +386,18 @@ TEST_F(test_ui_CirculationFilters, JumpingFromMembersShowsOverdueLoansToo)
     // Members sends the librarian here when a member still has books out.
     // Overdue books are out as well, and are usually the ones that matter.
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
-    auto* table = m_page->findChild<QTableWidget*>();
+    openPage();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
 
     const std::string number =
         m_db->scalar("SELECT membership_number FROM members WHERE id = " + std::to_string(m_memberId))
             .toString();
-    m_page->focusMemberLoans(QString::fromStdString(number));
+    focusMemberLoans(QString::fromStdString(number));
 
     QList<qint64> listed;
-    for (int row = 0; row < table->rowCount(); ++row) {
-        listed.append(table->item(row, 0)->data(Qt::UserRole).toLongLong());
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        listed.append(tableId(table, row));
     }
     EXPECT_TRUE(listed.contains(m_openId));
     EXPECT_TRUE(listed.contains(m_overdueId));
@@ -274,8 +410,7 @@ TEST_F(test_ui_CirculationFilters, JumpingFromMembersShowsOverdueLoansToo)
 TEST_F(test_ui_CirculationFilters, FilterSitsAtTheTopOfItsColumn)
 {
     seedOpenOverdueAndReturned();
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
     m_page->resize(1200, 800);
     m_page->show();
     QApplication::processEvents();
@@ -287,8 +422,7 @@ TEST_F(test_ui_CirculationFilters, FilterSitsAtTheTopOfItsColumn)
 
 TEST_F(test_ui_CirculationFilters, ReturnSitsBetweenTheSearchAndCheckout)
 {
-    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
+    openPage();
     QPushButton* returnButton = nullptr;
     QPushButton* checkoutButton = nullptr;
     for (QPushButton* button : m_page->findChildren<QPushButton*>()) {

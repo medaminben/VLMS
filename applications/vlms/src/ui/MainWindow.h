@@ -9,9 +9,9 @@
 
 class Application;
 class ArchivePage;
-class CirculationPage;
 class MetricsPage;
 class QLabel;
+class QListWidget;
 class QPushButton;
 class QStackedWidget;
 class QVBoxLayout;
@@ -23,6 +23,7 @@ class BookListSpec;
 class BookWorkflow;
 class BulkRunner;
 class ListPage;
+class LoanListSpec;
 class LoanWorkflow;
 class MemberFacetFilters;
 class MemberListSpec;
@@ -59,6 +60,9 @@ private:
     void updateBrandBanner();
     void updateThemeToggle();
     void updateManualButton();
+    void refreshLoanFilterList();
+    void applyCirculationFacets();
+    void selectLoanFilterAll();
     [[nodiscard]] static Page toPage(VLMS::PageId id);
 
     Application& m_app;
@@ -80,7 +84,7 @@ private:
 
     VLMS::ListPage* m_membersPage = nullptr;
     VLMS::ListPage* m_catalogPage = nullptr;
-    CirculationPage* m_circulationPage = nullptr;
+    VLMS::ListPage* m_circulationPage = nullptr;
     ArchivePage* m_archivePage = nullptr;
     MetricsPage* m_metricsPage = nullptr;
 
@@ -93,6 +97,9 @@ private:
     std::unique_ptr<VLMS::ArchiveWorkflow> m_archiveWorkflow;
     std::unique_ptr<VLMS::MemberListSpec> m_memberListSpec;
     std::unique_ptr<VLMS::BookListSpec> m_bookListSpec;
+    std::unique_ptr<VLMS::LoanListSpec> m_loanListSpec;
     VLMS::MemberFacetFilters* m_memberFilters = nullptr;
     VLMS::BookFacetFilters* m_bookFilters = nullptr;
+    VLMS::MemberFacetFilters* m_loanMemberFilters = nullptr;
+    QListWidget* m_loanFilter = nullptr;
 };

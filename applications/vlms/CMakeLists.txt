@@ -33,7 +33,6 @@ add_library(vlms_ui STATIC
     src/ui/members/MemberEditorDialog.cpp
     src/ui/members/BirthDateEdit.cpp
     src/ui/members/MemberLoansDialog.cpp
-    src/ui/circulation/CirculationPage.cpp
     src/ui/circulation/LoanCheckoutDialog.cpp
     src/ui/circulation/LoanExtendDialog.cpp
     src/ui/circulation/LoanReturnDialog.cpp
@@ -85,7 +84,6 @@ add_library(vlms_ui STATIC
     src/ui/members/MemberEditorDialog.h
     src/ui/members/BirthDateEdit.h
     src/ui/members/MemberLoansDialog.h
-    src/ui/circulation/CirculationPage.h
     src/ui/circulation/LoanCheckoutDialog.h
     src/ui/circulation/LoanExtendDialog.h
     src/ui/circulation/LoanReturnDialog.h

@@ -5,8 +5,8 @@
 #include "ui/Theme.h"
 #include "ui/UiHelpers.h"
 #include "ui/presentation/BookListSpec.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"
-#include "ui/circulation/CirculationPage.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
@@ -124,21 +124,34 @@ TEST_F(test_ui_PreviewTheme, ArabicCirculationPlaceholderTurnsDarkWithTheTheme)
                             "2026-09-15"),
               0);
     LoanWorkflowHarness workflows(m_circulation);
-    CirculationPage page(m_circulation, m_catalog, m_memberRepo, *workflows.loans);
+    LoanListSpec spec(m_circulation, m_catalog, m_memberRepo, *workflows.loans);
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.circulation.title");
+    cfg.bodyKey = QStringLiteral("page.circulation.body");
+    cfg.searchPlaceholderKey = QStringLiteral("circulation.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    cfg.secondImageObjectName = QStringLiteral("loanMemberPhoto");
+    cfg.secondImageBounds = bookCoverPreviewBounds();
+    ListPage page(&spec, workflows.events, cfg);
     page.resize(1440, 800);
     page.show();
     QApplication::processEvents();
     auto* cover = page.findChild<QLabel*>(QStringLiteral("bookCover"));
     ASSERT_NE(cover, nullptr);
-    auto* table = page.findChild<QTableWidget*>();
+    QTableView* table = page.table();
     ASSERT_NE(table, nullptr);
+    ASSERT_GT(table->model()->rowCount(), 0);
+    VLMS::selectTableRow(table, 0);
+    QApplication::processEvents();
     ASSERT_GT(placeholderLightness(cover), 200);
 
     applyMode(ThemeMode::Dark);
     page.retranslateUi();
     QApplication::processEvents();
 
-    EXPECT_FALSE(table->selectedItems().isEmpty());
+    ASSERT_NE(table->selectionModel(), nullptr);
+    EXPECT_FALSE(table->selectionModel()->selectedRows().isEmpty());
     EXPECT_LT(placeholderLightness(cover), 100);
 }
 

@@ -23,22 +23,32 @@
 #include "ui/catalog/LocalNumberDelegate.h"
 #include "ui/LanguageSelector.h"
 #include "ui/ListPage.h"
-#include "ui/circulation/CirculationPage.h"
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/metrics/MetricsPage.h"
 #include "ui/presentation/BookListSpec.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "ui/presentation/MemberListSpec.h"
+#include "ui/presentation/QueryState.h"
 
+#include <VLMS/Repositories/ArchiveTypes.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/LoanTypes.h>
+
+#include <QAbstractItemView>
 #include <QApplication>
 #include <QHash>
 #include <QDate>
 #include <QFileInfo>
+#include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QListWidget>
+#include <QListWidgetItem>
 #include <QPixmap>
 #include <QProcess>
 #include <QPushButton>
 #include <QScreen>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStandardPaths>
 #include <QTableView>
@@ -294,9 +304,39 @@ void MainWindow::buildUi() {
             catalogTable->setItemDelegateForColumn(
                 kCatalogLocalNumberColumn, new LocalNumberDelegate(catalogTable));
         }
-        m_circulationPage =
-            new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(),
-                                *m_loanWorkflow, m_stack);
+        m_loanListSpec = std::make_unique<VLMS::LoanListSpec>(
+            m_app.circulation(), m_app.catalog(), m_app.members(), *m_loanWorkflow);
+        VLMS::ListPage::Config circulationCfg;
+        circulationCfg.titleKey = QStringLiteral("page.circulation.title");
+        circulationCfg.bodyKey = QStringLiteral("page.circulation.body");
+        circulationCfg.searchPlaceholderKey = QStringLiteral("circulation.searchPlaceholder");
+        circulationCfg.imageObjectName = QStringLiteral("bookCover");
+        circulationCfg.imageBounds = VLMS::bookCoverPreviewBounds();
+        circulationCfg.secondImageObjectName = QStringLiteral("loanMemberPhoto");
+        circulationCfg.secondImageBounds = VLMS::bookCoverPreviewBounds();
+        m_circulationPage = new VLMS::ListPage(m_loanListSpec.get(), m_app.dataEvents(),
+                                               circulationCfg, m_stack);
+        m_loanFilter = new QListWidget(m_circulationPage->filterColumn());
+        m_loanFilter->setObjectName(QStringLiteral("loanFilter"));
+        m_loanFilter->setSelectionMode(QAbstractItemView::SingleSelection);
+        connect(m_loanFilter, &QListWidget::itemSelectionChanged, this, [this]() {
+            applyCirculationFacets();
+        });
+        m_circulationPage->addFilterWidget(m_loanFilter, 0);
+        // Loans of members since archived are still listed here, so years and
+        // cities include them. The year is the year of the loan, not registration.
+        m_loanMemberFilters = new VLMS::MemberFacetFilters(
+            m_app.members(), VLMS::Repositories::ArchiveScope::Any,
+            m_circulationPage->filterColumn());
+        m_loanMemberFilters->useLoanYears([this]() {
+            return m_app.circulation().listLoanYears(VLMS::Repositories::ArchiveScope::Live);
+        });
+        m_loanMemberFilters->refresh();
+        m_circulationPage->addFilterWidget(m_loanMemberFilters, 1);
+        connect(m_loanMemberFilters, &VLMS::MemberFacetFilters::changed, this, [this]() {
+            applyCirculationFacets();
+        });
+        refreshLoanFilterList();
         m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),
                                         *m_archiveWorkflow, m_stack);
         m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
@@ -308,6 +348,9 @@ void MainWindow::buildUi() {
         m_bookFilters = nullptr;
         m_bookListSpec.reset();
         m_circulationPage = nullptr;
+        m_loanFilter = nullptr;
+        m_loanMemberFilters = nullptr;
+        m_loanListSpec.reset();
         m_archivePage = nullptr;
         m_metricsPage = nullptr;
     }
@@ -589,6 +632,10 @@ void MainWindow::retranslateUi()
     }
     if (m_circulationPage != nullptr) {
         m_circulationPage->retranslateUi();
+        refreshLoanFilterList();
+        if (m_loanMemberFilters != nullptr) {
+            m_loanMemberFilters->refresh();
+        }
     }
     if (m_archivePage != nullptr) {
         m_archivePage->retranslateUi();
@@ -625,9 +672,35 @@ void MainWindow::show(VLMS::PageId page)
 void MainWindow::showMemberLoans(const QString& membershipNumber)
 {
     showPage(Page::Circulation);
-    if (m_circulationPage != nullptr) {
-        m_circulationPage->focusMemberLoans(membershipNumber);
+    if (m_circulationPage == nullptr) {
+        return;
     }
+    // All, not Open: overdue loans also block removal. Reset borrower facets so
+    // an earlier sex/city pick cannot hide this member's loans.
+    selectLoanFilterAll();
+    if (m_loanMemberFilters != nullptr) {
+        m_loanMemberFilters->reset();
+    }
+    applyCirculationFacets();
+    // ListPage enables header sorting; clear any active column sort so the
+    // repository default (open/overdue before returned) applies for this jump.
+    if (QTableView* table = m_circulationPage->table()) {
+        table->setSortingEnabled(false);
+        if (QHeaderView* header = table->horizontalHeader()) {
+            header->setSortIndicator(-1, Qt::AscendingOrder);
+        }
+    }
+    if (VLMS::PagedQueryModel* model = m_circulationPage->model()) {
+        VLMS::QueryState state = model->query();
+        state.sortKey.clear();
+        state.ascending = true;
+        model->setQuery(state);
+    }
+    m_circulationPage->setSearchText(membershipNumber);
+    if (QTableView* table = m_circulationPage->table()) {
+        table->setSortingEnabled(true);
+    }
+    m_circulationPage->focusSearch();
 }
 
 void MainWindow::showBook(qint64 bookId)
@@ -673,13 +746,115 @@ void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
         if (m_memberFilters != nullptr) {
             m_memberFilters->refresh();
         }
+        if (m_loanMemberFilters != nullptr) {
+            m_loanMemberFilters->refresh();
+        }
     }
     if (what & VLMS::Entity::Loans) {
-        if (m_circulationPage != nullptr) {
-            m_circulationPage->retranslateUi();
+        if (m_loanMemberFilters != nullptr) {
+            m_loanMemberFilters->refresh();
         }
     }
     if (m_metricsPage != nullptr) {
         m_metricsPage->refreshMetrics();
+    }
+}
+
+void MainWindow::refreshLoanFilterList()
+{
+    if (m_loanFilter == nullptr) {
+        return;
+    }
+
+    QString previouslySelected;
+    for (const QListWidgetItem* item : m_loanFilter->selectedItems()) {
+        previouslySelected = item->data(Qt::UserRole).toString();
+        break;
+    }
+    if (previouslySelected.isEmpty()) {
+        previouslySelected = QString::fromLatin1(VLMS::Repositories::LoanFilter::kAll);
+    }
+
+    const QSignalBlocker blocker(m_loanFilter);
+    m_loanFilter->clear();
+
+    auto* allItem = new QListWidgetItem(T("circulation.filter.all"));
+    allItem->setData(Qt::UserRole, QString::fromLatin1(VLMS::Repositories::LoanFilter::kAll));
+    m_loanFilter->addItem(allItem);
+
+    for (const std::string& code : VLMS::Repositories::CirculationRepository::filterCodes()) {
+        if (code == VLMS::Repositories::LoanFilter::kAll) {
+            continue;
+        }
+        auto* item = new QListWidgetItem(T("circulation.filter." + code));
+        item->setData(Qt::UserRole, qs(code));
+        m_loanFilter->addItem(item);
+    }
+
+    QListWidgetItem* toSelect = allItem;
+    for (int row = 0; row < m_loanFilter->count(); ++row) {
+        QListWidgetItem* item = m_loanFilter->item(row);
+        if (item->data(Qt::UserRole).toString() == previouslySelected) {
+            toSelect = item;
+            break;
+        }
+    }
+    toSelect->setSelected(true);
+    m_loanFilter->setCurrentItem(toSelect);
+
+    if (m_loanFilter->count() > 0) {
+        const int rowHeight = qMax(m_loanFilter->sizeHintForRow(0), 20);
+        m_loanFilter->setFixedHeight(rowHeight * m_loanFilter->count() + 4);
+        m_loanFilter->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
+}
+
+void MainWindow::applyCirculationFacets()
+{
+    if (m_circulationPage == nullptr) {
+        return;
+    }
+
+    QHash<QString, QStringList> mapped;
+    QStringList loanFilters;
+    if (m_loanFilter != nullptr) {
+        for (const QListWidgetItem* item : m_loanFilter->selectedItems()) {
+            const QString code = item->data(Qt::UserRole).toString();
+            loanFilters.append(code.isEmpty()
+                                   ? QString::fromLatin1(VLMS::Repositories::LoanFilter::kAll)
+                                   : code);
+        }
+    }
+    if (loanFilters.isEmpty()) {
+        loanFilters.append(QString::fromLatin1(VLMS::Repositories::LoanFilter::kAll));
+    }
+    mapped.insert(QStringLiteral("loanFilter"), loanFilters);
+
+    if (m_loanMemberFilters != nullptr) {
+        const VLMS::Repositories::MemberFacets facets = m_loanMemberFilters->facets();
+        mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+        mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+        mapped.insert(QStringLiteral("year"), m_loanMemberFilters->loanYears());
+        mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+        mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+    }
+    m_circulationPage->setFacets(mapped);
+}
+
+void MainWindow::selectLoanFilterAll()
+{
+    if (m_loanFilter == nullptr) {
+        return;
+    }
+    const QSignalBlocker blocker(m_loanFilter);
+    m_loanFilter->clearSelection();
+    for (int row = 0; row < m_loanFilter->count(); ++row) {
+        QListWidgetItem* item = m_loanFilter->item(row);
+        const QString code = item->data(Qt::UserRole).toString();
+        if (code.isEmpty() || code == QLatin1String(VLMS::Repositories::LoanFilter::kAll)) {
+            item->setSelected(true);
+            m_loanFilter->setCurrentItem(item);
+            break;
+        }
     }
 }

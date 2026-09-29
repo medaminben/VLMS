@@ -3,7 +3,8 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/circulation/CirculationPage.h"
+#include "ui/ListPage.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -12,7 +13,8 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
-#include <QTableWidget>
+#include <QAbstractItemModel>
+#include <QTableView>
 
 #include <gtest/gtest.h>
 
@@ -23,12 +25,25 @@ using namespace Test;
 
 namespace {
 
-void tickLoan(QTableWidget* table, std::int64_t loanId)
+ListPage::Config circulationConfig()
 {
-    for (int row = 0; row < table->rowCount(); ++row) {
-        QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == loanId) {
-            item->setCheckState(Qt::Checked);
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.circulation.title");
+    cfg.bodyKey = QStringLiteral("page.circulation.body");
+    cfg.searchPlaceholderKey = QStringLiteral("circulation.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    cfg.secondImageObjectName = QStringLiteral("loanMemberPhoto");
+    cfg.secondImageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
+void tickLoan(QTableView* table, std::int64_t loanId)
+{
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        const QModelIndex index = table->model()->index(row, 0);
+        if (index.data(Qt::UserRole).toLongLong() == loanId) {
+            table->model()->setData(index, Qt::Checked, Qt::CheckStateRole);
             return;
         }
     }
@@ -60,6 +75,8 @@ protected:
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_loanWorkflows.reset();
         m_circulation.reset();
         m_memberRepo.reset();
         m_catalog.reset();
@@ -77,11 +94,13 @@ protected:
     void openAndSelect(std::int64_t loanId)
     {
         m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
-        m_table = m_page->findChild<QTableWidget*>();
+        m_spec = std::make_unique<LoanListSpec>(*m_circulation, *m_catalog, *m_memberRepo,
+                                                *m_loanWorkflows->loans);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_loanWorkflows->events, circulationConfig());
+        m_table = m_page->table();
         ASSERT_NE(m_table, nullptr);
-        for (int row = 0; row < m_table->rowCount(); ++row) {
-            if (m_table->item(row, 0)->data(Qt::UserRole).toLongLong() == loanId) {
+        for (int row = 0; row < m_table->model()->rowCount(); ++row) {
+            if (m_table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == loanId) {
                 m_table->selectRow(row);
                 return;
             }
@@ -89,15 +108,19 @@ protected:
         FAIL() << "loan " << loanId << " is not on the page";
     }
 
-    void clickDelete() { clickButtonWithText(m_page.get(), qs(Core::Strings::t("circulation.delete"))); }
+    void clickDelete()
+    {
+        clickButtonWithText(m_page.get(), QString::fromStdString(Core::Strings::t("circulation.delete")));
+    }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<LoanWorkflowHarness> m_loanWorkflows;
-    std::unique_ptr<CirculationPage> m_page;
-    QTableWidget* m_table = nullptr;
+    std::unique_ptr<LoanListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
+    QTableView* m_table = nullptr;
 };
 
 TEST_F(test_ui_BulkPages, TwoTickedReturnedLoansAreArchivedAndTheThirdStays)
@@ -110,7 +133,7 @@ TEST_F(test_ui_BulkPages, TwoTickedReturnedLoansAreArchivedAndTheThirdStays)
     tickLoan(m_table, second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, QString::fromStdString(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 loans?"));
@@ -126,10 +149,10 @@ TEST_F(test_ui_BulkPages, NothingTickedArchivesOnlyTheHighlightedLoan)
     openAndSelect(highlighted);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, QString::fromStdString(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
+    EXPECT_EQ(outcome.text, QString::fromStdString(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_TRUE(loanArchived(*m_db, highlighted));
     EXPECT_FALSE(loanArchived(*m_db, bystander));
 }
@@ -146,10 +169,10 @@ TEST_F(test_ui_BulkPages, ATickedOpenLoanStaysWhileTheReturnedOneIsArchived)
     tickLoan(m_table, returned);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(); }, QString::fromStdString(Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
+    EXPECT_NE(outcome.text, QString::fromStdString(Core::Strings::t("circulation.archiveLoan")));
     EXPECT_FALSE(loanArchived(*m_db, open));
     EXPECT_TRUE(loanArchived(*m_db, returned));
 }
