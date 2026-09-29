@@ -20,7 +20,6 @@
 
 #include <memory>
 
-using namespace VLMS;
 using namespace Test;
 
 namespace {
@@ -43,18 +42,18 @@ void rejectNextDialog()
 
 }  // namespace
 
-class test_ui_LoanWorkflow : public ::testing::Test {
+class LoanWorkflow : public ::testing::Test {
 protected:
-    static void SetUpTestSuite() { Core::Locale::setCode("en"); }
-    static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
+    static void SetUpTestSuite() { VLMS::Core::Locale::setCode("en"); }
+    static void TearDownTestSuite() { VLMS::Core::Locale::setCode(VLMS::Core::Locale::kDefaultCode); }
 
     void SetUp() override
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_circulation = std::make_unique<VLMS::Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-        m_changed = std::make_unique<QSignalSpy>(&m_harness->events, &DataEvents::changed);
+        m_changed = std::make_unique<QSignalSpy>(&m_harness->events, &VLMS::DataEvents::changed);
     }
 
     void TearDown() override
@@ -68,7 +67,7 @@ protected:
     qint64 seedOpenLoan()
     {
         MemberSeed member = uniqueMemberSeed(1);
-        member.status = Repositories::MemberStatus::kActive;
+        member.status = VLMS::Repositories::MemberStatus::kActive;
         const qint64 memberId = seedMember(*m_db, member);
         const qint64 bookId = seedBook(*m_db, uniqueBookSeed(1));
         const QDate today = QDate::currentDate();
@@ -78,13 +77,13 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<VLMS::Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<LoanWorkflowHarness> m_harness;
     std::unique_ptr<QSignalSpy> m_changed;
     QWidget m_parent;
 };
 
-TEST_F(test_ui_LoanWorkflow, ReturnCancelEmitsNothing)
+TEST_F(LoanWorkflow, ReturnCancelEmitsNothing)
 {
     const qint64 loanId = seedOpenLoan();
     ASSERT_GT(loanId, 0);
@@ -99,10 +98,10 @@ TEST_F(test_ui_LoanWorkflow, ReturnCancelEmitsNothing)
                     .isNull());
 }
 
-TEST_F(test_ui_LoanWorkflow, CheckoutCancelEmitsNothing)
+TEST_F(LoanWorkflow, CheckoutCancelEmitsNothing)
 {
     MemberSeed member = uniqueMemberSeed(2);
-    member.status = Repositories::MemberStatus::kActive;
+    member.status = VLMS::Repositories::MemberStatus::kActive;
     ASSERT_GT(seedMember(*m_db, member), 0);
     ASSERT_GT(seedBook(*m_db, uniqueBookSeed(2)), 0);
 
@@ -115,10 +114,10 @@ TEST_F(test_ui_LoanWorkflow, CheckoutCancelEmitsNothing)
     EXPECT_EQ(m_db->count("loans"), 0);
 }
 
-TEST_F(test_ui_LoanWorkflow, ArchiveSingleConfirmEmitsLoansChanged)
+TEST_F(LoanWorkflow, ArchiveSingleConfirmEmitsLoansChanged)
 {
     MemberSeed member = uniqueMemberSeed(3);
-    member.status = Repositories::MemberStatus::kActive;
+    member.status = VLMS::Repositories::MemberStatus::kActive;
     const qint64 memberId = seedMember(*m_db, member);
     const qint64 bookId = seedBook(*m_db, uniqueBookSeed(3));
     const QDate today = QDate::currentDate();
@@ -133,12 +132,12 @@ TEST_F(test_ui_LoanWorkflow, ArchiveSingleConfirmEmitsLoansChanged)
         [this, loanId]() {
             ASSERT_TRUE(m_harness->loans->archive(&m_parent, {loanId}, {QStringLiteral("loan")}));
         },
-        qs(Core::Strings::t("common.yes")));
+        qs(VLMS::Core::Strings::t("common.yes")));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("circulation.archiveLoan")));
+    EXPECT_EQ(outcome.text, qs(VLMS::Core::Strings::t("circulation.archiveLoan")));
     ASSERT_EQ(m_changed->count(), 1);
-    EXPECT_EQ(m_changed->at(0).at(0).value<EntitySet>(), Entity::Loans);
+    EXPECT_EQ(m_changed->at(0).at(0).value<VLMS::EntitySet>(), VLMS::Entity::Loans);
     EXPECT_EQ(m_changed->at(0).at(1).value<QList<qint64>>(), QList<qint64>({loanId}));
     EXPECT_FALSE(m_db->scalar("SELECT archived_at FROM loans WHERE id = " + std::to_string(loanId))
                      .isNull());

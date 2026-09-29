@@ -15,7 +15,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using ArchivedCopySpecUnderTest = VLMS::ArchivedCopySpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -32,7 +44,7 @@ const PageAction* findAction(const QList<PageAction>& actions, const QString& id
 
 }  // namespace
 
-class ArchivedCopySpecTest : public ::testing::Test {
+class ArchivedCopySpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -48,7 +60,7 @@ protected:
             std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<ArchiveWorkflowHarness>(*m_members, *m_catalog, *m_circulation);
-        m_spec = std::make_unique<ArchivedCopySpec>(*m_catalog, *m_harness->archive);
+        m_spec = std::make_unique<ArchivedCopySpecUnderTest>(*m_catalog, *m_harness->archive);
     }
 
     void TearDown() override
@@ -67,10 +79,10 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<ArchiveWorkflowHarness> m_harness;
-    std::unique_ptr<ArchivedCopySpec> m_spec;
+    std::unique_ptr<ArchivedCopySpecUnderTest> m_spec;
 };
 
-TEST_F(ArchivedCopySpecTest, ForcesArchivedScopeIgnoresLive)
+TEST_F(ArchivedCopySpec, ForcesArchivedScopeIgnoresLive)
 {
     BookSeed live = uniqueBookSeed(1);
     live.title = "Live Book";
@@ -93,7 +105,7 @@ TEST_F(ArchivedCopySpecTest, ForcesArchivedScopeIgnoresLive)
     EXPECT_EQ(m_spec->idAt(0), copyId);
 }
 
-TEST_F(ArchivedCopySpecTest, DisplayRowsMatchArchiveColumns)
+TEST_F(ArchivedCopySpec, DisplayRowsMatchArchiveColumns)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Optics";
@@ -118,7 +130,7 @@ TEST_F(ArchivedCopySpecTest, DisplayRowsMatchArchiveColumns)
     EXPECT_FALSE(m_spec->cell(0, 4, Qt::DisplayRole).toString().isEmpty());
 }
 
-TEST_F(ArchivedCopySpecTest, RankOfScansOrderedIdsWithoutNewApi)
+TEST_F(ArchivedCopySpec, RankOfScansOrderedIdsWithoutNewApi)
 {
     BookSeed a = uniqueBookSeed(1);
     a.title = "Aaa";
@@ -149,7 +161,7 @@ TEST_F(ArchivedCopySpecTest, RankOfScansOrderedIdsWithoutNewApi)
     EXPECT_EQ(missing.error().key, "error.copy.notFound");
 }
 
-TEST_F(ArchivedCopySpecTest, PreviewMatchesArchiveDetails)
+TEST_F(ArchivedCopySpec, PreviewMatchesArchiveDetails)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Optics";
@@ -170,7 +182,7 @@ TEST_F(ArchivedCopySpecTest, PreviewMatchesArchiveDetails)
     EXPECT_EQ(preview.fields.at(4).labelKey, QStringLiteral("archive.col.notes"));
 }
 
-TEST_F(ArchivedCopySpecTest, ActionsIncludeReuseAndDependsOn)
+TEST_F(ArchivedCopySpec, ActionsIncludeReuseAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-copies"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Copies);

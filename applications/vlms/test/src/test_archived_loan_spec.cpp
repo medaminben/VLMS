@@ -14,7 +14,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using ArchivedLoanSpecUnderTest = VLMS::ArchivedLoanSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -31,7 +43,7 @@ const PageAction* findAction(const QList<PageAction>& actions, const QString& id
 
 }  // namespace
 
-class ArchivedLoanSpecTest : public ::testing::Test {
+class ArchivedLoanSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -47,7 +59,7 @@ protected:
             std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<ArchiveWorkflowHarness>(*m_members, *m_catalog, *m_circulation);
-        m_spec = std::make_unique<ArchivedLoanSpec>(*m_circulation, *m_catalog, *m_members,
+        m_spec = std::make_unique<ArchivedLoanSpecUnderTest>(*m_circulation, *m_catalog, *m_members,
                                                     *m_harness->archive);
     }
 
@@ -67,10 +79,10 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<ArchiveWorkflowHarness> m_harness;
-    std::unique_ptr<ArchivedLoanSpec> m_spec;
+    std::unique_ptr<ArchivedLoanSpecUnderTest> m_spec;
 };
 
-TEST_F(ArchivedLoanSpecTest, ForcesArchivedScopeIgnoresLive)
+TEST_F(ArchivedLoanSpec, ForcesArchivedScopeIgnoresLive)
 {
     MemberSeed member = uniqueMemberSeed(1);
     const qint64 memberId = seedMember(*m_db, member);
@@ -98,7 +110,7 @@ TEST_F(ArchivedLoanSpecTest, ForcesArchivedScopeIgnoresLive)
     EXPECT_EQ(m_spec->idAt(0), archivedLoan);
 }
 
-TEST_F(ArchivedLoanSpecTest, DisplayRowsMatchArchiveColumns)
+TEST_F(ArchivedLoanSpec, DisplayRowsMatchArchiveColumns)
 {
     MemberSeed member = uniqueMemberSeed(1);
     const qint64 memberId = seedMember(*m_db, member);
@@ -132,7 +144,7 @@ TEST_F(ArchivedLoanSpecTest, DisplayRowsMatchArchiveColumns)
     EXPECT_FALSE(m_spec->cell(0, 3, Qt::DisplayRole).toString().isEmpty());
 }
 
-TEST_F(ArchivedLoanSpecTest, RankOfMatchesRepository)
+TEST_F(ArchivedLoanSpec, RankOfMatchesRepository)
 {
     MemberSeed member = uniqueMemberSeed(1);
     const qint64 memberId = seedMember(*m_db, member);
@@ -168,7 +180,7 @@ TEST_F(ArchivedLoanSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(ArchivedLoanSpecTest, PreviewMatchesArchiveDetails)
+TEST_F(ArchivedLoanSpec, PreviewMatchesArchiveDetails)
 {
     MemberSeed member = uniqueMemberSeed(1);
     const qint64 memberId = seedMember(*m_db, member);
@@ -197,7 +209,7 @@ TEST_F(ArchivedLoanSpecTest, PreviewMatchesArchiveDetails)
     EXPECT_TRUE(preview.fields.at(5).scrollable);
 }
 
-TEST_F(ArchivedLoanSpecTest, ActionsOmitLoansAndDependsOn)
+TEST_F(ArchivedLoanSpec, ActionsOmitLoansAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-loans"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Loans);

@@ -21,7 +21,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using LoanListSpecUnderTest = VLMS::LoanListSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -47,7 +59,7 @@ const PageAction* findAction(const QList<PageAction>& actions, const QString& id
 
 }  // namespace
 
-class LoanListSpecTest : public ::testing::Test {
+class LoanListSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -66,7 +78,7 @@ protected:
             std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-        m_spec = std::make_unique<LoanListSpec>(*m_circulation, *m_catalog, *m_members,
+        m_spec = std::make_unique<LoanListSpecUnderTest>(*m_circulation, *m_catalog, *m_members,
                                                 *m_harness->loans);
     }
 
@@ -117,7 +129,7 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<LoanWorkflowHarness> m_harness;
-    std::unique_ptr<LoanListSpec> m_spec;
+    std::unique_ptr<LoanListSpecUnderTest> m_spec;
     std::int64_t m_memberId = 0;
     std::int64_t m_bookId = 0;
     std::vector<std::int64_t> m_copyIds;
@@ -126,7 +138,7 @@ protected:
     std::int64_t m_returnedId = 0;
 };
 
-TEST_F(LoanListSpecTest, FilterOpenShowsOnlyOpenLoans)
+TEST_F(LoanListSpec, FilterOpenShowsOnlyOpenLoans)
 {
     seedOpenOverdueAndReturned();
 
@@ -139,7 +151,7 @@ TEST_F(LoanListSpecTest, FilterOpenShowsOnlyOpenLoans)
     EXPECT_EQ(m_spec->idAt(0), m_openId);
 }
 
-TEST_F(LoanListSpecTest, FilterOverdueShowsOnlyOverdueLoans)
+TEST_F(LoanListSpec, FilterOverdueShowsOnlyOverdueLoans)
 {
     seedOpenOverdueAndReturned();
 
@@ -151,7 +163,7 @@ TEST_F(LoanListSpecTest, FilterOverdueShowsOnlyOverdueLoans)
     EXPECT_EQ(m_spec->idAt(0), m_overdueId);
 }
 
-TEST_F(LoanListSpecTest, FilterReturnedShowsOnlyReturnedLoans)
+TEST_F(LoanListSpec, FilterReturnedShowsOnlyReturnedLoans)
 {
     seedOpenOverdueAndReturned();
 
@@ -163,7 +175,7 @@ TEST_F(LoanListSpecTest, FilterReturnedShowsOnlyReturnedLoans)
     EXPECT_EQ(m_spec->idAt(0), m_returnedId);
 }
 
-TEST_F(LoanListSpecTest, FilterAllShowsEveryLoan)
+TEST_F(LoanListSpec, FilterAllShowsEveryLoan)
 {
     seedOpenOverdueAndReturned();
 
@@ -183,7 +195,7 @@ TEST_F(LoanListSpecTest, FilterAllShowsEveryLoan)
     EXPECT_TRUE(ids.contains(m_returnedId));
 }
 
-TEST_F(LoanListSpecTest, PinnedMemberIdRestrictsToThatBorrower)
+TEST_F(LoanListSpec, PinnedMemberIdRestrictsToThatBorrower)
 {
     seedOpenOverdueAndReturned();
 
@@ -212,7 +224,7 @@ TEST_F(LoanListSpecTest, PinnedMemberIdRestrictsToThatBorrower)
     EXPECT_EQ(m_spec->idAt(0), otherLoan);
 }
 
-TEST_F(LoanListSpecTest, PinnedBookIdAndCopyIdRestrictLoans)
+TEST_F(LoanListSpec, PinnedBookIdAndCopyIdRestrictLoans)
 {
     seedOpenOverdueAndReturned();
 
@@ -228,7 +240,7 @@ TEST_F(LoanListSpecTest, PinnedBookIdAndCopyIdRestrictLoans)
     EXPECT_EQ(m_spec->idAt(0), m_openId);
 }
 
-TEST_F(LoanListSpecTest, DisplayRowsUsePrebuiltStatusLabels)
+TEST_F(LoanListSpec, DisplayRowsUsePrebuiltStatusLabels)
 {
     seedOpenOverdueAndReturned();
 
@@ -259,7 +271,7 @@ TEST_F(LoanListSpecTest, DisplayRowsUsePrebuiltStatusLabels)
               QString::fromStdString(Core::Strings::t("circulation.status.returned")));
 }
 
-TEST_F(LoanListSpecTest, RetranslateDoesNotQuery)
+TEST_F(LoanListSpec, RetranslateDoesNotQuery)
 {
     seedOpenOverdueAndReturned();
 
@@ -285,7 +297,7 @@ TEST_F(LoanListSpecTest, RetranslateDoesNotQuery)
     EXPECT_EQ(m_spec->cell(0, 5, Qt::DisplayRole).toString(), french);
 }
 
-TEST_F(LoanListSpecTest, RankOfMatchesRepository)
+TEST_F(LoanListSpec, RankOfMatchesRepository)
 {
     seedOpenOverdueAndReturned();
 
@@ -304,7 +316,7 @@ TEST_F(LoanListSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(LoanListSpecTest, PreviewLoadsCoverPhotoAndFields)
+TEST_F(LoanListSpec, PreviewLoadsCoverPhotoAndFields)
 {
     seedOpenOverdueAndReturned();
 
@@ -342,7 +354,7 @@ TEST_F(LoanListSpecTest, PreviewLoadsCoverPhotoAndFields)
     EXPECT_TRUE(sawStatus);
 }
 
-TEST_F(LoanListSpecTest, ActionsEnableReturnExtendForOpenAndArchiveForReturned)
+TEST_F(LoanListSpec, ActionsEnableReturnExtendForOpenAndArchiveForReturned)
 {
     seedOpenOverdueAndReturned();
 
@@ -380,7 +392,7 @@ TEST_F(LoanListSpecTest, ActionsEnableReturnExtendForOpenAndArchiveForReturned)
     EXPECT_TRUE(archive->enabled(tickedCtx));
 }
 
-TEST_F(LoanListSpecTest, DependsOnLoansMembersCopiesBooks)
+TEST_F(LoanListSpec, DependsOnLoansMembersCopiesBooks)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("loans"));
     EXPECT_EQ(m_spec->dependsOn(),

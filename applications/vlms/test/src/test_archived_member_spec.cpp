@@ -15,7 +15,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using ArchivedMemberSpecUnderTest = VLMS::ArchivedMemberSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -32,7 +44,7 @@ const PageAction* findAction(const QList<PageAction>& actions, const QString& id
 
 }  // namespace
 
-class ArchivedMemberSpecTest : public ::testing::Test {
+class ArchivedMemberSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -48,7 +60,7 @@ protected:
             std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<ArchiveWorkflowHarness>(*m_members, *m_catalog, *m_circulation);
-        m_spec = std::make_unique<ArchivedMemberSpec>(*m_members, *m_harness->archive);
+        m_spec = std::make_unique<ArchivedMemberSpecUnderTest>(*m_members, *m_harness->archive);
     }
 
     void TearDown() override
@@ -67,10 +79,10 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<ArchiveWorkflowHarness> m_harness;
-    std::unique_ptr<ArchivedMemberSpec> m_spec;
+    std::unique_ptr<ArchivedMemberSpecUnderTest> m_spec;
 };
 
-TEST_F(ArchivedMemberSpecTest, ForcesArchivedScopeIgnoresLive)
+TEST_F(ArchivedMemberSpec, ForcesArchivedScopeIgnoresLive)
 {
     MemberSeed live = uniqueMemberSeed(1);
     live.city = "Tunis";
@@ -91,7 +103,7 @@ TEST_F(ArchivedMemberSpecTest, ForcesArchivedScopeIgnoresLive)
     EXPECT_EQ(m_spec->idAt(0), archivedId);
 }
 
-TEST_F(ArchivedMemberSpecTest, DisplayRowsMatchArchiveColumns)
+TEST_F(ArchivedMemberSpec, DisplayRowsMatchArchiveColumns)
 {
     MemberSeed seed = uniqueMemberSeed(1);
     seed.city = "Tunis";
@@ -118,7 +130,7 @@ TEST_F(ArchivedMemberSpecTest, DisplayRowsMatchArchiveColumns)
     EXPECT_FALSE(m_spec->cell(0, 5, Qt::DisplayRole).toString().isEmpty());
 }
 
-TEST_F(ArchivedMemberSpecTest, RankOfMatchesRepository)
+TEST_F(ArchivedMemberSpec, RankOfMatchesRepository)
 {
     MemberSeed a = uniqueMemberSeed(1);
     a.lastName = "Aaa";
@@ -148,7 +160,7 @@ TEST_F(ArchivedMemberSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(ArchivedMemberSpecTest, PreviewMatchesArchiveDetails)
+TEST_F(ArchivedMemberSpec, PreviewMatchesArchiveDetails)
 {
     MemberSeed seed = uniqueMemberSeed(1);
     seed.city = "Tunis";
@@ -170,7 +182,7 @@ TEST_F(ArchivedMemberSpecTest, PreviewMatchesArchiveDetails)
     EXPECT_EQ(preview.fields.at(4).labelKey, QStringLiteral("archive.col.archivedAt"));
 }
 
-TEST_F(ArchivedMemberSpecTest, ActionsRestorePurgeLoansAndDependsOn)
+TEST_F(ArchivedMemberSpec, ActionsRestorePurgeLoansAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-members"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Members);

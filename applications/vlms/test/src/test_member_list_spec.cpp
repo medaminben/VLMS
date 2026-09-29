@@ -19,7 +19,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using MemberListSpecUnderTest = VLMS::MemberListSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -35,7 +47,7 @@ QString writePng(const QTemporaryDir& dir, const QString& name)
 
 }  // namespace
 
-class MemberListSpecTest : public ::testing::Test {
+class MemberListSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -51,7 +63,7 @@ protected:
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_harness = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
-        m_spec = std::make_unique<MemberListSpec>(*m_members, *m_harness->members);
+        m_spec = std::make_unique<MemberListSpecUnderTest>(*m_members, *m_harness->members);
     }
 
     void TearDown() override
@@ -71,10 +83,10 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MemberWorkflowHarness> m_harness;
-    std::unique_ptr<MemberListSpec> m_spec;
+    std::unique_ptr<MemberListSpecUnderTest> m_spec;
 };
 
-TEST_F(MemberListSpecTest, MapsFacetsSortAndPagingIntoMemberQuery)
+TEST_F(MemberListSpec, MapsFacetsSortAndPagingIntoMemberQuery)
 {
     MemberSeed tunis = uniqueMemberSeed(1);
     tunis.city = "Tunis";
@@ -123,7 +135,7 @@ TEST_F(MemberListSpecTest, MapsFacetsSortAndPagingIntoMemberQuery)
     EXPECT_EQ(m_spec->cell(0, 1, Qt::DisplayRole).toString(), QStringLiteral("Member3 Mmm"));
 }
 
-TEST_F(MemberListSpecTest, DisplayRowsUsePrebuiltStrings)
+TEST_F(MemberListSpec, DisplayRowsUsePrebuiltStrings)
 {
     MemberSeed seed = uniqueMemberSeed(1);
     seed.city = "Tunis";
@@ -150,7 +162,7 @@ TEST_F(MemberListSpecTest, DisplayRowsUsePrebuiltStrings)
     EXPECT_EQ(m_spec->cell(0, 5, Qt::DisplayRole).toString(), QStringLiteral("0"));
 }
 
-TEST_F(MemberListSpecTest, RetranslateDoesNotQuery)
+TEST_F(MemberListSpec, RetranslateDoesNotQuery)
 {
     MemberSeed seed = uniqueMemberSeed(1);
     seed.status = Repositories::MemberStatus::kActive;
@@ -177,7 +189,7 @@ TEST_F(MemberListSpecTest, RetranslateDoesNotQuery)
     EXPECT_EQ(m_spec->cell(0, 4, Qt::DisplayRole).toString(), french);
 }
 
-TEST_F(MemberListSpecTest, RankOfMatchesRepository)
+TEST_F(MemberListSpec, RankOfMatchesRepository)
 {
     MemberSeed a = uniqueMemberSeed(1);
     a.lastName = "Aaa";
@@ -205,7 +217,7 @@ TEST_F(MemberListSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(MemberListSpecTest, PreviewLoadsPhotoPathAndFields)
+TEST_F(MemberListSpec, PreviewLoadsPhotoPathAndFields)
 {
     MemberSeed seed = uniqueMemberSeed(1);
     seed.notes = "Keep me scrollable";
@@ -246,7 +258,7 @@ TEST_F(MemberListSpecTest, PreviewLoadsPhotoPathAndFields)
     EXPECT_TRUE(sawStatus);
 }
 
-TEST_F(MemberListSpecTest, DependsOnMembers)
+TEST_F(MemberListSpec, DependsOnMembers)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("members"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Members);

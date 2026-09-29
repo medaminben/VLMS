@@ -20,7 +20,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using BookListSpecUnderTest = VLMS::BookListSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -36,7 +48,7 @@ QString writePng(const QTemporaryDir& dir, const QString& name)
 
 }  // namespace
 
-class BookListSpecTest : public ::testing::Test {
+class BookListSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -52,7 +64,7 @@ protected:
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_harness = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation, *m_members);
-        m_spec = std::make_unique<BookListSpec>(*m_catalog, *m_harness->books);
+        m_spec = std::make_unique<BookListSpecUnderTest>(*m_catalog, *m_harness->books);
     }
 
     void TearDown() override
@@ -72,10 +84,10 @@ protected:
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<BookWorkflowHarness> m_harness;
-    std::unique_ptr<BookListSpec> m_spec;
+    std::unique_ptr<BookListSpecUnderTest> m_spec;
 };
 
-TEST_F(BookListSpecTest, MapsFacetsSortAndPagingIntoBookQuery)
+TEST_F(BookListSpec, MapsFacetsSortAndPagingIntoBookQuery)
 {
     const std::int64_t fictionId = seedCategory(*m_db, "FIC", "Fiction");
     ASSERT_GT(fictionId, 0);
@@ -125,7 +137,7 @@ TEST_F(BookListSpecTest, MapsFacetsSortAndPagingIntoBookQuery)
     EXPECT_EQ(m_spec->cell(0, 0, Qt::DisplayRole).toString(), QStringLiteral("Mango"));
 }
 
-TEST_F(BookListSpecTest, DisplayRowsUsePrebuiltStrings)
+TEST_F(BookListSpec, DisplayRowsUsePrebuiltStrings)
 {
     const std::int64_t categoryId = seedCategory(*m_db, "SCI", "Science");
     ASSERT_GT(categoryId, 0);
@@ -165,7 +177,7 @@ TEST_F(BookListSpecTest, DisplayRowsUsePrebuiltStrings)
               QString::number(stored->availableCopies));
 }
 
-TEST_F(BookListSpecTest, RetranslateDoesNotQuery)
+TEST_F(BookListSpec, RetranslateDoesNotQuery)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Stable Title";
@@ -195,7 +207,7 @@ TEST_F(BookListSpecTest, RetranslateDoesNotQuery)
     EXPECT_EQ(m_spec->cell(0, 0, Qt::DisplayRole).toString(), titleBefore);
 }
 
-TEST_F(BookListSpecTest, RankOfMatchesRepository)
+TEST_F(BookListSpec, RankOfMatchesRepository)
 {
     BookSeed a = uniqueBookSeed(1);
     a.title = "Aaa";
@@ -223,7 +235,7 @@ TEST_F(BookListSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(BookListSpecTest, PreviewLoadsCoverPathAndFields)
+TEST_F(BookListSpec, PreviewLoadsCoverPathAndFields)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Covered";
@@ -263,7 +275,7 @@ TEST_F(BookListSpecTest, PreviewLoadsCoverPathAndFields)
     EXPECT_TRUE(sawLanguage);
 }
 
-TEST_F(BookListSpecTest, DependsOnBooksAndCopies)
+TEST_F(BookListSpec, DependsOnBooksAndCopies)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("books"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Books | Entity::Copies);

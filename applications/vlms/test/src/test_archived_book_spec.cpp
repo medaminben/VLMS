@@ -14,7 +14,19 @@
 
 #include <memory>
 
-using namespace VLMS;
+
+using ArchivedBookSpecUnderTest = VLMS::ArchivedBookSpec;
+namespace Core = VLMS::Core;
+namespace Repositories = VLMS::Repositories;
+using VLMS::ActionContext;
+using VLMS::ColumnSpec;
+using VLMS::Entity;
+using VLMS::FacetSpec;
+using VLMS::PageAction;
+using VLMS::PreviewContent;
+using VLMS::PreviewField;
+using VLMS::QueryState;
+
 using namespace Test;
 
 namespace {
@@ -31,7 +43,7 @@ const PageAction* findAction(const QList<PageAction>& actions, const QString& id
 
 }  // namespace
 
-class ArchivedBookSpecTest : public ::testing::Test {
+class ArchivedBookSpec : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -47,7 +59,7 @@ protected:
             std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
         m_harness = std::make_unique<ArchiveWorkflowHarness>(*m_members, *m_catalog, *m_circulation);
-        m_spec = std::make_unique<ArchivedBookSpec>(*m_catalog, *m_circulation, *m_harness->archive);
+        m_spec = std::make_unique<ArchivedBookSpecUnderTest>(*m_catalog, *m_circulation, *m_harness->archive);
     }
 
     void TearDown() override
@@ -66,10 +78,10 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<ArchiveWorkflowHarness> m_harness;
-    std::unique_ptr<ArchivedBookSpec> m_spec;
+    std::unique_ptr<ArchivedBookSpecUnderTest> m_spec;
 };
 
-TEST_F(ArchivedBookSpecTest, ForcesArchivedScopeIgnoresLive)
+TEST_F(ArchivedBookSpec, ForcesArchivedScopeIgnoresLive)
 {
     BookSeed live = uniqueBookSeed(1);
     live.title = "Live Title";
@@ -90,7 +102,7 @@ TEST_F(ArchivedBookSpecTest, ForcesArchivedScopeIgnoresLive)
     EXPECT_EQ(m_spec->cell(0, 0, Qt::DisplayRole).toString(), QStringLiteral("Archived Title"));
 }
 
-TEST_F(ArchivedBookSpecTest, DisplayRowsMatchArchiveColumns)
+TEST_F(ArchivedBookSpec, DisplayRowsMatchArchiveColumns)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Optics";
@@ -112,7 +124,7 @@ TEST_F(ArchivedBookSpecTest, DisplayRowsMatchArchiveColumns)
     EXPECT_FALSE(m_spec->cell(0, 3, Qt::DisplayRole).toString().isEmpty());
 }
 
-TEST_F(ArchivedBookSpecTest, RankOfMatchesRepository)
+TEST_F(ArchivedBookSpec, RankOfMatchesRepository)
 {
     BookSeed a = uniqueBookSeed(1);
     a.title = "Aaa";
@@ -142,7 +154,7 @@ TEST_F(ArchivedBookSpecTest, RankOfMatchesRepository)
     EXPECT_EQ(actual.value(), expected.value());
 }
 
-TEST_F(ArchivedBookSpecTest, PreviewMatchesArchiveDetails)
+TEST_F(ArchivedBookSpec, PreviewMatchesArchiveDetails)
 {
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Optics";
@@ -163,7 +175,7 @@ TEST_F(ArchivedBookSpecTest, PreviewMatchesArchiveDetails)
     EXPECT_EQ(preview.fields.at(3).labelKey, QStringLiteral("archive.col.archivedAt"));
 }
 
-TEST_F(ArchivedBookSpecTest, ActionsAndDependsOn)
+TEST_F(ArchivedBookSpec, ActionsAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-books"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Books);
