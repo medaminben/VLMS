@@ -190,7 +190,7 @@ QList<PageAction> BookListSpec::actions() const
 
 EntitySet BookListSpec::dependsOn() const
 {
-    return Entity::Books | Entity::Copies;
+    return Entity::Books | Entity::Copies | Entity::Categories;
 }
 
 Core::Status BookListSpec::load(const QueryState& state)

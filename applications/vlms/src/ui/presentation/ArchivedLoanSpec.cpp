@@ -169,7 +169,7 @@ QList<PageAction> ArchivedLoanSpec::actions() const
 
 EntitySet ArchivedLoanSpec::dependsOn() const
 {
-    return Entity::Loans;
+    return Entity::Loans | Entity::Members | Entity::Copies;
 }
 
 Core::Status ArchivedLoanSpec::load(const QueryState& state)

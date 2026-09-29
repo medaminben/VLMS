@@ -212,7 +212,7 @@ TEST_F(ArchivedLoanSpec, PreviewMatchesArchiveDetails)
 TEST_F(ArchivedLoanSpec, ActionsOmitLoansAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-loans"));
-    EXPECT_EQ(m_spec->dependsOn(), Entity::Loans);
+    EXPECT_EQ(m_spec->dependsOn(), Entity::Loans | Entity::Members | Entity::Copies);
 
     const QList<ColumnSpec> columns = m_spec->columns();
     ASSERT_EQ(columns.size(), 4);

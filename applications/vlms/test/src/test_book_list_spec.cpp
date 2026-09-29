@@ -278,7 +278,7 @@ TEST_F(BookListSpec, PreviewLoadsCoverPathAndFields)
 TEST_F(BookListSpec, DependsOnBooksAndCopies)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("books"));
-    EXPECT_EQ(m_spec->dependsOn(), Entity::Books | Entity::Copies);
+    EXPECT_EQ(m_spec->dependsOn(), Entity::Books | Entity::Copies | Entity::Categories);
 
     const QList<ColumnSpec> columns = m_spec->columns();
     ASSERT_EQ(columns.size(), 6);

@@ -227,7 +227,7 @@ QList<PageAction> ArchivedCopySpec::actions() const
 
 EntitySet ArchivedCopySpec::dependsOn() const
 {
-    return Entity::Copies;
+    return Entity::Copies | Entity::Books | Entity::Loans;
 }
 
 Core::Status ArchivedCopySpec::load(const QueryState& state)

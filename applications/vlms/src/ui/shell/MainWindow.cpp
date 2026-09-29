@@ -820,7 +820,8 @@ void MainWindow::showArchive(VLMS::ArchiveType type)
 
 void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
 {
-    if ((what & VLMS::Entity::Books) || (what & VLMS::Entity::Copies)) {
+    if ((what & VLMS::Entity::Books) || (what & VLMS::Entity::Copies)
+        || (what & VLMS::Entity::Categories)) {
         if (m_bookFilters != nullptr) {
             m_bookFilters->refresh();
         }

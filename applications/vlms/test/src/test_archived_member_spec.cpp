@@ -185,7 +185,7 @@ TEST_F(ArchivedMemberSpec, PreviewMatchesArchiveDetails)
 TEST_F(ArchivedMemberSpec, ActionsRestorePurgeLoansAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-members"));
-    EXPECT_EQ(m_spec->dependsOn(), Entity::Members);
+    EXPECT_EQ(m_spec->dependsOn(), Entity::Members | Entity::Loans);
 
     const QList<ColumnSpec> columns = m_spec->columns();
     ASSERT_EQ(columns.size(), 6);

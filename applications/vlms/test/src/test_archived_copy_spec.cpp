@@ -185,7 +185,7 @@ TEST_F(ArchivedCopySpec, PreviewMatchesArchiveDetails)
 TEST_F(ArchivedCopySpec, ActionsIncludeReuseAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-copies"));
-    EXPECT_EQ(m_spec->dependsOn(), Entity::Copies);
+    EXPECT_EQ(m_spec->dependsOn(), Entity::Copies | Entity::Books | Entity::Loans);
 
     const QList<ColumnSpec> columns = m_spec->columns();
     ASSERT_EQ(columns.size(), 5);

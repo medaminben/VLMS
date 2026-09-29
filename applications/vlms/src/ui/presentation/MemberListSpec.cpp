@@ -178,7 +178,7 @@ QList<PageAction> MemberListSpec::actions() const
 
 EntitySet MemberListSpec::dependsOn() const
 {
-    return Entity::Members;
+    return Entity::Members | Entity::Loans;
 }
 
 Core::Status MemberListSpec::load(const QueryState& state)

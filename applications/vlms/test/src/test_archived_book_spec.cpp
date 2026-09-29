@@ -178,7 +178,7 @@ TEST_F(ArchivedBookSpec, PreviewMatchesArchiveDetails)
 TEST_F(ArchivedBookSpec, ActionsAndDependsOn)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("archived-books"));
-    EXPECT_EQ(m_spec->dependsOn(), Entity::Books);
+    EXPECT_EQ(m_spec->dependsOn(), Entity::Books | Entity::Copies);
 
     const QList<ColumnSpec> columns = m_spec->columns();
     ASSERT_EQ(columns.size(), 4);

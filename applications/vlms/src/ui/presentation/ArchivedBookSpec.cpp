@@ -215,7 +215,7 @@ QList<PageAction> ArchivedBookSpec::actions() const
 
 EntitySet ArchivedBookSpec::dependsOn() const
 {
-    return Entity::Books;
+    return Entity::Books | Entity::Copies;
 }
 
 Core::Status ArchivedBookSpec::load(const QueryState& state)

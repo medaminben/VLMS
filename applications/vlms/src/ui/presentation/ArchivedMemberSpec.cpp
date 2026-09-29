@@ -198,7 +198,7 @@ QList<PageAction> ArchivedMemberSpec::actions() const
 
 EntitySet ArchivedMemberSpec::dependsOn() const
 {
-    return Entity::Members;
+    return Entity::Members | Entity::Loans;
 }
 
 Core::Status ArchivedMemberSpec::load(const QueryState& state)
