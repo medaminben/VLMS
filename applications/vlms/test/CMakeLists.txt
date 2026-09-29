@@ -46,6 +46,7 @@ build_gtest_executable(
         src/test_manual_location.cpp
         src/test_page_facets.cpp
         src/test_data_events.cpp
+        src/test_paged_query_model.cpp
         src/test_error_presenter.cpp
         src/test_dialog_factory.cpp
         src/test_navigator.cpp

@@ -51,6 +51,7 @@ add_library(vlms_ui STATIC
     src/ui/workflows/MemberWorkflow.cpp
     src/ui/workflows/LoanWorkflow.cpp
     src/ui/workflows/ArchiveWorkflow.cpp
+    src/ui/presentation/PagedQueryModel.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -112,6 +113,7 @@ add_library(vlms_ui STATIC
     src/ui/presentation/PageAction.h
     src/ui/presentation/PreviewContent.h
     src/ui/presentation/ListSpec.h
+    src/ui/presentation/PagedQueryModel.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
