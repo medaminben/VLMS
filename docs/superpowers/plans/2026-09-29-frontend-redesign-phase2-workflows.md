@@ -1,23 +1,28 @@
-# Frontend Redesign Phase 2: Workflows (in progress)
+# Frontend Redesign Phase 2: Workflows
 
-> **For agentic workers:** Continue from BookWorkflow/BulkRunner already on
-> branch `redesign/2-workflows`. REQUIRED SUB-SKILL: subagent-driven-development.
+> **For agentic workers:** REQUIRED SUB-SKILL: subagent-driven-development.
 
-**Goal:** Move all repository writes out of pages into BookWorkflow,
-MemberWorkflow, LoanWorkflow, ArchiveWorkflow + BulkRunner; pages call
-workflows only.
+**Goal:** Move repository writes out of pages into workflows.
 
-**Done so far:**
-- `BulkRunner` wraps `runBulkAction` and emits `DataEvents`
-- `BookWorkflow` with add/edit/archive/showLoans/manageCategories
+**Branch:** `redesign/2-workflows` (worktree `.worktrees/redesign-1-foundations`)
+**Depends on:** Phase 1 foundations (DataEvents, Navigator, ErrorPresenter, DialogFactory)
 
-**Remaining tasks:**
-1. Wire `CatalogPage` to `BookWorkflow` (constructor + action methods)
-2. `MemberWorkflow` + wire `MembersPage`
-3. `LoanWorkflow` + remove duplicated checkout/return/extend from pages and `LoanHistoryActions`
-4. `ArchiveWorkflow` + wire `ArchivePage`
-5. Own workflows from Application/MainWindow composition root
-6. `test_vlms_workflows` suite with FakeDialogFactory / FakeErrorPresenter / FakeNavigator
-7. Delete write paths from pages once covered
+## Done
 
-**Depends on:** Phase 1 foundations (`redesign/1-foundations` / commit `5dc8c94`)
+| Unit | Status |
+|---|---|
+| BulkRunner | done |
+| BookWorkflow + CatalogPage | done |
+| MemberWorkflow + MembersPage | done |
+| LoanWorkflow + CirculationPage + LoanHistoryActions | done |
+| Book/Member loan dialogs take LoanWorkflow | done |
+
+## Remaining
+
+1. **ArchiveWorkflow** — `restore`, `purge`, `reuseNumber`, `showLoans`; wire `ArchivePage`
+2. **test_vlms_workflows** — FakeDialogFactory / FakeErrorPresenter / FakeNavigator tests per use case
+3. Confirm pages no longer call `save*` / `archive*` / `returnLoan` / `extendLoan` directly (grep gate)
+
+## Verification so far
+
+`ctest -L ui`: **290/290** passing after LoanWorkflow wiring.
