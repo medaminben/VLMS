@@ -14,6 +14,8 @@
 #include <VLMS/Repositories/MetricsRepository.h>
 #include <VLMS/Core/Paths.h>
 
+#include <QCoreApplication>
+#include <QEvent>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QLocale>
@@ -21,6 +23,7 @@
 #include <QSettings>
 #include <QStyle>
 #include <QStyleFactory>
+#include <QWidget>
 
 using VLMS::T;
 using VLMS::cd;
@@ -188,7 +191,14 @@ void Application::setUiLocale(const QString& code)
     saveLocale();
     applyLocale(this);
     applyQtCatalogue();
-    emit languageChanged();
+
+    // Top-level only: QWidget does not recurse LanguageChange to children.
+    // MainWindow::changeEvent forwards to list pages and metrics.
+    const auto topLevels = QApplication::topLevelWidgets();
+    for (QWidget* w : topLevels) {
+        QEvent event(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(w, &event);
+    }
 }
 
 void Application::applyQtCatalogue()

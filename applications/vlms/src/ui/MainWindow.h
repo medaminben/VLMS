@@ -9,6 +9,7 @@
 
 class Application;
 class MetricsPage;
+class QEvent;
 class QLabel;
 class QListWidget;
 class QPushButton;
@@ -51,13 +52,17 @@ public:
 private slots:
     void onLanguageChanged(const QString& code);
     void onThemeChanged();
-    void retranslateUi();
     void onDataChanged(VLMS::EntitySet what, QList<qint64> ids);
+
+protected:
+    void changeEvent(QEvent* event) override;
 
 private:
     enum class Page { Catalog, Members, Circulation, Archive, Metrics };
 
     void buildUi();
+    void rebuildShellChrome();
+    void forwardLanguageChange();
     void showPage(Page page);
     QWidget* buildPlaceholderPage(const QString& titleKey, const QString& bodyKey);
     void updateNavigation(Page active);

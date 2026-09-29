@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QComboBox;
+class QEvent;
 class QLabel;
 class QPushButton;
 class QSpinBox;
@@ -31,10 +32,12 @@ public:
 
     void resetToFirstPage();
     void setCurrentPage(int page); // clamp 1..pageCount; no pageChanged signal
-    void retranslateUi();
 
 signals:
     void pageChanged(int page);
+
+protected:
+    void changeEvent(QEvent* event) override;
 
 private slots:
     void goFirst();
@@ -45,6 +48,7 @@ private slots:
     void onPageSizeChosen(int index);
 
 private:
+    void applyLabels();
     void updateControls();
     void fillPageSizeCombo();
     void syncPageSizeCombo();

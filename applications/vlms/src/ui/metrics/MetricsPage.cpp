@@ -8,6 +8,7 @@
 
 #include <QAbstractItemView>
 #include <QAbstractScrollArea>
+#include <QEvent>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -97,7 +98,7 @@ MetricsPage::MetricsPage(VLMS::Repositories::MetricsRepository& repository, QWid
     : QWidget(parent),
       m_repository(repository) {
     buildUi();
-    retranslateUi();
+    applyLabels();
     refreshMetrics();
 }
 
@@ -385,7 +386,15 @@ void MetricsPage::refreshTopCategoriesTable() {
     });
 }
 
-void MetricsPage::retranslateUi() {
+void MetricsPage::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QWidget::changeEvent(event);
+}
+
+void MetricsPage::applyLabels() {
     if (auto* title = findChild<QLabel*>(QStringLiteral("pageTitle"))) {
         title->setText(T("page.metrics.title"));
     }

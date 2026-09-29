@@ -14,6 +14,8 @@
 #include <VLMS/Core/Locale.h>
 
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEvent>
 #include <QImage>
 #include <QItemSelectionModel>
 #include <QLabel>
@@ -32,8 +34,8 @@ using namespace Test;
 namespace {
 
 /// What Application::setDarkTheme does, minus the signal: MainWindow cannot
-/// be built in a test, so the test calls the page's retranslateUi itself,
-/// which is all MainWindow::onThemeChanged does for a page.
+/// be built in a test, so the test sends LanguageChange to the page,
+/// which is what MainWindow forwards on theme (and language) refresh.
 void applyMode(ThemeMode mode)
 {
     Theme::setMode(mode);
@@ -107,7 +109,10 @@ TEST_F(test_ui_PreviewTheme, ArabicCataloguePlaceholderTurnsDarkWithTheTheme)
     ASSERT_GT(placeholderLightness(cover), 200);
 
     applyMode(ThemeMode::Dark);
-    page.retranslateUi();
+    {
+    QEvent languageChange(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(&page, &languageChange);
+}
     QApplication::processEvents();
 
     // The selection survives the refresh, and the card is repainted dark.
@@ -147,7 +152,10 @@ TEST_F(test_ui_PreviewTheme, ArabicCirculationPlaceholderTurnsDarkWithTheTheme)
     ASSERT_GT(placeholderLightness(cover), 200);
 
     applyMode(ThemeMode::Dark);
-    page.retranslateUi();
+    {
+    QEvent languageChange(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(&page, &languageChange);
+}
     QApplication::processEvents();
 
     ASSERT_NE(table->selectionModel(), nullptr);
@@ -205,7 +213,10 @@ TEST_F(test_ui_PreviewTheme, ThemeSwitchKeepsTheSameBookSelected)
         const qint64 id = table->model()->index(before, 0).data(Qt::UserRole).toLongLong();
 
         applyMode(ThemeMode::Dark);
-        page.retranslateUi();
+        {
+    QEvent languageChange(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(&page, &languageChange);
+}
         QApplication::processEvents();
 
         ASSERT_GE(table->currentIndex().row(), 0) << "direction " << direction;

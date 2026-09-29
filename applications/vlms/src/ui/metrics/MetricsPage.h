@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QWidget>
 
+class QEvent;
 class QLabel;
 class QPushButton;
 class QTableWidget;
@@ -15,8 +16,10 @@ class MetricsPage final : public QWidget {
 public:
     explicit MetricsPage(VLMS::Repositories::MetricsRepository& repository, QWidget* parent = nullptr);
 
-    void retranslateUi();
     void refreshMetrics();
+
+protected:
+    void changeEvent(QEvent* event) override;
 
 private:
     struct MetricCard {
@@ -26,6 +29,7 @@ private:
     };
 
     void buildUi();
+    void applyLabels();
     QWidget* makeSection(const QString& titleKey, QWidget* content, bool centerTitle = false);
     QWidget* makeMetricGrid(const QStringList& labelKeys,
                             QVector<MetricCard>* cards,

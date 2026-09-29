@@ -62,11 +62,9 @@ public:
 protected:
     void changeEvent(QEvent* event) override;
 
-public slots:
-    void retranslateUi();
-
 private:
     void buildUi(const Config& config);
+    void applyLocalizedChrome();
     void onSearchEdited(const QString& text);
     void searchNow();
     void onPageChanged();

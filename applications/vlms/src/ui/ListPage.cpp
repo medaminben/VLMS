@@ -8,6 +8,7 @@
 
 #include <QAbstractItemView>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QEvent>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -165,19 +166,19 @@ void ListPage::rebuildChrome()
 {
     rebuildActions();
     installShortcuts();
-    retranslateUi();
+    applyLocalizedChrome();
     updateActionEnabled();
 }
 
 void ListPage::changeEvent(QEvent* event)
 {
     if (event != nullptr && event->type() == QEvent::LanguageChange) {
-        retranslateUi();
+        rebuildChrome();
     }
     QWidget::changeEvent(event);
 }
 
-void ListPage::retranslateUi()
+void ListPage::applyLocalizedChrome()
 {
     if (auto* title = findChild<QLabel*>(QStringLiteral("pageTitle"))) {
         title->setText(T(ss(m_config.titleKey)));
@@ -189,7 +190,8 @@ void ListPage::retranslateUi()
         m_search->setPlaceholderText(T(ss(m_config.searchPlaceholderKey)));
     }
     if (m_pager != nullptr) {
-        m_pager->retranslateUi();
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(m_pager, &languageChange);
     }
     if (m_errorRetry != nullptr) {
         m_errorRetry->setText(QStringLiteral("Retry"));

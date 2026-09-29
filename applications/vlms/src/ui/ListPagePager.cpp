@@ -5,6 +5,7 @@
 #include "QtBridge.h"
 
 #include <QComboBox>
+#include <QEvent>
 #include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -94,7 +95,7 @@ ListPagePager::ListPagePager(QWidget* parent)
     grid->setColumnStretch(2, 1);
     grid->setColumnStretch(8, 1);
 
-    retranslateUi();
+    applyLabels();
     updateControls();
 }
 
@@ -179,7 +180,15 @@ void ListPagePager::setCurrentPage(int page)
     updateControls();
 }
 
-void ListPagePager::retranslateUi()
+void ListPagePager::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QWidget::changeEvent(event);
+}
+
+void ListPagePager::applyLabels()
 {
     m_firstButton->setText(T("pager.first"));
     m_previousButton->setText(T("pager.previous"));

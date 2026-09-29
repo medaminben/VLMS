@@ -58,7 +58,6 @@ public:
     void toggleTheme();
 
 signals:
-    void languageChanged();
     void themeChanged();
 
 private:

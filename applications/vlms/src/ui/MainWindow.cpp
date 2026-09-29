@@ -39,6 +39,8 @@
 
 #include <QAbstractItemView>
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEvent>
 #include <QHash>
 #include <QDate>
 #include <QFileInfo>
@@ -125,13 +127,12 @@ MainWindow::MainWindow(Application& app, QWidget* parent)
     , m_app(app) {
     buildUi();
 
-    connect(&m_app, &Application::languageChanged, this, &MainWindow::retranslateUi);
     connect(&m_app, &Application::themeChanged, this, &MainWindow::onThemeChanged);
     connect(&m_app.dataEvents(), &VLMS::DataEvents::changed,
             this, &MainWindow::onDataChanged);
 
     showPage(Page::Catalog);
-    retranslateUi();
+    rebuildShellChrome();
 }
 
 MainWindow::~MainWindow() = default;
@@ -613,9 +614,54 @@ void MainWindow::onThemeChanged()
     // The stylesheet has already been swapped application-wide. What is left is
     // everything the stylesheet cannot reach: the brand banner, the cover
     // placeholders the pages painted from light-mode artwork, and the label
-    // naming the mode the button switches to. retranslateUi refreshes all
-    // three, because a language switch has exactly the same problem.
-    retranslateUi();
+    // naming the mode the button switches to. LanguageChange refresh covers
+    // the same chrome and preview paths.
+    rebuildShellChrome();
+    forwardLanguageChange();
+}
+
+void MainWindow::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        rebuildShellChrome();
+        forwardLanguageChange();
+    }
+    QMainWindow::changeEvent(event);
+}
+
+void MainWindow::forwardLanguageChange()
+{
+    const auto send = [](QWidget* w) {
+        if (w == nullptr) {
+            return;
+        }
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(w, &languageChange);
+    };
+
+    send(m_languageSelector);
+    send(m_metricsPage);
+    send(m_membersPage);
+    send(m_catalogPage);
+    send(m_circulationPage);
+    send(m_archivePage);
+
+    if (m_memberFilters != nullptr) {
+        m_memberFilters->refresh();
+    }
+    if (m_bookFilters != nullptr) {
+        m_bookFilters->refresh();
+    }
+    if (m_loanMemberFilters != nullptr) {
+        m_loanMemberFilters->refresh();
+    }
+    if (m_circulationPage != nullptr) {
+        refreshLoanFilterList();
+    }
+    if (m_archivePage != nullptr) {
+        refreshArchiveTypeList();
+        applyArchiveFilterVisibility();
+    }
 }
 
 void MainWindow::updateThemeToggle()
@@ -658,7 +704,7 @@ void MainWindow::updateManualButton()
     m_manualButton->setAccessibleName(T("nav.help"));
 }
 
-void MainWindow::retranslateUi()
+void MainWindow::rebuildShellChrome()
 {
     setWindowTitle(T("app.title"));
 
@@ -673,8 +719,9 @@ void MainWindow::retranslateUi()
     updateThemeToggle();
     updateManualButton();
 
-    m_languageSelector->setCurrentLanguage(VLMS::qs(VLMS::Core::Locale::code()));
-    m_languageSelector->retranslateUi();
+    if (m_languageSelector != nullptr) {
+        m_languageSelector->setCurrentLanguage(VLMS::qs(VLMS::Core::Locale::code()));
+    }
 
     m_footerLabel->setText(T("footer.copyright", "year",
                              std::to_string(VLMS::Core::Clock::today().year())));
@@ -683,7 +730,7 @@ void MainWindow::retranslateUi()
     // cues that it opens anything.
     m_footerLabel->setToolTip(T("licence.tooltip"));
 
-    const auto retranslatePlaceholder = [&](QWidget* page) {
+    const auto refreshPlaceholder = [&](QWidget* page) {
         if (page == nullptr) {
             return;
         }
@@ -695,37 +742,11 @@ void MainWindow::retranslateUi()
         }
     };
 
-    if (m_metricsPage != nullptr) {
-        m_metricsPage->retranslateUi();
-    } else {
-        retranslatePlaceholder(m_stack->widget(4));
+    if (m_metricsPage == nullptr) {
+        refreshPlaceholder(m_stack->widget(4));
     }
-
-    if (m_membersPage != nullptr) {
-        m_membersPage->retranslateUi();
-        if (m_memberFilters != nullptr) {
-            m_memberFilters->refresh();
-        }
-    }
-    if (m_catalogPage != nullptr) {
-        m_catalogPage->retranslateUi();
-        if (m_bookFilters != nullptr) {
-            m_bookFilters->refresh();
-        }
-    }
-    if (m_circulationPage != nullptr) {
-        m_circulationPage->retranslateUi();
-        refreshLoanFilterList();
-        if (m_loanMemberFilters != nullptr) {
-            m_loanMemberFilters->refresh();
-        }
-    }
-    if (m_archivePage != nullptr) {
-        m_archivePage->retranslateUi();
-        refreshArchiveTypeList();
-        applyArchiveFilterVisibility();
-    } else {
-        retranslatePlaceholder(m_stack->widget(3));
+    if (m_archivePage == nullptr) {
+        refreshPlaceholder(m_stack->widget(3));
     }
 
     updateNavigation(m_activePage);

@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QSignalSpy>
 
+#include <QEvent>
+#include <QCoreApplication>
 #include <gtest/gtest.h>
 
 using namespace VLMS;
@@ -127,11 +129,17 @@ TEST(test_ui_LanguageSelector, TooltipsFollowTheUiLanguage)
     LanguageSelector selector;
 
     Core::Locale::setCode("en");
-    selector.retranslateUi();
+    {
+    QEvent languageChange(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(&selector, &languageChange);
+}
     EXPECT_EQ(buttonFor(selector, QStringLiteral("fr"))->toolTip(), QStringLiteral("Français"));
 
     Core::Locale::setCode("ar");
-    selector.retranslateUi();
+    {
+    QEvent languageChange(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(&selector, &languageChange);
+}
     EXPECT_EQ(buttonFor(selector, QStringLiteral("ar"))->toolTip(),
               QString::fromUtf8("العربية"));
     // A screen reader gets nothing but this.

@@ -6,6 +6,7 @@
 
 #include <QAbstractButton>
 #include <QButtonGroup>
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSize>
@@ -62,7 +63,7 @@ LanguageSelector::LanguageSelector(QWidget* parent)
         emit languageSelected(code);
     });
 
-    retranslateUi();
+    applyLabels();
 }
 
 QString LanguageSelector::currentLanguage() const
@@ -79,7 +80,15 @@ void LanguageSelector::setCurrentLanguage(const QString& code)
     updateButtons();
 }
 
-void LanguageSelector::retranslateUi()
+void LanguageSelector::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QWidget::changeEvent(event);
+}
+
+void LanguageSelector::applyLabels()
 {
     for (QAbstractButton* button : m_group->buttons()) {
         const QString code = button->property("langCode").toString();

@@ -4,6 +4,7 @@
 #include <QWidget>
 
 class QButtonGroup;
+class QEvent;
 
 namespace VLMS {
 
@@ -28,14 +29,15 @@ public:
     /// Moves the selection without announcing it, for following the locale.
     /// Ignores a code the row does not offer.
     void setCurrentLanguage(const QString& code);
-    /// Re-reads the tooltips and repaints the flags, which a theme change
-    /// needs as much as a language change does.
-    void retranslateUi();
 
 signals:
     void languageSelected(const QString& code);
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
+    void applyLabels();
     void updateButtons();
 
     QButtonGroup* m_group = nullptr;
