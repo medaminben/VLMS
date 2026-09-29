@@ -529,7 +529,8 @@ void ListPage::installShortcuts()
     for (const PageAction& action : actions) {
         QKeySequence sequence = action.shortcut;
         if (sequence.isEmpty()) {
-            if (action.id == QStringLiteral("add")) {
+            if (action.id == QStringLiteral("add")
+                || action.id == QStringLiteral("checkout")) {
                 sequence = QKeySequence(QStringLiteral("Ctrl+N"));
             } else if (action.id == QStringLiteral("edit")) {
                 sequence = QKeySequence(Qt::Key_Return);
@@ -758,7 +759,8 @@ bool ListPage::actionIsEnabled(const PageAction& action) const
 
 bool ListPage::isPageScopedAction(const QString& id)
 {
-    return id == QStringLiteral("add") || id == QStringLiteral("refresh");
+    return id == QStringLiteral("add") || id == QStringLiteral("checkout")
+        || id == QStringLiteral("refresh");
 }
 
 int ListPage::actionSortRank(const QString& id)
