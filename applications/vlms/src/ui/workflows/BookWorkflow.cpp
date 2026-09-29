@@ -1,0 +1,166 @@
+#include "ui/workflows/BookWorkflow.h"
+
+#include "QtBridge.h"
+#include "ui/catalog/BookEditorDialog.h"
+#include "ui/catalog/BookLoansDialog.h"
+#include "ui/workflows/BulkRunner.h"
+#include "ui/workflows/DataEvents.h"
+#include "ui/workflows/DialogFactory.h"
+#include "ui/workflows/ErrorPresenter.h"
+#include "ui/workflows/Navigator.h"
+#include "ui/UiHelpers.h"
+
+#include <VLMS/Core/Strings.h>
+#include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/CirculationRepository.h>
+
+#include <QWidget>
+
+using VLMS::T;
+using VLMS::qs;
+using VLMS::ss;
+
+namespace VLMS {
+
+BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
+                           Repositories::CirculationRepository& circulation,
+                           DialogFactory& dialogs,
+                           ErrorPresenter& errors,
+                           DataEvents& events,
+                           Navigator& navigator,
+                           BulkRunner& bulk)
+    : m_catalog(catalog)
+    , m_circulation(circulation)
+    , m_dialogs(dialogs)
+    , m_errors(errors)
+    , m_events(events)
+    , m_navigator(navigator)
+    , m_bulk(bulk)
+{
+    (void)m_navigator;
+}
+
+Core::Status BookWorkflow::add(QWidget* parent)
+{
+    const auto form = m_dialogs.addBook(parent);
+    if (!form) {
+        return Core::Status::ok();
+    }
+
+    Repositories::BookWrite write;
+    write.book = form->book;
+    write.copies = form->copies;
+    if (form->coverChanged) {
+        write.coverSourcePath = ss(form->coverSourcePath);
+    }
+    const auto created = m_catalog.saveNewBook(write);
+    if (!created) {
+        m_errors.show(parent, created.error());
+        return Core::asStatus(created);
+    }
+    m_events.emitChanged(Entity::Books | Entity::Copies, {created.value()});
+    return Core::Status::ok();
+}
+
+Core::Status BookWorkflow::edit(QWidget* parent, qint64 bookId)
+{
+    if (bookId <= 0) {
+        showInformation(parent, T("catalog.editBook"), T("catalog.selectBookFirst"));
+        return Core::Status::ok();
+    }
+
+    const auto book = m_catalog.getBook(bookId);
+    if (!book) {
+        m_errors.show(parent, book.error());
+        return Core::asStatus(book);
+    }
+
+    // Phase 2: DialogFactory::editBook still rebuilds from BookInput only; open
+    // the existing editor with the full record so copies and cover load.
+    BookEditorDialog dialog(m_catalog, book.value(), parent);
+    if (dialog.exec() != QDialog::Accepted) {
+        return Core::Status::ok();
+    }
+
+    Repositories::BookWrite write;
+    write.book = dialog.bookInput();
+    write.copies = dialog.copyInputs();
+    if (dialog.coverChanged()) {
+        write.coverSourcePath = ss(dialog.coverSourcePath());
+    }
+    const auto saved = m_catalog.saveExistingBook(bookId, write);
+    if (!saved) {
+        m_errors.show(parent, saved.error());
+        return saved;
+    }
+    m_events.emitChanged(Entity::Books | Entity::Copies, {bookId});
+    return Core::Status::ok();
+}
+
+Core::Status BookWorkflow::archive(QWidget* parent,
+                                   const QList<qint64>& ids,
+                                   const QList<QString>& labels)
+{
+    if (ids.isEmpty()) {
+        showInformation(parent, T("catalog.deleteBook"), T("catalog.selectBookFirst"));
+        return Core::Status::ok();
+    }
+
+    QList<BulkRow> rows;
+    for (int i = 0; i < ids.size(); ++i) {
+        BulkRow row;
+        row.id = ids.at(i);
+        row.row = i;
+        row.label = i < labels.size() ? labels.at(i) : QString::number(ids.at(i));
+        rows.append(row);
+    }
+
+    if (rows.size() == 1) {
+        if (!askYesNo(parent, T("catalog.deleteBook"), T("catalog.deleteConfirm"))) {
+            return Core::Status::ok();
+        }
+        const auto archived = m_catalog.archiveBook(rows.first().id);
+        if (!archived) {
+            m_errors.show(parent, archived.error());
+            return archived;
+        }
+        m_events.emitChanged(Entity::Books, {rows.first().id});
+        return Core::Status::ok();
+    }
+
+    BulkActionTexts texts;
+    texts.title = T("catalog.deleteBook");
+    texts.verb = T("bulk.verb.archive");
+    texts.passive = T("bulk.passive.archive");
+    texts.noun = T("bulk.noun.books");
+    m_bulk.run(
+        parent, texts, rows,
+        [this](const BulkRow& bulk) { return m_catalog.canArchiveBook(bulk.id); },
+        [this](const BulkRow& bulk) { return m_catalog.archiveBook(bulk.id); },
+        Entity::Books);
+    return Core::Status::ok();
+}
+
+Core::Status BookWorkflow::showLoans(QWidget* parent, qint64 bookId)
+{
+    if (bookId <= 0) {
+        return Core::Status::ok();
+    }
+    const auto book = m_catalog.getBook(bookId);
+    if (!book) {
+        m_errors.show(parent, book.error());
+        return Core::asStatus(book);
+    }
+    BookLoansDialog dialog(m_circulation, bookId, qs(book->title), parent);
+    dialog.exec();
+    return Core::Status::ok();
+}
+
+Core::Status BookWorkflow::manageCategories(QWidget* parent)
+{
+    (void)m_dialogs.manageCategories(parent);
+    m_events.emitChanged(Entity::Categories, {});
+    return Core::Status::ok();
+}
+
+}  // namespace VLMS
