@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/workflows/Navigator.h"
+#include "ui/shell/Navigator.h"
 
 #include <VLMS/Core/Result.h>
 

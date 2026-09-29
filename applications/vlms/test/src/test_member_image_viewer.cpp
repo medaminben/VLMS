@@ -1,8 +1,8 @@
 #include "ModalTest.h"
 #include "TestDatabase.h"
 
-#include "ui/ImageViewerDialog.h"
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/views/ImageViewerDialog.h"
+#include "ui/views/MemberEditorDialog.h"
 #include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Locale.h>

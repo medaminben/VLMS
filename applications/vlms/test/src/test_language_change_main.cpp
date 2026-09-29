@@ -1,4 +1,4 @@
-#include "Application.h"
+#include "ui/shell/Application.h"
 
 #include <QDir>
 #include <QFont>

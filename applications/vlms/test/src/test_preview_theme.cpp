@@ -1,9 +1,9 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/ListPage.h"
-#include "ui/Theme.h"
-#include "ui/UiHelpers.h"
+#include "ui/views/ListPage.h"
+#include "ui/services/Theme.h"
+#include "ui/views/UiHelpers.h"
 #include "ui/presentation/BookListSpec.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"

@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/catalog/BookEditorDialog.h"
+#include "ui/views/BookEditorDialog.h"
 #include "ui/presentation/QtCatalogLookups.h"
 #include "ui/services/OcrService.h"
 

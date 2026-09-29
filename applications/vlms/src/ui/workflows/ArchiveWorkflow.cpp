@@ -1,9 +1,9 @@
 #include "ui/workflows/ArchiveWorkflow.h"
 
-#include "ui/BulkAction.h"
-#include "ui/LoanHistoryDialog.h"
-#include "ui/UiHelpers.h"
-#include "ui/archive/ReuseNumberFlow.h"
+#include "ui/views/BulkAction.h"
+#include "ui/views/LoanHistoryDialog.h"
+#include "ui/views/UiHelpers.h"
+#include "ui/views/ReuseNumberFlow.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"

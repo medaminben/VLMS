@@ -1,4 +1,4 @@
-#include "ui/workflows/Navigator.h"
+#include "ui/shell/Navigator.h"
 
 #include <gtest/gtest.h>
 

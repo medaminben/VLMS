@@ -1,4 +1,4 @@
-#include "ui/Theme.h"
+#include "ui/services/Theme.h"
 
 #include <QPalette>
 #include <QRegularExpression>

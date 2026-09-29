@@ -1,6 +1,6 @@
 #include "ModalTest.h"
 
-#include "ui/ImageViewerDialog.h"
+#include "ui/views/ImageViewerDialog.h"
 
 #include <VLMS/Core/Locale.h>
 

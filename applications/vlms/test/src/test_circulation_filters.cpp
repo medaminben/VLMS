@@ -2,8 +2,8 @@
 #include "TestSeed.h"
 
 #include "QtBridge.h"
-#include "ui/ListPage.h"
-#include "ui/members/MemberFacetFilters.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/MemberFacetFilters.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"
 

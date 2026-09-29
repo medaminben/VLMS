@@ -1,10 +1,10 @@
 #include "Capture.h"
 #include "Shots.h"
 
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "QtBridge.h"
-#include "ui/MainWindow.h"
-#include "ui/ListPageFrame.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/ListPageFrame.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>

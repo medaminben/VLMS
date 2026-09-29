@@ -3,7 +3,7 @@
 #include "TestSeed.h"
 
 #include "QtBridge.h"
-#include "ui/ListPage.h"
+#include "ui/views/ListPage.h"
 #include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 

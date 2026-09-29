@@ -3,40 +3,40 @@
 # resources in a static library need Q_INIT_RESOURCE, and no test exercises
 # Theme::setupFonts.
 add_library(vlms_ui STATIC
-    src/Application.cpp
-    src/ui/Theme.cpp
-    src/ui/FlagIcons.cpp
-    src/ui/LanguageSelector.cpp
-    src/ui/ClickableLabel.cpp
-    src/ui/LicenceDialog.cpp
-    src/ui/ImageViewerDialog.cpp
-    src/ui/ManualLocation.cpp
-    src/ui/UiHelpers.cpp
-    src/ui/ListPagePager.cpp
-    src/ui/WidgetTableSort.cpp
-    src/ui/WidgetTableChecks.cpp
-    src/ui/BulkAction.cpp
-    src/ui/ListPageFrame.cpp
-    src/ui/ListPage.cpp
-    src/ui/FacetList.cpp
-    src/ui/PreviewImages.cpp
-    src/ui/MainWindow.cpp
-    src/ui/catalog/BookFacetFilters.cpp
-    src/ui/catalog/BookEditorDialog.cpp
-    src/ui/catalog/BookCopiesTable.cpp
+    src/ui/shell/Application.cpp
+    src/ui/shell/MainWindow.cpp
+    src/ui/shell/LanguageSelector.cpp
+    src/ui/shell/ManualLocation.cpp
+    src/ui/services/Theme.cpp
     src/ui/services/OcrService.cpp
-    src/ui/catalog/CategoryManagerDialog.cpp
-    src/ui/catalog/LocalNumberDelegate.cpp
-    src/ui/catalog/FreeLocalNumberDelegate.cpp
-    src/ui/members/MemberFacetFilters.cpp
-    src/ui/members/MemberEditorDialog.cpp
-    src/ui/members/BirthDateEdit.cpp
-    src/ui/circulation/LoanCheckoutDialog.cpp
-    src/ui/circulation/LoanExtendDialog.cpp
-    src/ui/circulation/LoanReturnDialog.cpp
-    src/ui/LoanHistoryDialog.cpp
-    src/ui/metrics/MetricsPage.cpp
-    src/ui/archive/ReuseNumberFlow.cpp
+    src/ui/views/FlagIcons.cpp
+    src/ui/views/ClickableLabel.cpp
+    src/ui/views/LicenceDialog.cpp
+    src/ui/views/ImageViewerDialog.cpp
+    src/ui/views/UiHelpers.cpp
+    src/ui/views/ListPagePager.cpp
+    src/ui/views/WidgetTableSort.cpp
+    src/ui/views/WidgetTableChecks.cpp
+    src/ui/views/BulkAction.cpp
+    src/ui/views/ListPageFrame.cpp
+    src/ui/views/ListPage.cpp
+    src/ui/views/FacetList.cpp
+    src/ui/views/PreviewImages.cpp
+    src/ui/views/BookFacetFilters.cpp
+    src/ui/views/BookEditorDialog.cpp
+    src/ui/views/BookCopiesTable.cpp
+    src/ui/views/CategoryManagerDialog.cpp
+    src/ui/views/LocalNumberDelegate.cpp
+    src/ui/views/FreeLocalNumberDelegate.cpp
+    src/ui/views/MemberFacetFilters.cpp
+    src/ui/views/MemberEditorDialog.cpp
+    src/ui/views/BirthDateEdit.cpp
+    src/ui/views/LoanCheckoutDialog.cpp
+    src/ui/views/LoanExtendDialog.cpp
+    src/ui/views/LoanReturnDialog.cpp
+    src/ui/views/LoanHistoryDialog.cpp
+    src/ui/views/MetricsPage.cpp
+    src/ui/views/ReuseNumberFlow.cpp
     src/ui/workflows/DataEvents.cpp
     src/ui/workflows/QtErrorPresenter.cpp
     src/ui/workflows/QtDialogFactory.cpp
@@ -57,45 +57,45 @@ add_library(vlms_ui STATIC
     src/ui/presentation/QtMemberLookups.cpp
     src/ui/presentation/QtCirculationLookups.cpp
 
-    src/Application.h
-    src/ui/Theme.h
-    src/ui/FlagIcons.h
-    src/ui/LanguageSelector.h
-    src/ui/ClickableLabel.h
-    src/ui/LicenceDialog.h
-    src/ui/ImageViewerDialog.h
-    src/ui/ManualLocation.h
-    src/ui/UiHelpers.h
-    src/ui/ListPagePager.h
-    src/ui/WidgetTableSort.h
-    src/ui/WidgetTableChecks.h
-    src/ui/BulkAction.h
-    src/ui/ListPageFrame.h
-    src/ui/ListPage.h
-    src/ui/FacetList.h
-    src/ui/PreviewImages.h
-    src/ui/MainWindow.h
-    src/ui/catalog/BookFacetFilters.h
-    src/ui/catalog/BookEditorDialog.h
-    src/ui/catalog/BookCopiesTable.h
+    src/ui/shell/Application.h
+    src/ui/shell/MainWindow.h
+    src/ui/shell/Navigator.h
+    src/ui/shell/LanguageSelector.h
+    src/ui/shell/ManualLocation.h
+    src/ui/services/Theme.h
     src/ui/services/OcrService.h
-    src/ui/catalog/CategoryManagerDialog.h
-    src/ui/catalog/LocalNumberDelegate.h
-    src/ui/catalog/FreeLocalNumberDelegate.h
-    src/ui/members/MemberFacetFilters.h
-    src/ui/members/MemberEditorDialog.h
-    src/ui/members/BirthDateEdit.h
-    src/ui/circulation/LoanCheckoutDialog.h
-    src/ui/circulation/LoanExtendDialog.h
-    src/ui/circulation/LoanReturnDialog.h
-    src/ui/LoanHistoryDialog.h
-    src/ui/metrics/MetricsPage.h
-    src/ui/archive/ReuseNumberFlow.h
+    src/ui/views/FlagIcons.h
+    src/ui/views/ClickableLabel.h
+    src/ui/views/LicenceDialog.h
+    src/ui/views/ImageViewerDialog.h
+    src/ui/views/UiHelpers.h
+    src/ui/views/ListPagePager.h
+    src/ui/views/WidgetTableSort.h
+    src/ui/views/WidgetTableChecks.h
+    src/ui/views/BulkAction.h
+    src/ui/views/ListPageFrame.h
+    src/ui/views/ListPage.h
+    src/ui/views/FacetList.h
+    src/ui/views/PreviewImages.h
+    src/ui/views/BookFacetFilters.h
+    src/ui/views/BookEditorDialog.h
+    src/ui/views/BookCopiesTable.h
+    src/ui/views/CategoryManagerDialog.h
+    src/ui/views/LocalNumberDelegate.h
+    src/ui/views/FreeLocalNumberDelegate.h
+    src/ui/views/MemberFacetFilters.h
+    src/ui/views/MemberEditorDialog.h
+    src/ui/views/BirthDateEdit.h
+    src/ui/views/LoanCheckoutDialog.h
+    src/ui/views/LoanExtendDialog.h
+    src/ui/views/LoanReturnDialog.h
+    src/ui/views/LoanHistoryDialog.h
+    src/ui/views/MetricsPage.h
+    src/ui/views/ReuseNumberFlow.h
     src/ui/workflows/DataEvents.h
     src/ui/workflows/ErrorPresenter.h
     src/ui/workflows/QtErrorPresenter.h
     src/ui/workflows/FakeErrorPresenter.h
-    src/ui/workflows/Navigator.h
     src/ui/workflows/Forms.h
     src/ui/workflows/DialogFactory.h
     src/ui/workflows/QtDialogFactory.h

@@ -2,11 +2,11 @@
 #include "TestSeed.h"
 
 #include "QtBridge.h"
-#include "ui/ListPage.h"
-#include "ui/ListPagePager.h"
-#include "ui/members/MemberFacetFilters.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/ListPagePager.h"
+#include "ui/views/MemberFacetFilters.h"
 #include "ui/presentation/MemberListSpec.h"
-#include "ui/workflows/Navigator.h"
+#include "ui/shell/Navigator.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>

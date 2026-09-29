@@ -1,6 +1,6 @@
 #include "ui/workflows/QtErrorPresenter.h"
 
-#include "ui/UiHelpers.h"
+#include "ui/views/UiHelpers.h"
 
 namespace VLMS {
 

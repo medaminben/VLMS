@@ -1,7 +1,7 @@
-#include "ui/ListPage.h"
+#include "ui/views/ListPage.h"
 #include "ui/presentation/ListSpec.h"
 #include "ui/presentation/PagedQueryModel.h"
-#include "ui/UiHelpers.h"
+#include "ui/views/UiHelpers.h"
 #include "ui/workflows/DataEvents.h"
 
 #include <VLMS/Core/Result.h>

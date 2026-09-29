@@ -2,10 +2,10 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/Theme.h"
-#include "ui/UiHelpers.h"
-#include "ui/members/BirthDateEdit.h"
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/services/Theme.h"
+#include "ui/views/UiHelpers.h"
+#include "ui/views/BirthDateEdit.h"
+#include "ui/views/MemberEditorDialog.h"
 #include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Clock.h>

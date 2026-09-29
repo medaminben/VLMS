@@ -1,6 +1,6 @@
-#include "Application.h"
-#include "ui/MainWindow.h"
-#include "ui/UiHelpers.h"
+#include "ui/shell/Application.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/UiHelpers.h"
 #include "QtBridge.h"
 
 #include <VLMS/Core/Strings.h>

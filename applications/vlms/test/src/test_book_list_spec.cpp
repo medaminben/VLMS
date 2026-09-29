@@ -2,7 +2,7 @@
 #include "TestSeed.h"
 #include "WorkflowTestSupport.h"
 
-#include "ui/catalog/LocalNumberDelegate.h"
+#include "ui/views/LocalNumberDelegate.h"
 #include "ui/presentation/BookListSpec.h"
 
 #include <VLMS/Core/Locale.h>

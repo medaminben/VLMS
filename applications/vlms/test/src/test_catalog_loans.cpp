@@ -1,12 +1,12 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/ListPage.h"
-#include "ui/LoanHistoryDialog.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/LoanHistoryDialog.h"
 #include "ui/presentation/BookListSpec.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "WorkflowTestSupport.h"
-#include "ui/circulation/LoanCheckoutDialog.h"
+#include "ui/views/LoanCheckoutDialog.h"
 #include "ui/presentation/QtCirculationLookups.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>

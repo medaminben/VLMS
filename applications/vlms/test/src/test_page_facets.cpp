@@ -2,16 +2,16 @@
 #include "TestSeed.h"
 
 #include "QtBridge.h"
-#include "ui/Theme.h"
-#include "ui/ListPage.h"
-#include "ui/catalog/BookFacetFilters.h"
-#include "ui/members/MemberFacetFilters.h"
+#include "ui/services/Theme.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/BookFacetFilters.h"
+#include "ui/views/MemberFacetFilters.h"
 #include "ui/presentation/ArchivedBookSpec.h"
 #include "ui/presentation/ArchivedCopySpec.h"
 #include "ui/presentation/ArchivedLoanSpec.h"
 #include "ui/presentation/ArchivedMemberSpec.h"
 #include "ui/presentation/LoanListSpec.h"
-#include "ui/workflows/Navigator.h"
+#include "ui/shell/Navigator.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/ArchiveTypes.h>

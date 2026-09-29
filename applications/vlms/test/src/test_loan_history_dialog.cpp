@@ -2,7 +2,7 @@
 #include "TestSeed.h"
 #include "WorkflowTestSupport.h"
 
-#include "ui/LoanHistoryDialog.h"
+#include "ui/views/LoanHistoryDialog.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "QtBridge.h"
 

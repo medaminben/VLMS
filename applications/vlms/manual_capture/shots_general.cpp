@@ -1,13 +1,13 @@
 #include "Capture.h"
 #include "Shots.h"
 
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "QtBridge.h"
-#include "ui/MainWindow.h"
-#include "ui/ClickableLabel.h"
-#include "ui/LanguageSelector.h"
-#include "ui/ListPageFrame.h"
-#include "ui/ListPagePager.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/ClickableLabel.h"
+#include "ui/shell/LanguageSelector.h"
+#include "ui/views/ListPageFrame.h"
+#include "ui/views/ListPagePager.h"
 
 #include <QAbstractButton>
 #include <QApplication>

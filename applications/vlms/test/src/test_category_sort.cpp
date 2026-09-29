@@ -1,4 +1,4 @@
-#include "ui/catalog/CategoryManagerDialog.h"
+#include "ui/views/CategoryManagerDialog.h"
 #include <VLMS/Repositories/CatalogRepository.h>
 #include "TestDatabase.h"
 #include "TestSeed.h"

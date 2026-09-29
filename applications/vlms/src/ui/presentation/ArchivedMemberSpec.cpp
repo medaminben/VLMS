@@ -1,7 +1,7 @@
 #include "ui/presentation/ArchivedMemberSpec.h"
 
 #include "QtBridge.h"
-#include "ui/UiHelpers.h"
+#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/ArchiveTypes.h>

@@ -1,8 +1,8 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/ListPage.h"
-#include "ui/catalog/LocalNumberDelegate.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/LocalNumberDelegate.h"
 #include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 

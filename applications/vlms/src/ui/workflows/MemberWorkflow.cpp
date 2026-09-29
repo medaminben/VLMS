@@ -1,8 +1,8 @@
 #include "ui/workflows/MemberWorkflow.h"
 
 #include "QtBridge.h"
-#include "ui/LoanHistoryDialog.h"
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/views/LoanHistoryDialog.h"
+#include "ui/views/MemberEditorDialog.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "ui/presentation/MemberLookups.h"
 #include "ui/workflows/BulkRunner.h"
@@ -10,8 +10,8 @@
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
-#include "ui/workflows/Navigator.h"
-#include "ui/UiHelpers.h"
+#include "ui/shell/Navigator.h"
+#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CirculationRepository.h>

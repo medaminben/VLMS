@@ -1,12 +1,12 @@
-#include "Application.h"
+#include "ui/shell/Application.h"
 
 #include "TestDatabase.h"
 #include "TestSeed.h"
 #include "WorkflowTestSupport.h"
 
-#include "ui/ListPage.h"
+#include "ui/views/ListPage.h"
 #include "ui/presentation/BookListSpec.h"
-#include "ui/UiHelpers.h"
+#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>

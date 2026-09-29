@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "UiTest.h"
 
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/views/MemberEditorDialog.h"
 #include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Clock.h>

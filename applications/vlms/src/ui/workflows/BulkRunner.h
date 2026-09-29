@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/BulkAction.h"
+#include "ui/views/BulkAction.h"
 #include "ui/workflows/DataEvents.h"
 
 #include <VLMS/Core/Result.h>

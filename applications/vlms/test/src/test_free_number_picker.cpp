@@ -2,8 +2,8 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/catalog/BookCopiesTable.h"
-#include "ui/catalog/FreeLocalNumberDelegate.h"
+#include "ui/views/BookCopiesTable.h"
+#include "ui/views/FreeLocalNumberDelegate.h"
 #include "ui/presentation/QtCatalogLookups.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>

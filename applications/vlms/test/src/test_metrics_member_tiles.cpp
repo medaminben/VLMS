@@ -1,7 +1,7 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/metrics/MetricsPage.h"
+#include "ui/views/MetricsPage.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Repositories/MetricsRepository.h>

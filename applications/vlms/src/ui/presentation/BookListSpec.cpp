@@ -1,8 +1,8 @@
 #include "ui/presentation/BookListSpec.h"
 
 #include "QtBridge.h"
-#include "ui/UiHelpers.h"
-#include "ui/catalog/LocalNumberDelegate.h"
+#include "ui/views/UiHelpers.h"
+#include "ui/views/LocalNumberDelegate.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/ArchiveTypes.h>

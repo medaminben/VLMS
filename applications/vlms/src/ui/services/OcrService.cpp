@@ -2,7 +2,7 @@
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Ocr/Ocr.h>
-#include "ui/UiHelpers.h"
+#include "ui/views/UiHelpers.h"
 
 #include <QProgressDialog>
 #include <QTimer>

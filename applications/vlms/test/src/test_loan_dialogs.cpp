@@ -1,10 +1,10 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/circulation/LoanCheckoutDialog.h"
+#include "ui/views/LoanCheckoutDialog.h"
 #include "ui/presentation/QtCirculationLookups.h"
-#include "ui/circulation/LoanExtendDialog.h"
-#include "ui/circulation/LoanReturnDialog.h"
+#include "ui/views/LoanExtendDialog.h"
+#include "ui/views/LoanReturnDialog.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>

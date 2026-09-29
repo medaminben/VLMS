@@ -1,4 +1,4 @@
-#include "ui/LanguageSelector.h"
+#include "ui/shell/LanguageSelector.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>

@@ -1,7 +1,7 @@
 #include "UiTest.h"
 
-#include "ui/LicenceDialog.h"
-#include "ui/Theme.h"
+#include "ui/views/LicenceDialog.h"
+#include "ui/services/Theme.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>

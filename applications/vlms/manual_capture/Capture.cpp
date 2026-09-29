@@ -1,8 +1,8 @@
 #include "Capture.h"
 
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "QtBridge.h"
-#include "ui/MainWindow.h"
+#include "ui/shell/MainWindow.h"
 
 #include <VLMS/Core/Strings.h>
 

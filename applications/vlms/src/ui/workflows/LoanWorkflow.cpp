@@ -1,17 +1,17 @@
 #include "ui/workflows/LoanWorkflow.h"
 
 #include "QtBridge.h"
-#include "ui/BulkAction.h"
-#include "ui/circulation/LoanCheckoutDialog.h"
-#include "ui/circulation/LoanExtendDialog.h"
-#include "ui/circulation/LoanReturnDialog.h"
+#include "ui/views/BulkAction.h"
+#include "ui/views/LoanCheckoutDialog.h"
+#include "ui/views/LoanExtendDialog.h"
+#include "ui/views/LoanReturnDialog.h"
 #include "ui/presentation/CirculationLookups.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
-#include "ui/workflows/Navigator.h"
-#include "ui/UiHelpers.h"
+#include "ui/shell/Navigator.h"
+#include "ui/views/UiHelpers.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CirculationRepository.h>

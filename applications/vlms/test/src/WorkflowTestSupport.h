@@ -13,7 +13,7 @@
 #include "ui/workflows/FakeErrorPresenter.h"
 #include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/MemberWorkflow.h"
-#include "ui/workflows/Navigator.h"
+#include "ui/shell/Navigator.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>

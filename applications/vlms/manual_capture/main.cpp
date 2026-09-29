@@ -1,8 +1,8 @@
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "Capture.h"
 #include "Shots.h"
-#include "ui/FlagIcons.h"
-#include "ui/MainWindow.h"
+#include "ui/views/FlagIcons.h"
+#include "ui/shell/MainWindow.h"
 
 #include <VLMS/Core/Paths.h>
 
