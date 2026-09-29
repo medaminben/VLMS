@@ -48,6 +48,7 @@ build_gtest_executable(
         src/test_list_page_shortcuts.cpp
         src/test_error_presenter.cpp
         src/test_dialog_factory.cpp
+        src/test_string_keys_used.cpp
         src/test_navigator.cpp
     DEPENDS
         vlms_testsupport
@@ -59,6 +60,7 @@ build_gtest_executable(
     NO_GTEST_MAIN
     LABELS ui
 )
+target_compile_definitions(test_vlms_ui PRIVATE VLMS_SOURCE_ROOT="${CMAKE_SOURCE_DIR}")
 target_include_directories(test_vlms_ui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
