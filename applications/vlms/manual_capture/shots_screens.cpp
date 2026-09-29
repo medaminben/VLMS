@@ -4,13 +4,14 @@
 #include "ui/shell/Application.h"
 #include "QtBridge.h"
 #include "ui/shell/MainWindow.h"
-#include "ui/views/ListPageFrame.h"
+#include "ui/views/ListPagePager.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 
 #include <QAbstractButton>
+#include <QAbstractItemView>
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
@@ -22,6 +23,9 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QAbstractItemModel>
+#include <QLabel>
+#include <QTableView>
 #include <QTableWidget>
 #include <QTest>
 
@@ -48,32 +52,71 @@ Application& app()
     return *application;
 }
 
-VLMS::ListPageFrame* frameOf(Capture& capture)
+struct ListChrome {
+    QLineEdit* search = nullptr;
+    QWidget* filterColumn = nullptr;
+    QTableView* table = nullptr;
+    VLMS::ListPagePager* pager = nullptr;
+    QWidget* previewPanel = nullptr;
+    QWidget* buttonPad = nullptr;
+    QLabel* image = nullptr;
+    QLabel* secondImage = nullptr;
+};
+
+ListChrome chromeOf(Capture& capture)
 {
-    auto* frame = capture.page()->findChild<VLMS::ListPageFrame*>();
-    if (frame == nullptr) {
-        fail("list frame is missing");
+    QWidget* page = capture.page();
+    ListChrome chrome;
+    chrome.search = page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
+    chrome.filterColumn = page->findChild<QWidget*>(QStringLiteral("filterColumn"));
+    chrome.table = page->findChild<QTableView*>(QStringLiteral("listTable"));
+    chrome.pager = page->findChild<VLMS::ListPagePager*>();
+    chrome.previewPanel = page->findChild<QWidget*>(QStringLiteral("previewPanel"));
+    chrome.buttonPad = page->findChild<QWidget*>(QStringLiteral("buttonPad"));
+    for (const char* name : {"bookCover", "memberPhoto", "archiveImage"}) {
+        chrome.image = page->findChild<QLabel*>(QLatin1String(name));
+        if (chrome.image != nullptr) {
+            break;
+        }
     }
-    return frame;
+    for (const char* name : {"loanMemberPhoto", "archiveMemberPhoto"}) {
+        chrome.secondImage = page->findChild<QLabel*>(QLatin1String(name));
+        if (chrome.secondImage != nullptr) {
+            break;
+        }
+    }
+    if (chrome.search == nullptr || chrome.table == nullptr) {
+        fail("list chrome is missing");
+    }
+    return chrome;
 }
+
+QLineEdit* searchOf(Capture& capture)
+{
+    return chromeOf(capture).search;
+}
+
 
 QRect widgetRect(QWidget* widget, QWidget* base)
 {
+    if (widget == nullptr || base == nullptr) {
+        return {};
+    }
     return QRect(widget->mapTo(base, QPoint(0, 0)), widget->size());
 }
 
-int columnByHeader(const QTableWidget* table, const QString& label)
+int columnByHeader(const QTableView* table, const QString& label)
 {
-    for (int column = 0; column < table->columnCount(); ++column) {
-        const QTableWidgetItem* item = table->horizontalHeaderItem(column);
-        if (item != nullptr && item->text() == label) {
+    const QAbstractItemModel* model = table->model();
+    for (int column = 0; column < model->columnCount(); ++column) {
+        if (model->headerData(column, Qt::Horizontal).toString() == label) {
             return column;
         }
     }
     return -1;
 }
 
-QRect headerSection(const QTableWidget* table, int column, QWidget* window)
+QRect headerSection(const QTableView* table, int column, QWidget* window)
 {
     const QHeaderView* header = table->horizontalHeader();
     const QRect section(header->sectionViewportPosition(column), 0,
@@ -81,7 +124,7 @@ QRect headerSection(const QTableWidget* table, int column, QWidget* window)
     return QRect(header->viewport()->mapTo(window, section.topLeft()), section.size());
 }
 
-QRect headerByKey(const QTableWidget* table, const char* key, QWidget* window)
+QRect headerByKey(const QTableView* table, const char* key, QWidget* window)
 {
     const int column = columnByHeader(table, T(key));
     if (column < 0) {
@@ -92,14 +135,14 @@ QRect headerByKey(const QTableWidget* table, const char* key, QWidget* window)
 
 void setSearch(Capture& capture, const QString& text)
 {
-    auto* edit = frameOf(capture)->searchEdit();
+    auto* edit = searchOf(capture);
     // Arabic input would rewrite ASCII digits, and the search would miss the row.
     edit->setAttribute(Qt::WA_InputMethodEnabled, false);
     edit->setText(text);
     capture.settle(500);
 }
 
-void holdRow(QTableWidget* table, int row)
+void holdRow(QAbstractItemView* table, int row)
 {
     // selectRow() in right-to-left asks the header for the column at the
     // viewport's far edge. That index is -1 until the sections fill the width,
@@ -111,22 +154,22 @@ void holdRow(QTableWidget* table, int row)
 
 void selectFirst(Capture& capture)
 {
-    QTableWidget* table = capture.table();
-    if (table->rowCount() < 1) {
+    QTableView* table = capture.table();
+    if (table->model() == nullptr || table->model()->rowCount() < 1) {
         fail("the table is empty");
     }
     holdRow(table, 0);
-    if (table->currentRow() != 0 || table->selectedItems().isEmpty()) {
+    if (table->currentIndex().row() != 0 || !table->selectionModel()->hasSelection()) {
         fail("could not select a row");
     }
 }
 
-bool selectId(QTableWidget* table, qint64 id)
+bool selectId(QTableView* table, qint64 id)
 {
+    auto* model = table->model();
     int found = -1;
-    for (int row = 0; row < table->rowCount(); ++row) {
-        const QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == id) {
+    for (int row = 0; row < model->rowCount(); ++row) {
+        if (model->index(row, 0).data(Qt::UserRole).toLongLong() == id) {
             found = row;
             break;
         }
@@ -135,7 +178,7 @@ bool selectId(QTableWidget* table, qint64 id)
         return false;
     }
     holdRow(table, found);
-    return table->currentRow() == found && !table->selectedItems().isEmpty();
+    return table->currentIndex().row() == found && table->selectionModel()->hasSelection();
 }
 
 void pickList(Capture& capture, const char* objectName, const QString& text)
@@ -159,11 +202,11 @@ void answer(Capture& capture, QWidget* modal, const char* key)
     capture.click(capture.button(key, modal));
 }
 
-QPixmap topOfTable(Capture& capture, QTableWidget* table, int rows)
+QPixmap topOfTable(Capture& capture, QTableView* table, int rows)
 {
     const QRect tableInWindow = widgetRect(table, &capture.window());
     const QRect crop = tableInWindow.adjusted(-12, -12, 12, 12).intersected(capture.window().rect());
-    const int rowHeight = table->rowCount() > 0 ? table->rowHeight(0) : 28;
+    const int rowHeight = table->model()->rowCount() > 0 ? table->rowHeight(0) : 28;
     const int keep = (tableInWindow.top() - crop.top()) + table->horizontalHeader()->height()
         + rows * rowHeight + 12;
     return capture.grab().copy(crop).copy(0, 0, crop.width(), std::min(keep, crop.height()));
@@ -288,21 +331,21 @@ void showBook(Capture& capture, qint64 bookId, const QString& search)
 void shotCatOverview(Capture& capture)
 {
     capture.goTo("nav.catalog");
-    frameOf(capture)->searchEdit()->clear();
+    searchOf(capture)->clear();
     capture.settle(400);
     selectFirst(capture);
 
-    QTableWidget* table = capture.table();
+    QTableView* table = capture.table();
     QWidget* window = &capture.window();
-    auto* frame = frameOf(capture);
+    auto frame = chromeOf(capture);
     const QList<QRect> marks = {
         widgetRect(capture.named<QListWidget>(QStringLiteral("categoryFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("languageFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("coverFilter")), window),
-        widgetRect(frame->searchEdit(), window),
+        widgetRect(frame.search, window),
         headerByKey(table, "catalog.col.localNumber", window),
         headerByKey(table, "catalog.col.copies", window).united(headerByKey(table, "catalog.col.available", window)),
-        widgetRect(frame->previewPanel(), window),
+        widgetRect(frame.previewPanel, window),
         widgetRect(capture.button("catalog.loans"), window),
         widgetRect(capture.button("catalog.addBook"), window),
         widgetRect(capture.button("catalog.edit"), window),
@@ -322,9 +365,9 @@ void shotCatNumberDropdown(Capture& capture)
 {
     const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
     showBook(capture, book.id, qs(book.localIdsOnLoan.front()));
-    QTableWidget* table = capture.table();
+    QTableView* table = capture.table();
     const int column = columnByHeader(table, T("catalog.col.localNumber"));
-    const int row = table->currentRow();
+    const int row = table->currentIndex().row();
     if (column < 0 || row < 0) {
         fail("local-number cell is missing");
     }
@@ -364,22 +407,22 @@ void shotCatLoans(Capture& capture)
 void shotMemOverview(Capture& capture)
 {
     capture.goTo("nav.members");
-    frameOf(capture)->searchEdit()->clear();
+    searchOf(capture)->clear();
     capture.settle(400);
     selectFirst(capture);
 
-    QTableWidget* table = capture.table();
+    QTableView* table = capture.table();
     QWidget* window = &capture.window();
-    auto* frame = frameOf(capture);
+    auto frame = chromeOf(capture);
     const QList<QRect> marks = {
         widgetRect(capture.named<QListWidget>(QStringLiteral("statusFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("sexFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("yearFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("ageGroupFilter")), window),
         widgetRect(capture.named<QListWidget>(QStringLiteral("cityFilter")), window),
-        widgetRect(frame->searchEdit(), window),
+        widgetRect(frame.search, window),
         headerByKey(table, "members.col.loans", window),
-        widgetRect(frame->previewPanel(), window),
+        widgetRect(frame.previewPanel, window),
         widgetRect(capture.button("members.loans"), window),
         widgetRect(capture.button("members.addMember"), window),
         widgetRect(capture.button("members.edit"), window),
@@ -400,11 +443,11 @@ void showMember(Capture& capture, const VLMS::Repositories::LoanRecord& loan)
 void shotMemDetails(Capture& capture)
 {
     showMember(capture, firstUnreturnedLoan());
-    auto* panel = frameOf(capture)->previewPanel();
+    auto* panel = chromeOf(capture).previewPanel;
     // The caption promises status and the last active day, which sit below the fold at 900px.
     // Put the name at the top: in Arabic the panel runs past the window's bottom edge, so
     // ensureWidgetVisible() thinks the row is already on screen.
-    auto* scroll = capture.named<QScrollArea>(QStringLiteral("memberDetailsScroll"));
+    auto* scroll = capture.named<QScrollArea>(QStringLiteral("listDetailsScroll"));
     const QString name = T("members.col.name") + QStringLiteral(":");
     QLabel* nameLabel = nullptr;
     for (QLabel* label : scroll->widget()->findChildren<QLabel*>()) {
@@ -447,19 +490,19 @@ void shotCircOverview(Capture& capture)
 {
     capture.goTo("nav.circulation");
     pickList(capture, "loanFilter", T("circulation.filter.all"));
-    frameOf(capture)->searchEdit()->clear();
+    searchOf(capture)->clear();
     capture.settle(400);
     selectFirst(capture);
 
     QWidget* window = &capture.window();
-    auto* frame = frameOf(capture);
+    auto frame = chromeOf(capture);
     const QList<QRect> marks = {
         widgetRect(capture.named<QListWidget>(QStringLiteral("loanFilter")), window),
         widgetRect(capture.named<QWidget>(QStringLiteral("memberFilters")), window),
-        widgetRect(frame->searchEdit(), window),
-        widgetRect(frame->table(), window),
-        widgetRect(frame->imageLabel(), window),
-        widgetRect(frame->secondImageLabel(), window),
+        widgetRect(frame.search, window),
+        widgetRect(frame.table, window),
+        widgetRect(frame.image, window),
+        widgetRect(frame.secondImage, window),
         widgetRect(capture.button("circulation.return"), window),
         widgetRect(capture.button("circulation.checkout"), window),
         widgetRect(capture.button("circulation.extend"), window),
@@ -471,9 +514,9 @@ void shotCircOverview(Capture& capture)
 void shotCircOverdue(Capture& capture)
 {
     capture.goTo("nav.circulation");
-    frameOf(capture)->searchEdit()->clear();
+    searchOf(capture)->clear();
     pickList(capture, "loanFilter", T("circulation.filter.overdue"));
-    if (capture.table()->rowCount() > 0) {
+    if (capture.table()->model()->rowCount() > 0) {
         selectFirst(capture);
     }
     capture.save(QStringLiteral("circ-overdue"), capture.grab());
@@ -485,7 +528,7 @@ void shotCircSearchName(Capture& capture)
     capture.goTo("nav.circulation");
     pickList(capture, "loanFilter", T("circulation.filter.all"));
     setSearch(capture, qs(loan.memberName));
-    if (capture.table()->rowCount() > 0) {
+    if (capture.table()->model()->rowCount() > 0) {
         selectFirst(capture);
     }
     capture.save(QStringLiteral("circ-search-name"), capture.grab());
@@ -496,7 +539,7 @@ void showArchive(Capture& capture, const char* typeKey)
     ensureArchivedBook();
     capture.goTo("nav.archive");
     pickList(capture, "archiveType", T(typeKey));
-    if (capture.table()->rowCount() > 0) {
+    if (capture.table()->model()->rowCount() > 0) {
         selectFirst(capture);
     }
 }
@@ -505,13 +548,13 @@ void shotArcBooks(Capture& capture)
 {
     showArchive(capture, "archive.type.books");
     QWidget* window = &capture.window();
-    auto* frame = frameOf(capture);
+    auto frame = chromeOf(capture);
     const QList<QRect> marks = {
         widgetRect(capture.named<QListWidget>(QStringLiteral("archiveType")), window),
         widgetRect(capture.named<QWidget>(QStringLiteral("bookFilters")), window),
-        widgetRect(frame->searchEdit(), window),
+        widgetRect(frame.search, window),
         headerByKey(capture.table(), "archive.col.copies", window),
-        widgetRect(frame->imageLabel(), window),
+        widgetRect(frame.image, window),
         widgetRect(capture.button("archive.restore"), window),
         widgetRect(capture.button("archive.purge"), window),
     };
@@ -524,7 +567,7 @@ void shotArcCopies(Capture& capture)
     QWidget* window = &capture.window();
     const QList<QRect> marks = {
         widgetRect(capture.named<QWidget>(QStringLiteral("bookFilters")), window),
-        widgetRect(frameOf(capture)->imageLabel(), window),
+        widgetRect(chromeOf(capture).image, window),
         headerByKey(capture.table(), "archive.col.loans", window),
         widgetRect(capture.button("archive.reuse"), window),
     };
@@ -535,11 +578,11 @@ void shotArcLoans(Capture& capture)
 {
     showArchive(capture, "archive.type.loans");
     QWidget* window = &capture.window();
-    auto* frame = frameOf(capture);
+    auto frame = chromeOf(capture);
     const QList<QRect> marks = {
         widgetRect(capture.named<QWidget>(QStringLiteral("memberFilters")), window),
-        widgetRect(frame->imageLabel(), window),
-        widgetRect(frame->secondImageLabel(), window),
+        widgetRect(frame.image, window),
+        widgetRect(frame.secondImage, window),
     };
     capture.save(QStringLiteral("arc-loans"), capture.calloutsAt(capture.grab(), marks));
 }
@@ -550,7 +593,7 @@ void shotArcMembers(Capture& capture)
     QWidget* window = &capture.window();
     const QList<QRect> marks = {
         widgetRect(capture.named<QWidget>(QStringLiteral("memberFilters")), window),
-        widgetRect(frameOf(capture)->imageLabel(), window),
+        widgetRect(chromeOf(capture).image, window),
         headerByKey(capture.table(), "archive.col.loans", window),
         widgetRect(capture.button("archive.loans"), window),
     };

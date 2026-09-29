@@ -16,7 +16,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QStackedWidget>
-#include <QTableWidget>
+#include <QTableView>
 #include <QTest>
 #include <QTimer>
 
@@ -103,10 +103,13 @@ QAbstractButton* Capture::button(const char* key, QWidget* root) const
     throw std::runtime_error(std::string("no button ") + key);
 }
 
-QTableWidget* Capture::table(QWidget* root) const
+QTableView* Capture::table(QWidget* root) const
 {
     QWidget* base = root != nullptr ? root : page();
-    auto* found = base->findChild<QTableWidget*>();
+    auto* found = base->findChild<QTableView*>(QStringLiteral("listTable"));
+    if (found == nullptr) {
+        found = base->findChild<QTableView*>();
+    }
     if (found == nullptr) {
         throw std::runtime_error("no table");
     }
@@ -322,16 +325,19 @@ void Capture::reset()
     const QString placeholder = T("catalog.searchPlaceholder");
     const auto edits = page()->findChildren<QLineEdit*>();
     for (QLineEdit* edit : edits) {
-        if (edit->placeholderText() == placeholder) {
+        if (edit->placeholderText() == placeholder
+            || edit->objectName() == QLatin1String("listSearch")) {
             edit->clear();
         }
     }
 
-    QTableWidget* books = table();
-    for (int row = 0; row < books->rowCount(); ++row) {
-        QTableWidgetItem* item = books->item(row, 0);
-        if (item != nullptr && item->checkState() != Qt::Unchecked) {
-            item->setCheckState(Qt::Unchecked);
+    QTableView* books = table();
+    if (auto* model = books->model()) {
+        for (int row = 0; row < model->rowCount(); ++row) {
+            const QModelIndex index = model->index(row, 0);
+            if (index.data(Qt::CheckStateRole).toInt() != static_cast<int>(Qt::Unchecked)) {
+                model->setData(index, Qt::Unchecked, Qt::CheckStateRole);
+            }
         }
     }
     settle();
