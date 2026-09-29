@@ -4,6 +4,7 @@
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 
+#include <QList>
 #include <QVector>
 #include <QWidget>
 
@@ -19,6 +20,7 @@ class TableRowChecks;
 
 namespace VLMS {
 class BookFacetFilters;
+class DataEvents;
 class MemberFacetFilters;
 class TableHeaderSort;
 class TablePager;
@@ -36,16 +38,16 @@ public:
     ArchivePage(VLMS::Repositories::MemberRepository& members,
                 VLMS::Repositories::CatalogRepository& catalog,
                 VLMS::Repositories::CirculationRepository& circulation,
+                VLMS::DataEvents& events,
                 QWidget* parent = nullptr);
 
     void retranslateUi();
     /// Re-reads the current type; MainWindow calls it whenever the page is shown.
     void refresh();
     [[nodiscard]] Type currentType() const { return m_type; }
+    void setType(Type type);
 
 signals:
-    /// Something went back to a live page, which should re-read its list.
-    void recordRestored();
     /// Reuse was pressed on an archived copy that still holds its number.
     void reuseNumberRequested(qint64 copyId);
 
@@ -86,10 +88,12 @@ private:
     [[nodiscard]] bool selectedMayBePurged() const;
     /// True when the highlighted member, title or copy has ever been lent.
     [[nodiscard]] bool selectedHasLoans() const;
+    void notifyRestored(const QList<qint64>& ids);
 
     VLMS::Repositories::MemberRepository& m_members;
     VLMS::Repositories::CatalogRepository& m_catalog;
     VLMS::Repositories::CirculationRepository& m_circulation;
+    VLMS::DataEvents& m_events;
     Type m_type = Type::Members;
 
     QListWidget* m_typeList = nullptr;

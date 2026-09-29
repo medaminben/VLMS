@@ -22,6 +22,7 @@ class QLabel;
 
 namespace VLMS {
 class MemberFacetFilters;
+class Navigator;
 class TablePager;
 }
 
@@ -31,14 +32,10 @@ class MembersPage final : public QWidget {
 public:
     explicit MembersPage(VLMS::Repositories::MemberRepository& repository,
                          VLMS::Repositories::CirculationRepository& circulationRepository,
+                         VLMS::Navigator& navigator,
                          QWidget* parent = nullptr);
 
     void retranslateUi();
-
-signals:
-    /// Asks the window to show the circulation page narrowed to this member.
-    /// Emitted when a removal is blocked by books the member still has out.
-    void memberLoansRequested(const QString& membershipNumber);
 
 private slots:
     void refreshMembers();
@@ -72,6 +69,7 @@ private:
     void refreshSelectedMemberPreview();
 
     VLMS::Repositories::MemberRepository& m_repository;
+    VLMS::Navigator& m_navigator;
     VLMS::Repositories::CirculationRepository& m_circulationRepository;
 
     QLineEdit* m_searchEdit = nullptr;

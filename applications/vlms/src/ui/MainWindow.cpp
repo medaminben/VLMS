@@ -1,5 +1,7 @@
 #include "ui/MainWindow.h"
 
+#include "ui/workflows/DataEvents.h"
+
 #include "Application.h"
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Locale.h>
@@ -64,14 +66,15 @@ QStringList existingBrowsers(const QStringList& candidates)
 }
 }  // namespace
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent) {
+MainWindow::MainWindow(Application& app, QWidget* parent)
+    : QMainWindow(parent)
+    , m_app(app) {
     buildUi();
 
-    if (auto* app = qobject_cast<Application*>(QApplication::instance())) {
-        connect(app, &Application::languageChanged, this, &MainWindow::retranslateUi);
-        connect(app, &Application::themeChanged, this, &MainWindow::onThemeChanged);
-    }
+    connect(&m_app, &Application::languageChanged, this, &MainWindow::retranslateUi);
+    connect(&m_app, &Application::themeChanged, this, &MainWindow::onThemeChanged);
+    connect(&m_app.dataEvents(), &VLMS::DataEvents::changed,
+            this, &MainWindow::onDataChanged);
 
     showPage(Page::Catalog);
     retranslateUi();
@@ -140,10 +143,8 @@ void MainWindow::buildUi() {
     m_manualButton->setText({});
     headerLayout->addWidget(m_manualButton);
 
-    connect(m_themeToggle, &QPushButton::clicked, this, []() {
-        if (auto* app = qobject_cast<Application*>(QApplication::instance())) {
-            app->toggleTheme();
-        }
+    connect(m_themeToggle, &QPushButton::clicked, this, [this]() {
+        m_app.toggleTheme();
     });
 
     connect(m_membersNav, &QPushButton::clicked, this, [this]() { showPage(Page::Members); });
@@ -194,33 +195,20 @@ void MainWindow::buildUi() {
     m_contentLayout->setSpacing(0);
 
     m_stack = new QStackedWidget(mainHost);
-    if (auto* app = qobject_cast<Application*>(QApplication::instance())) {
-        m_membersPage = new MembersPage(app->members(), app->circulation(), m_stack);
-        m_catalogPage = new CatalogPage(app->catalog(), app->circulation(), m_stack);
+    if (m_app.isDatabaseReady()) {
+        m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this, m_stack);
+        m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), m_stack);
         m_circulationPage =
-            new CirculationPage(app->circulation(), app->catalog(), app->members(), m_stack);
-        m_archivePage = new ArchivePage(app->members(), app->catalog(), app->circulation(), m_stack);
-        m_metricsPage = new MetricsPage(app->metrics(), m_stack);
+            new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(), m_stack);
+        m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),
+                                        m_app.dataEvents(), m_stack);
+        m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
     } else {
         m_membersPage = nullptr;
         m_catalogPage = nullptr;
         m_circulationPage = nullptr;
         m_archivePage = nullptr;
         m_metricsPage = nullptr;
-    }
-
-    // Both pages have to exist for this: the members page sends the librarian
-    // to the circulation page when a member cannot be removed until their books
-    // come back. Under the placeholder branch above there is nowhere to send
-    // them, and the members page will not be raising it either.
-    if (m_membersPage != nullptr && m_circulationPage != nullptr) {
-        connect(m_membersPage,
-                &MembersPage::memberLoansRequested,
-                this,
-                [this](const QString& membershipNumber) {
-                    showPage(Page::Circulation);
-                    m_circulationPage->focusMemberLoans(membershipNumber);
-                });
     }
 
     if (m_catalogPage != nullptr) {
@@ -246,19 +234,6 @@ void MainWindow::buildUi() {
     }
     if (m_archivePage != nullptr) {
         m_stack->addWidget(m_archivePage);
-        // A restore changes what the live pages list; each page's
-        // retranslateUi re-reads its list, which is the refresh they expose.
-        connect(m_archivePage, &ArchivePage::recordRestored, this, [this]() {
-            if (m_catalogPage != nullptr) {
-                m_catalogPage->retranslateUi();
-            }
-            if (m_membersPage != nullptr) {
-                m_membersPage->retranslateUi();
-            }
-            if (m_circulationPage != nullptr) {
-                m_circulationPage->retranslateUi();
-            }
-        });
     } else {
         m_stack->addWidget(buildPlaceholderPage(
             QStringLiteral("page.archive.title"),
@@ -399,16 +374,11 @@ void MainWindow::updateNavigation(Page active)
 
 void MainWindow::onLanguageChanged(const QString& code)
 {
-    auto* app = qobject_cast<Application*>(QApplication::instance());
-    if (app == nullptr) {
+    if (code.isEmpty() || code == m_app.uiLocale()) {
         return;
     }
 
-    if (code.isEmpty() || code == app->uiLocale()) {
-        return;
-    }
-
-    app->setUiLocale(code);
+    m_app.setUiLocale(code);
 }
 
 void MainWindow::onThemeChanged()
@@ -520,4 +490,89 @@ void MainWindow::retranslateUi()
     }
 
     updateNavigation(m_activePage);
+}
+
+
+MainWindow::Page MainWindow::toPage(VLMS::PageId id)
+{
+    switch (id) {
+    case VLMS::PageId::Catalog:
+        return Page::Catalog;
+    case VLMS::PageId::Members:
+        return Page::Members;
+    case VLMS::PageId::Circulation:
+        return Page::Circulation;
+    case VLMS::PageId::Archive:
+        return Page::Archive;
+    case VLMS::PageId::Metrics:
+        return Page::Metrics;
+    }
+    return Page::Catalog;
+}
+
+void MainWindow::show(VLMS::PageId page)
+{
+    showPage(toPage(page));
+}
+
+void MainWindow::showMemberLoans(const QString& membershipNumber)
+{
+    showPage(Page::Circulation);
+    if (m_circulationPage != nullptr) {
+        m_circulationPage->focusMemberLoans(membershipNumber);
+    }
+}
+
+void MainWindow::showBook(qint64 bookId)
+{
+    showPage(Page::Catalog);
+    if (m_catalogPage != nullptr) {
+        m_catalogPage->selectBookId(bookId);
+    }
+}
+
+void MainWindow::showArchive(VLMS::ArchiveType type)
+{
+    showPage(Page::Archive);
+    if (m_archivePage == nullptr) {
+        return;
+    }
+    ArchivePage::Type pageType = ArchivePage::Type::Members;
+    switch (type) {
+    case VLMS::ArchiveType::Members:
+        pageType = ArchivePage::Type::Members;
+        break;
+    case VLMS::ArchiveType::Books:
+        pageType = ArchivePage::Type::Books;
+        break;
+    case VLMS::ArchiveType::Copies:
+        pageType = ArchivePage::Type::Copies;
+        break;
+    case VLMS::ArchiveType::Loans:
+        pageType = ArchivePage::Type::Loans;
+        break;
+    }
+    m_archivePage->setType(pageType);
+}
+
+void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
+{
+    if ((what & VLMS::Entity::Books) || (what & VLMS::Entity::Copies)) {
+        if (m_catalogPage != nullptr) {
+            m_catalogPage->retranslateUi();
+        }
+    }
+    if (what & VLMS::Entity::Members) {
+        if (m_membersPage != nullptr) {
+            m_membersPage->retranslateUi();
+        }
+    }
+    if (what & VLMS::Entity::Loans) {
+        if (m_circulationPage != nullptr) {
+            m_circulationPage->retranslateUi();
+        }
+    }
+    if (m_metricsPage != nullptr) {
+        m_metricsPage->refreshMetrics();
+    }
 }

@@ -32,6 +32,7 @@ public:
                 QWidget* parent = nullptr);
 
     void retranslateUi();
+    void selectBookId(qint64 id);
 
 private slots:
     void refreshBooks();
@@ -57,7 +58,6 @@ private:
     void resetPagerAndRefresh();
     VLMS::Repositories::BookQuery currentBookQuery() const;
     qint64 selectedBookId() const;
-    void selectBookId(qint64 id);
     void updateCoverPreview(const VLMS::Repositories::BookRecord& book);
     void renderCoverPreview();
     void clearBookDetails();

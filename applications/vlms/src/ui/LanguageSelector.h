@@ -10,9 +10,8 @@ namespace VLMS {
 /**
  * The three UI languages as circular flag buttons, exactly one pressed.
  *
- * Its own widget rather than a row built inside MainWindow, because MainWindow
- * reaches for qobject_cast<Application*>(qApp) and so cannot be constructed in
- * a test; this can.
+ * Its own widget rather than a row built inside MainWindow, so language
+ * selection can be unit-tested without constructing the shell.
  */
 class LanguageSelector final : public QWidget {
     Q_OBJECT

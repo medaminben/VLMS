@@ -20,6 +20,11 @@ class DataEvents : public QObject {
 public:
     using QObject::QObject;
 
+    void emitChanged(EntitySet what, QList<qint64> ids)
+    {
+        emit changed(what, std::move(ids));
+    }
+
 signals:
     void changed(VLMS::EntitySet what, QList<qint64> ids);
 };

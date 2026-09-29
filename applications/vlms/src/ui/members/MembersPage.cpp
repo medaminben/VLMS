@@ -1,5 +1,7 @@
 #include "ui/members/MembersPage.h"
 
+#include "ui/workflows/Navigator.h"
+
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
 #include "ui/ListPageFrame.h"
@@ -77,9 +79,11 @@ QStringList memberDetailLabelKeys() {
 
 MembersPage::MembersPage(VLMS::Repositories::MemberRepository& repository,
                          VLMS::Repositories::CirculationRepository& circulationRepository,
+                         VLMS::Navigator& navigator,
                          QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
+      m_navigator(navigator),
       m_circulationRepository(circulationRepository) {
     buildUi();
     retranslateUi();
@@ -592,7 +596,7 @@ void MembersPage::deleteMember() {
                 T("members.deleteBlockedByLoans"),
                 T("members.goToLoans"))) {
             const auto member = m_repository.getMember(memberId);
-            emit memberLoansRequested(member ? qs(member->membershipNumber) : QString());
+            m_navigator.showMemberLoans(member ? qs(member->membershipNumber) : QString());
         }
         return;
     }

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "ui/workflows/DataEvents.h"
+#include "ui/workflows/Navigator.h"
+
+#include <QList>
 #include <QMainWindow>
 
 class Application;
@@ -18,16 +22,22 @@ class ClickableLabel;
 class LanguageSelector;
 }
 
-class MainWindow final : public QMainWindow {
+class MainWindow final : public QMainWindow, public VLMS::Navigator {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(Application& app, QWidget* parent = nullptr);
+
+    void show(VLMS::PageId page) override;
+    void showMemberLoans(const QString& membershipNumber) override;
+    void showBook(qint64 bookId) override;
+    void showArchive(VLMS::ArchiveType type) override;
 
 private slots:
     void onLanguageChanged(const QString& code);
     void onThemeChanged();
     void retranslateUi();
+    void onDataChanged(VLMS::EntitySet what, QList<qint64> ids);
 
 private:
     enum class Page { Catalog, Members, Circulation, Archive, Metrics };
@@ -39,6 +49,9 @@ private:
     void updateBrandBanner();
     void updateThemeToggle();
     void updateManualButton();
+    [[nodiscard]] static Page toPage(VLMS::PageId id);
+
+    Application& m_app;
 
     QWidget* m_centralRoot = nullptr;
     QStackedWidget* m_stack = nullptr;

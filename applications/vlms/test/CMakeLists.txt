@@ -1,6 +1,6 @@
-# Dialog tests link vlms_ui. They never construct Application or
-# MainWindow: MainWindow reaches for qobject_cast<Application*>(qApp), and
-# Application's constructor opens the real source-tree database.
+# Dialog tests link vlms_ui. They build pages against temporary databases and
+# FakeNavigator/DataEvents; MainWindow needs a real Application and is only
+# covered lightly (or not at all) here.
 
 build_gtest_executable(
     NAME test_vlms_ui
@@ -46,6 +46,9 @@ build_gtest_executable(
         src/test_manual_location.cpp
         src/test_page_facets.cpp
         src/test_data_events.cpp
+        src/test_error_presenter.cpp
+        src/test_dialog_factory.cpp
+        src/test_navigator.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui

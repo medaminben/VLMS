@@ -3,9 +3,9 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/MainWindow.h"
 #include "ui/Theme.h"
 #include "ui/archive/ArchivePage.h"
+#include "ui/workflows/DataEvents.h"
 #include "ui/archive/ReuseNumberFlow.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -116,7 +116,7 @@ protected:
                                  "2026-09-01", "2026-09-15", "2026-09-10");
         ASSERT_TRUE(m_circulation->archiveLoan(m_loanId));
 
-        m_page = std::make_unique<ArchivePage>(*m_members, *m_catalog, *m_circulation);
+        m_page = std::make_unique<ArchivePage>(*m_members, *m_catalog, *m_circulation, m_events);
         m_typeList = m_page->findChild<QListWidget*>(QStringLiteral("archiveType"));
         m_table = m_page->findChild<QTableWidget*>();
         m_restore = buttonWithText(m_page.get(), QStringLiteral("Restore"));
@@ -152,6 +152,7 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    VLMS::DataEvents m_events;
     std::unique_ptr<ArchivePage> m_page;
     QListWidget* m_typeList = nullptr;
     QTableWidget* m_table = nullptr;
@@ -248,7 +249,7 @@ TEST_F(test_ui_ArchivePage, ReuseComesBeforeRestoreOnTheButtonPad)
 
 TEST_F(test_ui_ArchivePage, RestoreSendsTheMemberBackToTheLiveList)
 {
-    QSignalSpy restored(m_page.get(), &ArchivePage::recordRestored);
+    QSignalSpy restored(&m_events, &VLMS::DataEvents::changed);
     answerNextBoxYes();
     m_restore->click();
 
@@ -294,32 +295,15 @@ TEST_F(test_ui_ArchivePage, ReuseOpensTheChooserAndCancelKeepsTheNumber)
     EXPECT_GE(rowOf(m_numberedCopyId), 0);  // still archived, still listed
 }
 
-TEST(test_ui_ArchiveNavigation, TheHeaderHasAnArchiveButtonThatOpensTheArchive)
+TEST_F(test_ui_ArchivePage, SetTypeSwitchesTheListedKind)
 {
-    // Without an Application instance MainWindow builds placeholder pages,
-    // which is enough to check the button and the page it opens.
-    Core::Locale::setCode("en");
-    MainWindow window;
-    QPushButton* nav = nullptr;
-    for (QPushButton* button : window.findChildren<QPushButton*>()) {
-        if (button->property("navKey").toString() == QStringLiteral("archive")) {
-            nav = button;
-        }
-    }
-    ASSERT_NE(nav, nullptr);
-    EXPECT_EQ(nav->text(), QStringLiteral("Archive"));
-
-    nav->click();
-    auto* stack = window.findChild<QStackedWidget*>();
-    ASSERT_NE(stack, nullptr);
-    bool showsArchive = false;
-    for (const QLabel* label : stack->currentWidget()->findChildren<QLabel*>()) {
-        if (label->property("i18nKey").toString() == QStringLiteral("page.archive.title")) {
-            showsArchive = true;
-        }
-    }
-    EXPECT_TRUE(showsArchive);
-    Core::Locale::setCode(Core::Locale::kDefaultCode);
+    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Members);
+    m_page->setType(ArchivePage::Type::Books);
+    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Books);
+    m_page->setType(ArchivePage::Type::Copies);
+    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Copies);
+    m_page->setType(ArchivePage::Type::Loans);
+    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Loans);
 }
 
 TEST_F(test_ui_ArchivePage, EveryTypeStaysVisibleWhateverTypeIsPicked)
@@ -445,7 +429,7 @@ TEST_F(test_ui_ArchivePage, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
     tickId(m_table, m_memberId);
     tickId(m_table, second);
 
-    QSignalSpy spy(m_page.get(), &ArchivePage::recordRestored);
+    QSignalSpy spy(&m_events, &VLMS::DataEvents::changed);
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
 

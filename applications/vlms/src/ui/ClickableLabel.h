@@ -9,11 +9,8 @@ namespace VLMS {
 /**
  * A QLabel that reports a left-click.
  *
- * Only the footer's copyright line needs this, and it could as easily have
- * been an event filter inside MainWindow -- except that MainWindow cannot be
- * constructed in a test, because it reaches for qobject_cast<Application*>
- * (qApp). Anything put there is verifiable only by hand, so the click lives
- * here instead, where it has a test.
+ * Only the footer's copyright line needs this. Kept as its own widget so the
+ * click path has a unit test without constructing MainWindow.
  */
 class ClickableLabel final : public QLabel {
     Q_OBJECT

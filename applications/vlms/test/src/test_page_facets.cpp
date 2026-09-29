@@ -4,10 +4,12 @@
 #include "QtBridge.h"
 #include "ui/Theme.h"
 #include "ui/archive/ArchivePage.h"
+#include "ui/workflows/DataEvents.h"
 #include "ui/catalog/BookFacetFilters.h"
 #include "ui/circulation/CirculationPage.h"
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/members/MembersPage.h"
+#include "ui/workflows/Navigator.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -122,7 +124,8 @@ protected:
 
 TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 {
-    MembersPage page(*m_members, *m_circulation);
+    VLMS::FakeNavigator navigator;
+    MembersPage page(*m_members, *m_circulation, navigator);
     auto* filters = named<QWidget>(&page, "memberFilters");
     ASSERT_NE(filters, nullptr);
     EXPECT_TRUE(filters->findChildren<QLabel*>().isEmpty())
@@ -156,7 +159,8 @@ TEST_F(test_ui_PageFacets, CirculationShowsTheCoverBesideTheBorrowersPhoto)
 
 TEST_F(test_ui_PageFacets, ArchiveShowsTheFiltersOfTheTypeOnScreen)
 {
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     auto* types = named<QListWidget>(&page, "archiveType");
     auto* memberFilters = page.findChild<VLMS::MemberFacetFilters*>();
     auto* bookFilters = page.findChild<VLMS::BookFacetFilters*>();
@@ -189,7 +193,8 @@ TEST_F(test_ui_PageFacets, ArchiveFiltersCopiesByTheirTitlesLanguage)
     ASSERT_TRUE(m_catalog->saveCopies(m_arabicBookId, {}));
     ASSERT_TRUE(m_catalog->saveCopies(m_frenchBookId, {}));
 
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     auto* table = named<QTableWidget>(&page, "listTable");
     ASSERT_TRUE(pick(named<QListWidget>(&page, "archiveType"), QStringLiteral("copies")));
     ASSERT_EQ(table->rowCount(), 2);
@@ -205,7 +210,8 @@ TEST_F(test_ui_PageFacets, ArchiveFiltersLoansByTheBorrowersSex)
     ASSERT_TRUE(m_circulation->archiveLoan(m_maleLoan));
     ASSERT_TRUE(m_circulation->archiveLoan(m_femaleLoan));
 
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     auto* table = named<QTableWidget>(&page, "listTable");
     ASSERT_TRUE(pick(named<QListWidget>(&page, "archiveType"), QStringLiteral("loans")));
     ASSERT_EQ(table->rowCount(), 2);
@@ -235,7 +241,8 @@ TEST_F(test_ui_PageFacets, ArchivedLoanDetailsShowTheMembershipNumberAndNotes)
     const auto loan = m_circulation->getLoan(m_femaleLoan);
     ASSERT_TRUE(loan.has_value());
 
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     ASSERT_TRUE(pick(named<QListWidget>(&page, "archiveType"), QStringLiteral("loans")));
     auto* table = named<QTableWidget>(&page, "listTable");
     ASSERT_EQ(table->rowCount(), 1);
@@ -279,7 +286,8 @@ TEST_F(test_ui_PageFacets, ArchiveLoansButtonFollowsTheTypeAndTheHistory)
     const std::int64_t unread = seedBook(*m_db, uniqueBookSeed(3));
     ASSERT_TRUE(m_catalog->saveCopies(unread, {}));
 
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     auto* types = named<QListWidget>(&page, "archiveType");
     QPushButton* loans = archiveLoansButton(&page);
     ASSERT_NE(loans, nullptr);
@@ -298,7 +306,8 @@ TEST_F(test_ui_PageFacets, ArchiveLoansButtonFollowsTheTypeAndTheHistory)
 TEST_F(test_ui_PageFacets, ArchiveLoansButtonOpensTheMembersHistory)
 {
     ASSERT_TRUE(m_members->archiveMember(m_maleId));
-    ArchivePage page(*m_members, *m_catalog, *m_circulation);
+    VLMS::DataEvents events;
+    ArchivePage page(*m_members, *m_catalog, *m_circulation, events);
     QPushButton* loans = archiveLoansButton(&page);
     ASSERT_NE(loans, nullptr);
     ASSERT_TRUE(loans->isEnabled());
@@ -350,7 +359,8 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
 
 TEST_F(test_ui_PageFacets, MembersYearIsStillTheYearOfRegistration)
 {
-    MembersPage page(*m_members, *m_circulation);
+    VLMS::FakeNavigator navigator;
+    MembersPage page(*m_members, *m_circulation, navigator);
     auto* years = named<QListWidget>(&page, "yearFilter");
     ASSERT_NE(years, nullptr);
     EXPECT_EQ(years->item(0)->text(), VLMS::T("members.allYears"));

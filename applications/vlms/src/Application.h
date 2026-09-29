@@ -4,6 +4,14 @@
 #include <QString>
 #include <QTranslator>
 
+#include <memory>
+
+#include "ui/workflows/DataEvents.h"
+#include "ui/workflows/DialogFactory.h"
+#include "ui/workflows/ErrorPresenter.h"
+#include "ui/workflows/QtDialogFactory.h"
+#include "ui/workflows/QtErrorPresenter.h"
+
 namespace VLMS::Database {
 class Connection;
 }  // namespace VLMS::Database
@@ -30,6 +38,10 @@ public:
     [[nodiscard]] VLMS::Repositories::MemberRepository& members() const { return *m_memberRepository; }
     [[nodiscard]] VLMS::Repositories::CirculationRepository& circulation() const { return *m_circulationRepository; }
     [[nodiscard]] VLMS::Repositories::MetricsRepository& metrics() const { return *m_metricsRepository; }
+    [[nodiscard]] VLMS::DataEvents& dataEvents() { return *m_dataEvents; }
+    [[nodiscard]] VLMS::ErrorPresenter& errors() { return *m_errors; }
+    /// Null when the database is not ready (no repositories to back dialogs).
+    [[nodiscard]] VLMS::DialogFactory* dialogs() { return m_dialogs.get(); }
     [[nodiscard]] QString uiLocale() const;
     [[nodiscard]] bool isDarkTheme() const;
 
@@ -42,11 +54,7 @@ signals:
     void themeChanged();
 
 private:
-    /// Palette and stylesheet for the mode Theme currently holds, in that
-    /// order. Called at start-up and on every toggle.
     void applyTheme();
-    /// Installs Qt's own catalogue for the current locale, so the text inside
-    /// stock Qt widgets follows the language chosen in the header.
     void applyQtCatalogue();
 
     QTranslator m_qtTranslator;
@@ -57,4 +65,8 @@ private:
     VLMS::Repositories::MemberRepository* m_memberRepository = nullptr;
     VLMS::Repositories::CirculationRepository* m_circulationRepository = nullptr;
     VLMS::Repositories::MetricsRepository* m_metricsRepository = nullptr;
+
+    std::unique_ptr<VLMS::DataEvents> m_dataEvents;
+    std::unique_ptr<VLMS::QtErrorPresenter> m_errors;
+    std::unique_ptr<VLMS::QtDialogFactory> m_dialogs;
 };

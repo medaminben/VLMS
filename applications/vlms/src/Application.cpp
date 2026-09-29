@@ -2,6 +2,9 @@
 
 #include "QtBridge.h"
 #include "ui/Theme.h"
+#include "ui/workflows/DataEvents.h"
+#include "ui/workflows/QtDialogFactory.h"
+#include "ui/workflows/QtErrorPresenter.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -113,6 +116,9 @@ Application::Application(int& argc, char** argv)
 
     VLMS::Core::Paths::ensureLayout();
 
+    m_dataEvents = std::make_unique<VLMS::DataEvents>();
+    m_errors = std::make_unique<VLMS::QtErrorPresenter>();
+
     m_database = new VLMS::Database::Connection(VLMS::Core::Paths::databaseDirectory());
     // The result was discarded here until D2 gave open() a reason to refuse on
     // purpose -- a database written by a newer build. Carrying on regardless
@@ -132,11 +138,17 @@ Application::Application(int& argc, char** argv)
                                                                   VLMS::Core::Paths::resourcesDirectory());
     m_circulationRepository = new VLMS::Repositories::CirculationRepository(m_database->session());
     m_metricsRepository = new VLMS::Repositories::MetricsRepository(m_database->session());
+
+    m_dialogs = std::make_unique<VLMS::QtDialogFactory>(*m_catalogRepository,
+                                                        *m_memberRepository,
+                                                        *m_circulationRepository);
 }
 
 Application::~Application() {
-    // Repositories go first: they hold a session reference and must not
-    // outlive Connection. Connection itself is no longer a QObject child.
+    // Factories first (they only hold repository refs), then repositories,
+    // then Connection. DataEvents and ErrorPresenter outlive the window.
+    m_dialogs.reset();
+
     delete m_metricsRepository;
     m_metricsRepository = nullptr;
     delete m_circulationRepository;

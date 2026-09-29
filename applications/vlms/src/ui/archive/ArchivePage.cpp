@@ -1,4 +1,6 @@
 #include "ui/archive/ArchivePage.h"
+
+#include "ui/workflows/DataEvents.h"
 #include "ui/archive/ReuseNumberFlow.h"
 #include "ui/archive/ArchiveLoansDialog.h"
 
@@ -22,6 +24,7 @@
 #include <QEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QList>
 #include <QListWidget>
 #include <QPixmap>
 #include <QPushButton>
@@ -107,11 +110,13 @@ QString memberName(const VLMS::Repositories::MemberRecord& member)
 ArchivePage::ArchivePage(VLMS::Repositories::MemberRepository& members,
                          VLMS::Repositories::CatalogRepository& catalog,
                          VLMS::Repositories::CirculationRepository& circulation,
+                         VLMS::DataEvents& events,
                          QWidget* parent)
     : QWidget(parent),
       m_members(members),
       m_catalog(catalog),
-      m_circulation(circulation)
+      m_circulation(circulation),
+      m_events(events)
 {
     buildUi();
     retranslateUi();
@@ -321,6 +326,45 @@ void ArchivePage::onTypeChanged()
     // the new list is row 0 of the old one -- so the buttons would keep the
     // previous type's state, Reuse included.
     onSelectionChanged();
+}
+
+
+void ArchivePage::notifyRestored(const QList<qint64>& ids)
+{
+    VLMS::EntitySet what;
+    switch (m_type) {
+    case Type::Members:
+        what = VLMS::Entity::Members;
+        break;
+    case Type::Books:
+        what = VLMS::Entity::Books;
+        break;
+    case Type::Copies:
+        what = VLMS::Entity::Copies;
+        break;
+    case Type::Loans:
+        what = VLMS::Entity::Loans;
+        break;
+    }
+    m_events.emitChanged(what, ids);
+}
+
+void ArchivePage::setType(Type type)
+{
+    if (m_typeList == nullptr) {
+        m_type = type;
+        return;
+    }
+    for (int row = 0; row < m_typeList->count(); ++row) {
+        if (kTypes[row].type == type) {
+            const QSignalBlocker blocker(m_typeList);
+            m_typeList->clearSelection();
+            m_typeList->item(row)->setSelected(true);
+            break;
+        }
+    }
+    // Drive the same path as a click so columns and filters update.
+    onTypeChanged();
 }
 
 void ArchivePage::onSearchChanged()
@@ -859,7 +903,7 @@ void ArchivePage::restoreSelected()
             });
         if (done > 0) {
             refreshRows();
-            emit recordRestored();
+            notifyRestored({});
         }
         return;
     }
@@ -889,7 +933,7 @@ void ArchivePage::restoreSelected()
         return;
     }
     refreshRows();
-    emit recordRestored();
+    notifyRestored({});
 }
 
 void ArchivePage::reuseSelected()
@@ -904,7 +948,7 @@ void ArchivePage::reuseSelected()
     emit reuseNumberRequested(copy.id);
     if (VLMS::runReuseNumberFlow(this, m_catalog, copy)) {
         refreshRows();
-        emit recordRestored();
+        notifyRestored({});
     }
 }
 
@@ -993,7 +1037,7 @@ void ArchivePage::purgeSelected()
         return;
     }
 
-    // No recordRestored(): nothing went back to a live page, and the live lists
+    // No DataEvents emit: nothing went back to a live page, and the live lists
     // never showed this row.
     refreshRows();
 }

@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/members/MembersPage.h"
+#include "ui/workflows/Navigator.h"
 #include "ui/TablePager.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -101,6 +102,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    VLMS::FakeNavigator m_navigator;
     std::unique_ptr<MembersPage> m_page;
     qint64 m_maleId = 0;
     qint64 m_femaleId = 0;
@@ -108,7 +110,7 @@ protected:
 
 TEST_F(test_ui_MemberFilters, FilterListsArePresent)
 {
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     EXPECT_NE(m_page->findChild<QListWidget*>(QStringLiteral("statusFilter")), nullptr);
     EXPECT_NE(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")), nullptr);
@@ -121,7 +123,7 @@ TEST_F(test_ui_MemberFilters, FilterListsArePresent)
 TEST_F(test_ui_MemberFilters, SexFilterKeepsOnlyTheMatchingRow)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
@@ -138,7 +140,7 @@ TEST_F(test_ui_MemberFilters, SexFilterKeepsOnlyTheMatchingRow)
 TEST_F(test_ui_MemberFilters, CityAndSexFiltersCombineWithAnd)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
@@ -154,7 +156,7 @@ TEST_F(test_ui_MemberFilters, CityAndSexFiltersCombineWithAnd)
 TEST_F(test_ui_MemberFilters, SelectingAllClearsTheDimension)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     auto* table = m_page->findChild<QTableWidget*>();
     auto* sexFilter = m_page->findChild<QListWidget*>(QStringLiteral("sexFilter"));
@@ -171,7 +173,7 @@ TEST_F(test_ui_MemberFilters, SelectingAllClearsTheDimension)
 TEST_F(test_ui_MemberFilters, YearAndAgeGroupNarrowTheTable)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
@@ -192,7 +194,7 @@ TEST_F(test_ui_MemberFilters, YearAndAgeGroupNarrowTheTable)
 TEST_F(test_ui_MemberFilters, SearchStillFindsMembersByOccupation)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
 
     auto* table = m_page->findChild<QTableWidget*>();
     auto* search = m_page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
@@ -213,7 +215,7 @@ TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
         ASSERT_GT(seedMember(*m_db, uniqueMemberSeed(i)), 0) << i;
     }
 
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
     m_page->show();
     QApplication::processEvents();
 
@@ -250,7 +252,7 @@ TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
 TEST_F(test_ui_MemberFilters, StatusFilterOffersActiveAndNotActive)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("statusFilter"));
     ASSERT_NE(list, nullptr);
 
@@ -270,7 +272,7 @@ TEST_F(test_ui_MemberFilters, NotActiveKeepsOnlyTheMemberWhoseYearEnded)
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2026-01-01' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_maleId)}}));
     const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 2);
@@ -286,7 +288,7 @@ TEST_F(test_ui_MemberFilters, DetailsShowTheLastActiveDay)
     seedTunisAndSfax();
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2027-04-30' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_femaleId)}}));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
     auto* search = m_page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
     ASSERT_NE(search, nullptr);
     search->setText(QStringLiteral("Sfax"));
