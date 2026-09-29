@@ -135,7 +135,13 @@ MainWindow::MainWindow(Application& app, QWidget* parent)
     rebuildShellChrome();
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow()
+{
+    // The pages are Qt children and would outlive the specs, models and
+    // workflows held in unique_ptr members: a table destroyed while shown asks
+    // its model for columns during teardown. Destroy the widgets first.
+    delete takeCentralWidget();
+}
 
 void MainWindow::buildUi() {
     setMinimumSize(1000, 640);
@@ -797,7 +803,10 @@ void MainWindow::showMemberLoans(const QString& membershipNumber)
         state.ascending = true;
         model->setQuery(state);
     }
-    m_circulationPage->setSearchText(membershipNumber);
+    // Quoted, so the search is exact: member 1 must not also bring 10, 11 or
+    // a title containing "1". A copy numbered the same still shows, as in any
+    // quoted search.
+    m_circulationPage->setSearchText(QLatin1Char('"') + membershipNumber + QLatin1Char('"'));
     if (QTableView* table = m_circulationPage->table()) {
         table->setSortingEnabled(true);
     }
