@@ -1,4 +1,4 @@
-#include "ui/workflows/FakeDialogFactory.h"
+#include "Fakes.h"
 
 #include <gtest/gtest.h>
 
@@ -9,15 +9,15 @@ TEST(FakeDialogFactory, ReturnsScriptedBookForm)
     form.book.title = "T";
     factory.nextBook = form;
 
-    const auto got = factory.addBook(nullptr);
+    const auto got = factory.editBook(nullptr, {});
     ASSERT_TRUE(got.has_value());
     EXPECT_EQ(got->book.title, "T");
     ASSERT_EQ(factory.calls.size(), 1u);
-    EXPECT_EQ(factory.calls.front(), QStringLiteral("addBook"));
+    EXPECT_EQ(factory.calls.front(), QStringLiteral("editBook"));
 }
 
 TEST(FakeDialogFactory, CancelReturnsEmpty)
 {
     VLMS::FakeDialogFactory factory;
-    EXPECT_FALSE(factory.editMember(nullptr, {}).has_value());
+    EXPECT_FALSE(factory.editMember(nullptr, std::nullopt).has_value());
 }
