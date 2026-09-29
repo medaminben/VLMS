@@ -53,6 +53,7 @@ add_library(vlms_ui STATIC
     src/ui/presentation/PagedQueryModel.cpp
     src/ui/presentation/MemberListSpec.cpp
     src/ui/presentation/BookListSpec.cpp
+    src/ui/presentation/LoanListSpec.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -116,6 +117,7 @@ add_library(vlms_ui STATIC
     src/ui/presentation/PagedQueryModel.h
     src/ui/presentation/MemberListSpec.h
     src/ui/presentation/BookListSpec.h
+    src/ui/presentation/LoanListSpec.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
