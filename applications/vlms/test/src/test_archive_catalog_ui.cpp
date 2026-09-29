@@ -11,6 +11,7 @@
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
@@ -92,6 +93,7 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_lookups = std::make_unique<QtCatalogLookups>(*m_catalog);
         m_ocr = std::make_unique<OcrService>();
     }
@@ -100,6 +102,7 @@ protected:
     {
         m_ocr.reset();
         m_lookups.reset();
+        m_members.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
@@ -124,6 +127,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<QtCatalogLookups> m_lookups;
     std::unique_ptr<OcrService> m_ocr;
 };
@@ -131,7 +135,7 @@ protected:
 TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(1));
-    BookWorkflowHarness workflows(*m_catalog, *m_circulation);
+    BookWorkflowHarness workflows(*m_catalog, *m_circulation, *m_members);
     BookListSpec spec(*m_catalog, *workflows.books);
     ListPage::Config cfg;
     cfg.titleKey = QStringLiteral("page.catalog.title");

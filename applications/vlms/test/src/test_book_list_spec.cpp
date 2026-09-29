@@ -8,6 +8,7 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CatalogTypes.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 
@@ -49,7 +50,8 @@ protected:
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
                                                                       m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
-        m_harness = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_harness = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation, *m_members);
         m_spec = std::make_unique<BookListSpec>(*m_catalog, *m_harness->books);
     }
 
@@ -57,6 +59,7 @@ protected:
     {
         m_spec.reset();
         m_harness.reset();
+        m_members.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
@@ -67,6 +70,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<BookWorkflowHarness> m_harness;
     std::unique_ptr<BookListSpec> m_spec;
 };

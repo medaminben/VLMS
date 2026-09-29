@@ -18,6 +18,8 @@ class CatalogLookups;
 class DataEvents;
 class DialogFactory;
 class ErrorPresenter;
+class LoanListSpec;
+class LoanWorkflow;
 class OcrService;
 
 namespace Repositories {
@@ -37,7 +39,9 @@ public:
                     ErrorPresenter& errors,
                     DataEvents& events,
                     Navigator& navigator,
-                    BulkRunner& bulk);
+                    BulkRunner& bulk,
+                    LoanListSpec& loanHistorySpec,
+                    LoanWorkflow& loans);
 
     Core::Status restore(QWidget* parent, ArchiveType type,
                          const QList<qint64>& ids, const QList<QString>& labels);
@@ -58,6 +62,8 @@ private:
     DataEvents& m_events;
     Navigator& m_navigator;
     BulkRunner& m_bulk;
+    LoanListSpec& m_loanHistorySpec;
+    LoanWorkflow& m_loanWorkflow;
 };
 
 }  // namespace VLMS

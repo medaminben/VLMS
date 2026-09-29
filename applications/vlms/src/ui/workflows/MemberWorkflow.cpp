@@ -1,8 +1,9 @@
 #include "ui/workflows/MemberWorkflow.h"
 
 #include "QtBridge.h"
+#include "ui/LoanHistoryDialog.h"
 #include "ui/members/MemberEditorDialog.h"
-#include "ui/members/MemberLoansDialog.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "ui/presentation/MemberLookups.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/LoanWorkflow.h"
@@ -32,7 +33,8 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
                                DataEvents& events,
                                Navigator& navigator,
                                BulkRunner& bulk,
-                               LoanWorkflow& loans)
+                               LoanWorkflow& loans,
+                               LoanListSpec& loanHistorySpec)
     : m_members(members)
     , m_circulation(circulation)
     , m_lookups(lookups)
@@ -42,6 +44,7 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
     , m_navigator(navigator)
     , m_bulk(bulk)
     , m_loanWorkflow(loans)
+    , m_loanHistorySpec(loanHistorySpec)
 {
     (void)m_dialogs;
 }
@@ -181,7 +184,9 @@ Core::Status MemberWorkflow::showLoans(QWidget* parent, qint64 memberId)
     const QString fullName = qs(member->fullName.empty()
                                     ? member->firstName + " " + member->lastName
                                     : member->fullName);
-    MemberLoansDialog dialog(m_circulation, memberId, fullName, m_loanWorkflow, parent);
+    LoanHistoryDialog dialog(m_loanHistorySpec, m_loanWorkflow, m_events,
+                             LoanHistoryDialog::Kind::Member, memberId, fullName,
+                             Repositories::ArchiveScope::Any, parent);
     dialog.exec();
     return Core::Status::ok();
 }

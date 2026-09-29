@@ -257,17 +257,22 @@ void MainWindow::buildUi() {
         m_loanWorkflow = std::make_unique<VLMS::LoanWorkflow>(
             m_app.circulation(), m_app.circulationLookups(), *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk);
+        // Dedicated LoanListSpec for history dialogs — never shares QueryState with Circulation.
+        m_loanHistorySpec = std::make_unique<VLMS::LoanListSpec>(
+            m_app.circulation(), m_app.catalog(), m_app.members(), *m_loanWorkflow);
         m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
             m_app.catalog(), m_app.circulation(), m_app.catalogLookups(), m_app.ocr(),
             *m_app.dialogs(), m_app.errors(),
-            m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
+            m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow, *m_loanHistorySpec);
         m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
             m_app.members(), m_app.circulation(), m_app.memberLookups(), *m_app.dialogs(),
-            m_app.errors(), m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
+            m_app.errors(), m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow,
+            *m_loanHistorySpec);
         m_archiveWorkflow = std::make_unique<VLMS::ArchiveWorkflow>(
             m_app.members(), m_app.catalog(), m_app.circulation(),
             m_app.catalogLookups(), m_app.ocr(), *m_app.dialogs(),
-            m_app.errors(), m_app.dataEvents(), *this, *m_bulk);
+            m_app.errors(), m_app.dataEvents(), *this, *m_bulk, *m_loanHistorySpec,
+            *m_loanWorkflow);
         m_memberListSpec =
             std::make_unique<VLMS::MemberListSpec>(m_app.members(), *m_memberWorkflow);
         VLMS::ListPage::Config membersCfg;
@@ -418,6 +423,7 @@ void MainWindow::buildUi() {
         m_loanFilter = nullptr;
         m_loanMemberFilters = nullptr;
         m_loanListSpec.reset();
+        m_loanHistorySpec.reset();
         m_archivePage = nullptr;
         m_archiveTypeList = nullptr;
         m_archiveMemberFilters = nullptr;

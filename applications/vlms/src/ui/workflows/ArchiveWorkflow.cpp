@@ -1,13 +1,15 @@
 #include "ui/workflows/ArchiveWorkflow.h"
 
 #include "ui/BulkAction.h"
+#include "ui/LoanHistoryDialog.h"
 #include "ui/UiHelpers.h"
-#include "ui/archive/ArchiveLoansDialog.h"
 #include "ui/archive/ReuseNumberFlow.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
+#include "ui/workflows/LoanWorkflow.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -147,7 +149,9 @@ ArchiveWorkflow::ArchiveWorkflow(Repositories::MemberRepository& members,
                                  ErrorPresenter& errors,
                                  DataEvents& events,
                                  Navigator& navigator,
-                                 BulkRunner& bulk)
+                                 BulkRunner& bulk,
+                                 LoanListSpec& loanHistorySpec,
+                                 LoanWorkflow& loans)
     : m_members(members)
     , m_catalog(catalog)
     , m_circulation(circulation)
@@ -158,6 +162,8 @@ ArchiveWorkflow::ArchiveWorkflow(Repositories::MemberRepository& members,
     , m_events(events)
     , m_navigator(navigator)
     , m_bulk(bulk)
+    , m_loanHistorySpec(loanHistorySpec)
+    , m_loanWorkflow(loans)
 {
     (void)m_dialogs;
     (void)m_navigator;
@@ -293,21 +299,22 @@ Core::Status ArchiveWorkflow::showLoans(QWidget* parent,
         return Core::Status::ok();
     }
 
-    Repositories::LoanQuery query;
+    LoanHistoryDialog::Kind kind = LoanHistoryDialog::Kind::ArchivedMember;
     switch (type) {
     case ArchiveType::Members:
-        query.memberId = id;
+        kind = LoanHistoryDialog::Kind::ArchivedMember;
         break;
     case ArchiveType::Books:
-        query.bookId = id;
+        kind = LoanHistoryDialog::Kind::ArchivedBook;
         break;
     case ArchiveType::Copies:
-        query.copyId = id;
+        kind = LoanHistoryDialog::Kind::ArchivedCopy;
         break;
     case ArchiveType::Loans:
         return Core::Status::ok();
     }
-    ArchiveLoansDialog dialog(m_circulation, query, displayName, parent);
+    LoanHistoryDialog dialog(m_loanHistorySpec, m_loanWorkflow, m_events, kind, id, displayName,
+                             Repositories::ArchiveScope::Any, parent);
     dialog.exec();
     return Core::Status::ok();
 }

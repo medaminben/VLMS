@@ -35,6 +35,7 @@ build_gtest_executable(
         src/test_catalog_removal.cpp
         src/test_free_number_picker.cpp
         src/test_member_loans_actions.cpp
+        src/test_loan_history_dialog.cpp
         src/test_clickable_label.cpp
         src/test_licence_dialog.cpp
         src/test_image_viewer_dialog.cpp

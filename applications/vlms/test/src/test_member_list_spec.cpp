@@ -7,6 +7,7 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Repositories/CirculationRepository.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
 
@@ -48,7 +49,8 @@ protected:
         m_members =
             std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
-        m_harness = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_harness = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
         m_spec = std::make_unique<MemberListSpec>(*m_members, *m_harness->members);
     }
 
@@ -57,6 +59,7 @@ protected:
         m_spec.reset();
         m_harness.reset();
         m_circulation.reset();
+        m_catalog.reset();
         m_members.reset();
         m_db.reset();
         Core::Locale::setCode("en");
@@ -64,6 +67,7 @@ protected:
 
     QTemporaryDir m_dir;
     std::unique_ptr<TestDatabase> m_db;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<MemberWorkflowHarness> m_harness;

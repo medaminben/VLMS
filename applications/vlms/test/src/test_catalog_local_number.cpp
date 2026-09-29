@@ -7,6 +7,7 @@
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
@@ -62,6 +63,7 @@ protected:
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
                                                                       m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -69,13 +71,15 @@ protected:
         m_page.reset();
         m_spec.reset();
         m_workflows.reset();
+        m_members.reset();
+        m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
     }
 
     QTableView* openPage()
     {
-        m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
+        m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation, *m_members);
         m_spec = std::make_unique<BookListSpec>(*m_catalog, *m_workflows->books);
         m_page = std::make_unique<ListPage>(m_spec.get(), m_workflows->events, catalogConfig());
         QTableView* table = m_page->table();
@@ -130,6 +134,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<BookWorkflowHarness> m_workflows;
     std::unique_ptr<BookListSpec> m_spec;
     std::unique_ptr<ListPage> m_page;

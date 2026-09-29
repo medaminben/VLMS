@@ -13,6 +13,7 @@
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
 
@@ -87,6 +88,7 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
@@ -95,6 +97,7 @@ protected:
         m_spec.reset();
         m_memberWorkflows.reset();
         m_circulation.reset();
+        m_catalog.reset();
         m_members.reset();
         m_db.reset();
     }
@@ -124,7 +127,7 @@ protected:
 
     void openPage()
     {
-        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
         m_spec = std::make_unique<MemberListSpec>(*m_members, *m_memberWorkflows->members);
         m_page = std::make_unique<ListPage>(m_spec.get(), m_memberWorkflows->events, membersConfig());
         m_filters = new MemberFacetFilters(*m_members, Repositories::ArchiveScope::Live,
@@ -153,6 +156,7 @@ protected:
     }
 
     std::unique_ptr<TestDatabase> m_db;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     VLMS::FakeNavigator m_navigator;

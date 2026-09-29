@@ -110,6 +110,7 @@ private:
     std::unique_ptr<VLMS::MemberListSpec> m_memberListSpec;
     std::unique_ptr<VLMS::BookListSpec> m_bookListSpec;
     std::unique_ptr<VLMS::LoanListSpec> m_loanListSpec;
+    std::unique_ptr<VLMS::LoanListSpec> m_loanHistorySpec;
     std::unique_ptr<VLMS::ArchivedMemberSpec> m_archivedMemberSpec;
     std::unique_ptr<VLMS::ArchivedBookSpec> m_archivedBookSpec;
     std::unique_ptr<VLMS::ArchivedCopySpec> m_archivedCopySpec;

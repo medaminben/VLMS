@@ -85,7 +85,7 @@ protected:
 
 TEST_F(test_ui_PreviewTheme, ArabicCataloguePlaceholderTurnsDarkWithTheTheme)
 {
-    BookWorkflowHarness workflows(m_catalog, m_circulation);
+    BookWorkflowHarness workflows(m_catalog, m_circulation, m_memberRepo);
     BookListSpec spec(m_catalog, *workflows.books);
     ListPage::Config cfg;
     cfg.titleKey = QStringLiteral("page.catalog.title");
@@ -183,7 +183,7 @@ TEST_F(test_ui_PreviewTheme, ThemeSwitchKeepsTheSameBookSelected)
     for (const Qt::LayoutDirection direction : {Qt::RightToLeft, Qt::LeftToRight}) {
         qApp->setLayoutDirection(direction);
         applyMode(ThemeMode::Light);
-        BookWorkflowHarness workflows(m_catalog, m_circulation);
+        BookWorkflowHarness workflows(m_catalog, m_circulation, m_memberRepo);
         BookListSpec spec(m_catalog, *workflows.books);
         ListPage::Config cfg;
         cfg.titleKey = QStringLiteral("page.catalog.title");

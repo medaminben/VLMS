@@ -1,8 +1,9 @@
 #include "ui/workflows/BookWorkflow.h"
 
 #include "QtBridge.h"
+#include "ui/LoanHistoryDialog.h"
 #include "ui/catalog/BookEditorDialog.h"
-#include "ui/catalog/BookLoansDialog.h"
+#include "ui/presentation/LoanListSpec.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/DataEvents.h"
@@ -32,7 +33,8 @@ BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
                            DataEvents& events,
                            Navigator& navigator,
                            BulkRunner& bulk,
-                           LoanWorkflow& loans)
+                           LoanWorkflow& loans,
+                           LoanListSpec& loanHistorySpec)
     : m_catalog(catalog)
     , m_circulation(circulation)
     , m_lookups(lookups)
@@ -43,6 +45,7 @@ BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
     , m_navigator(navigator)
     , m_bulk(bulk)
     , m_loanWorkflow(loans)
+    , m_loanHistorySpec(loanHistorySpec)
 {
     (void)m_navigator;
 }
@@ -168,7 +171,9 @@ Core::Status BookWorkflow::showLoans(QWidget* parent, qint64 bookId)
         m_errors.show(parent, book.error());
         return Core::asStatus(book);
     }
-    BookLoansDialog dialog(m_circulation, bookId, qs(book->title), m_loanWorkflow, parent);
+    LoanHistoryDialog dialog(m_loanHistorySpec, m_loanWorkflow, m_events,
+                             LoanHistoryDialog::Kind::Book, bookId, qs(book->title),
+                             Repositories::ArchiveScope::Any, parent);
     dialog.exec();
     return Core::Status::ok();
 }

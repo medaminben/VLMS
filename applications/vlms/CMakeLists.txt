@@ -26,19 +26,16 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookCopiesTable.cpp
     src/ui/services/OcrService.cpp
     src/ui/catalog/CategoryManagerDialog.cpp
-    src/ui/catalog/BookLoansDialog.cpp
     src/ui/catalog/LocalNumberDelegate.cpp
     src/ui/catalog/FreeLocalNumberDelegate.cpp
     src/ui/members/MemberFacetFilters.cpp
     src/ui/members/MemberEditorDialog.cpp
     src/ui/members/BirthDateEdit.cpp
-    src/ui/members/MemberLoansDialog.cpp
     src/ui/circulation/LoanCheckoutDialog.cpp
     src/ui/circulation/LoanExtendDialog.cpp
     src/ui/circulation/LoanReturnDialog.cpp
-    src/ui/circulation/LoanHistoryActions.cpp
+    src/ui/LoanHistoryDialog.cpp
     src/ui/metrics/MetricsPage.cpp
-    src/ui/archive/ArchiveLoansDialog.cpp
     src/ui/archive/ReuseNumberFlow.cpp
     src/ui/workflows/DataEvents.cpp
     src/ui/workflows/QtErrorPresenter.cpp
@@ -83,19 +80,16 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookCopiesTable.h
     src/ui/services/OcrService.h
     src/ui/catalog/CategoryManagerDialog.h
-    src/ui/catalog/BookLoansDialog.h
     src/ui/catalog/LocalNumberDelegate.h
     src/ui/catalog/FreeLocalNumberDelegate.h
     src/ui/members/MemberFacetFilters.h
     src/ui/members/MemberEditorDialog.h
     src/ui/members/BirthDateEdit.h
-    src/ui/members/MemberLoansDialog.h
     src/ui/circulation/LoanCheckoutDialog.h
     src/ui/circulation/LoanExtendDialog.h
     src/ui/circulation/LoanReturnDialog.h
-    src/ui/circulation/LoanHistoryActions.h
+    src/ui/LoanHistoryDialog.h
     src/ui/metrics/MetricsPage.h
-    src/ui/archive/ArchiveLoansDialog.h
     src/ui/archive/ReuseNumberFlow.h
     src/ui/workflows/DataEvents.h
     src/ui/workflows/ErrorPresenter.h

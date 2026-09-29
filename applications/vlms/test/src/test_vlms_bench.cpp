@@ -5,6 +5,7 @@
 #include "ui/presentation/QueryState.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 
 #include "TestDatabase.h"
@@ -117,7 +118,8 @@ TEST(VlmsBench, CatalogShowAllRefreshUnderBudget)
     auto catalog = std::make_unique<Repositories::CatalogRepository>(db.session(),
                                                                      db.resourcesDirectory());
     auto circulation = std::make_unique<Repositories::CirculationRepository>(db.session());
-    BookWorkflowHarness harness(*catalog, *circulation);
+    auto members = std::make_unique<Repositories::MemberRepository>(db.session(), db.resourcesDirectory());
+    BookWorkflowHarness harness(*catalog, *circulation, *members);
     BookListSpec spec(*catalog, *harness.books);
     DataEvents events;
     PagedQueryModel model(&spec, events);

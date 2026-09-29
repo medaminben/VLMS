@@ -570,8 +570,8 @@ TEST_F(test_ui_PageFacets, ArchiveLoansButtonOpensTheMembersHistory)
             return;
         }
         title = modal->windowTitle();
-        if (auto* table = modal->findChild<QTableWidget*>(QStringLiteral("archiveLoanHistory"))) {
-            rows = table->rowCount();
+        if (auto* table = modal->findChild<QTableView*>(QStringLiteral("loanHistoryTable"))) {
+            rows = table->model()->rowCount();
         }
         modal->close();
     });
