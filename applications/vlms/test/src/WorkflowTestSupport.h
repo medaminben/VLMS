@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/presentation/QtCatalogLookups.h"
+#include "ui/services/OcrService.h"
 #include "ui/workflows/ArchiveWorkflow.h"
 #include "ui/workflows/BookWorkflow.h"
 #include "ui/workflows/BulkRunner.h"
@@ -37,6 +39,8 @@ struct BookWorkflowHarness {
     VLMS::FakeErrorPresenter errors;
     VLMS::DataEvents events;
     VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::QtCatalogLookups> lookups;
+    std::unique_ptr<VLMS::OcrService> ocr;
     std::unique_ptr<VLMS::BulkRunner> bulk;
     std::unique_ptr<VLMS::LoanWorkflow> loans;
     std::unique_ptr<VLMS::BookWorkflow> books;
@@ -44,11 +48,14 @@ struct BookWorkflowHarness {
     BookWorkflowHarness(VLMS::Repositories::CatalogRepository& catalog,
                         VLMS::Repositories::CirculationRepository& circulation)
     {
+        lookups = std::make_unique<VLMS::QtCatalogLookups>(catalog);
+        ocr = std::make_unique<VLMS::OcrService>();
         bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
         loans = std::make_unique<VLMS::LoanWorkflow>(
             circulation, dialogs, errors, events, navigator, *bulk);
         books = std::make_unique<VLMS::BookWorkflow>(
-            catalog, circulation, dialogs, errors, events, navigator, *bulk, *loans);
+            catalog, circulation, *lookups, *ocr, dialogs, errors, events, navigator, *bulk,
+            *loans);
     }
 };
 
@@ -77,6 +84,8 @@ struct ArchiveWorkflowHarness {
     VLMS::FakeErrorPresenter errors;
     VLMS::DataEvents events;
     VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::QtCatalogLookups> lookups;
+    std::unique_ptr<VLMS::OcrService> ocr;
     std::unique_ptr<VLMS::BulkRunner> bulk;
     std::unique_ptr<VLMS::ArchiveWorkflow> archive;
 
@@ -84,8 +93,11 @@ struct ArchiveWorkflowHarness {
                            VLMS::Repositories::CatalogRepository& catalog,
                            VLMS::Repositories::CirculationRepository& circulation)
     {
+        lookups = std::make_unique<VLMS::QtCatalogLookups>(catalog);
+        ocr = std::make_unique<VLMS::OcrService>();
         bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
         archive = std::make_unique<VLMS::ArchiveWorkflow>(
-            members, catalog, circulation, dialogs, errors, events, navigator, *bulk);
+            members, catalog, circulation, *lookups, *ocr, dialogs, errors, events, navigator,
+            *bulk);
     }
 };

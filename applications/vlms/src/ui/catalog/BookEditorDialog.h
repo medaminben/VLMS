@@ -1,6 +1,5 @@
 #pragma once
 
-#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QDialog>
@@ -8,6 +7,8 @@
 #include <QStringList>
 
 namespace VLMS {
+class CatalogLookups;
+class DialogFactory;
 class OcrService;
 }
 
@@ -29,9 +30,16 @@ class BookEditorDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent = nullptr);
-    BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, const VLMS::Repositories::BookRecord& book, QWidget* parent = nullptr);
+    BookEditorDialog(VLMS::CatalogLookups& lookups, VLMS::OcrService& ocr, QWidget* parent = nullptr);
+    BookEditorDialog(VLMS::CatalogLookups& lookups,
+                     VLMS::OcrService& ocr,
+                     const VLMS::Repositories::BookRecord& book,
+                     QWidget* parent = nullptr);
     ~BookEditorDialog() override;
+
+    /// Lets the Categories button open CategoryManagerDialog through the factory
+    /// (the only place still allowed to hold CatalogRepository for category CRUD).
+    void setDialogFactory(VLMS::DialogFactory* dialogs);
 
     [[nodiscard]] VLMS::Repositories::BookInput bookInput() const;
 
@@ -82,7 +90,9 @@ private:
     [[nodiscard]] QString selectedLanguageCode() const;
     [[nodiscard]] QSize currentCoverSize() const;
 
-    VLMS::Repositories::CatalogRepository& m_repository;
+    VLMS::CatalogLookups& m_lookups;
+    VLMS::OcrService& m_ocr;
+    VLMS::DialogFactory* m_dialogs = nullptr;
     bool m_isEdit = false;
     qint64 m_bookId = 0;
     QString m_coverSourcePath;
@@ -127,6 +137,4 @@ private:
     QToolButton* m_ocrButton = nullptr;
     QStringList m_ocrLanguages;             ///< Tesseract codes, joined with '+'
     bool m_ocrLanguageChosenByUser = false; ///< stop tracking the book's language
-
-    VLMS::OcrService* m_ocr = nullptr;
 };

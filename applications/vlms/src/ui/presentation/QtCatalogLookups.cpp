@@ -64,6 +64,12 @@ void QtCatalogLookups::suggestCopyIdentifiers(const QString& language,
     }
 }
 
+std::vector<Repositories::BookCopyRecord> QtCatalogLookups::copiesForBook(std::int64_t bookId) const
+{
+    const auto copies = m_catalog.listCopies(bookId);
+    return copies ? copies.value() : std::vector<Repositories::BookCopyRecord>{};
+}
+
 QString QtCatalogLookups::resolveCoverPath(const QString& storedPath) const
 {
     return qs(m_catalog.resolveCoverPath(ss(storedPath)));

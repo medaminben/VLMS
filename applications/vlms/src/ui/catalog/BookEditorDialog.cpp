@@ -7,8 +7,9 @@
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 #include "ui/catalog/BookCopiesTable.h"
-#include "ui/catalog/CategoryManagerDialog.h"
+#include "ui/presentation/CatalogLookups.h"
 #include "ui/services/OcrService.h"
+#include "ui/workflows/DialogFactory.h"
 
 #include <QAbstractSpinBox>
 #include <QAction>
@@ -123,20 +124,23 @@ void showCoverPlaceholder(QLabel* label, const QSize& size)
 
 }  // namespace
 
-BookEditorDialog::BookEditorDialog(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
+BookEditorDialog::BookEditorDialog(VLMS::CatalogLookups& lookups, VLMS::OcrService& ocr, QWidget* parent)
     : QDialog(parent),
-      m_repository(repository) {
+      m_lookups(lookups),
+      m_ocr(ocr) {
     buildUi();
     populateCategories();
     populateLanguages();
     retranslateUi();
 }
 
-BookEditorDialog::BookEditorDialog(VLMS::Repositories::CatalogRepository& repository,
+BookEditorDialog::BookEditorDialog(VLMS::CatalogLookups& lookups,
+                                   VLMS::OcrService& ocr,
                                    const VLMS::Repositories::BookRecord& book,
                                    QWidget* parent)
     : QDialog(parent),
-      m_repository(repository),
+      m_lookups(lookups),
+      m_ocr(ocr),
       m_isEdit(true),
       m_bookId(book.id) {
     buildUi();
@@ -146,7 +150,15 @@ BookEditorDialog::BookEditorDialog(VLMS::Repositories::CatalogRepository& reposi
     retranslateUi();
 }
 
-BookEditorDialog::~BookEditorDialog() = default;
+BookEditorDialog::~BookEditorDialog()
+{
+    disconnect(&m_ocr, nullptr, this, nullptr);
+}
+
+void BookEditorDialog::setDialogFactory(VLMS::DialogFactory* dialogs)
+{
+    m_dialogs = dialogs;
+}
 
 void BookEditorDialog::buildUi() {
     setMinimumSize(980, 600);
@@ -182,15 +194,13 @@ void BookEditorDialog::buildUi() {
     m_form->addRow(makeFieldLabel(bookTab), m_titleEdit);
 
     m_authorEdit = new QLineEdit(bookTab);
-    const auto authors = m_repository.listAuthorNames();
-    auto* authorCompleter = new QCompleter(authors ? qsl(authors.value()) : QStringList(), this);
+    auto* authorCompleter = new QCompleter(m_lookups.authorNames(), this);
     authorCompleter->setCaseSensitivity(Qt::CaseInsensitive);
     m_authorEdit->setCompleter(authorCompleter);
     m_form->addRow(makeFieldLabel(bookTab), m_authorEdit);
 
     m_publisherEdit = new QLineEdit(bookTab);
-    const auto publishers = m_repository.listPublisherNames();
-    auto* publisherCompleter = new QCompleter(publishers ? qsl(publishers.value()) : QStringList(), this);
+    auto* publisherCompleter = new QCompleter(m_lookups.publisherNames(), this);
     publisherCompleter->setCaseSensitivity(Qt::CaseInsensitive);
     m_publisherEdit->setCompleter(publisherCompleter);
     m_form->addRow(makeFieldLabel(bookTab), m_publisherEdit);
@@ -295,8 +305,7 @@ void BookEditorDialog::buildUi() {
     m_ocrButton->setPopupMode(QToolButton::MenuButtonPopup);
     m_ocrButton->setMenu(new QMenu(m_ocrButton));
     connect(m_ocrButton, &QToolButton::clicked, this, &BookEditorDialog::readDescriptionFromImage);
-    m_ocr = new VLMS::OcrService(this);
-    connect(m_ocr, &VLMS::OcrService::textReady, this, &BookEditorDialog::appendRecognizedText);
+    connect(&m_ocr, &VLMS::OcrService::textReady, this, &BookEditorDialog::appendRecognizedText);
 
     m_coverButton = VLMS::makeSecondaryButton({});
     m_coverButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -320,7 +329,7 @@ void BookEditorDialog::buildUi() {
     auto* copiesColumn = new QVBoxLayout(copiesTab);
     copiesColumn->setContentsMargins(kContentSpacing, kContentSpacing, kContentSpacing, kContentSpacing);
     copiesColumn->setSpacing(10);
-    m_copies = new BookCopiesTable(m_repository, copiesTab);
+    m_copies = new BookCopiesTable(m_lookups, copiesTab);
     connect(m_copies, &BookCopiesTable::addRequested, this, [this]() {
         m_copies->addRow(selectedLanguageCode());
     });
@@ -448,8 +457,9 @@ void BookEditorDialog::retranslateUi()
 }
 
 void BookEditorDialog::manageCategories() {
-    CategoryManagerDialog dialog(m_repository, this);
-    dialog.exec();
+    if (m_dialogs != nullptr) {
+        (void)m_dialogs->manageCategories(this);
+    }
     // The list the combo shows may have grown or lost an entry; the current
     // pick is read and restored by populateCategories itself.
     populateCategories();
@@ -460,12 +470,7 @@ void BookEditorDialog::populateCategories() {
     m_categoryCombo->clear();
     m_categoryCombo->addItem(T("book.noneCategory"), 0);
 
-    const auto categories = m_repository.listAllCategories();
-    if (!categories) {
-        VLMS::showRepoError(this, categories.error());
-        return;
-    }
-    for (const VLMS::Repositories::CategoryRecord& category : categories.value()) {
+    for (const VLMS::Repositories::CategoryRecord& category : m_lookups.categories()) {
         const QString label = qs(category.label.empty() ? category.code : category.label);
         m_categoryCombo->addItem(QStringLiteral("%1 (%2)").arg(label, qs(category.code)),
                                  QVariant::fromValue(category.id));
@@ -722,7 +727,7 @@ QString BookEditorDialog::selectedOcrLanguages() const
 
 void BookEditorDialog::readDescriptionFromImage()
 {
-    m_ocr->start(this, m_coverDisplayPath, selectedOcrLanguages());
+    m_ocr.start(this, m_coverDisplayPath, selectedOcrLanguages());
 }
 
 
@@ -757,7 +762,7 @@ void BookEditorDialog::loadBook(const VLMS::Repositories::BookRecord& book) {
     loadCopies(book.id);
 
     if (!book.coverImagePath.empty()) {
-        const QString coverPath = qs(m_repository.resolveCoverPath(book.coverImagePath));
+        const QString coverPath = m_lookups.resolveCoverPath(qs(book.coverImagePath));
         m_coverButton->setText(QFileInfo(coverPath).fileName());
         updateCoverPreview(coverPath);
     } else {

@@ -4,9 +4,10 @@
 
 #include <QWidget>
 
-namespace VLMS::Repositories {
-class CatalogRepository;
-}  // namespace VLMS::Repositories
+namespace VLMS {
+class CatalogLookups;
+}
+
 class QPushButton;
 class QTableWidget;
 class WidgetTableChecks;
@@ -16,7 +17,7 @@ class BookCopiesTable final : public QWidget {
     Q_OBJECT
 
 public:
-    explicit BookCopiesTable(VLMS::Repositories::CatalogRepository& repository, QWidget* parent = nullptr);
+    explicit BookCopiesTable(VLMS::CatalogLookups& lookups, QWidget* parent = nullptr);
 
     void retranslateUi();
     void loadCopies(qint64 bookId);
@@ -37,7 +38,7 @@ private:
     void sizeCopyColumns();
     void removeSelectedRow();
 
-    VLMS::Repositories::CatalogRepository& m_repository;
+    VLMS::CatalogLookups& m_lookups;
     QTableWidget* m_table = nullptr;
     WidgetTableChecks* m_checks = nullptr;
     QPushButton* m_addButton = nullptr;

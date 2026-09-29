@@ -1,8 +1,8 @@
 #include "ui/catalog/BookCopiesTable.h"
 
 #include "ui/catalog/FreeLocalNumberDelegate.h"
+#include "ui/presentation/CatalogLookups.h"
 
-#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Result.h>
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
@@ -73,9 +73,9 @@ constexpr int kFreeNumberLimit = 100;
 
 }  // namespace
 
-BookCopiesTable::BookCopiesTable(VLMS::Repositories::CatalogRepository& repository, QWidget* parent)
+BookCopiesTable::BookCopiesTable(VLMS::CatalogLookups& lookups, QWidget* parent)
     : QWidget(parent),
-      m_repository(repository)
+      m_lookups(lookups)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -125,12 +125,7 @@ void BookCopiesTable::retranslateUi()
 void BookCopiesTable::loadCopies(const qint64 bookId)
 {
     m_table->setRowCount(0);
-    const auto copies = m_repository.listCopies(bookId);
-    if (!copies) {
-        VLMS::showRepoError(this, copies.error());
-        return;
-    }
-    for (const VLMS::Repositories::BookCopyRecord& copy : copies.value()) {
+    for (const VLMS::Repositories::BookCopyRecord& copy : m_lookups.copiesForBook(bookId)) {
         appendCopyRow(copy);
     }
     sizeCopyColumns();
@@ -140,23 +135,19 @@ void BookCopiesTable::loadCopies(const qint64 bookId)
 void BookCopiesTable::addRow(const QString& language)
 {
     VLMS::Repositories::BookCopyRecord copy;
-    std::string source;
-    std::string localId;
-    std::string globalCopyId;
-    m_repository.suggestCopyIdentifiers(ss(language), &source, &localId, &globalCopyId);
-    copy.source = source;
-    copy.localId = localId;
-    copy.globalCopyId = globalCopyId;
+    QString source;
+    QString localId;
+    QString globalCopyId;
+    m_lookups.suggestCopyIdentifiers(language, &source, &localId, &globalCopyId);
+    copy.source = ss(source);
+    copy.localId = ss(localId);
+    copy.globalCopyId = ss(globalCopyId);
 
     // The incremented number first -- it is what the cell opens on and what a
     // save uses if nobody touches the list. The gaps follow, capped: a
     // drop-down with 5,976 entries is not a choice, it is a haystack.
-    QStringList offered{qs(localId)};
-    if (const auto free = m_repository.listFreeLocalNumbers(source, kFreeNumberLimit)) {
-        for (const std::string& number : free.value()) {
-            offered.append(qs(number));
-        }
-    }
+    QStringList offered{localId};
+    offered.append(m_lookups.freeLocalNumbers(source, kFreeNumberLimit));
 
     appendCopyRow(copy);
     if (QTableWidgetItem* numberCell = m_table->item(m_table->rowCount() - 1, kCopyLocalId)) {

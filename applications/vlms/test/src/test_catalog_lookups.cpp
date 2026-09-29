@@ -98,3 +98,15 @@ TEST_F(CatalogLookupsTest, FreeLocalNumbersAndCoverPath)
     EXPECT_TRUE(resolved.contains(QStringLiteral("books/1/cover.jpg")));
     EXPECT_TRUE(m_lookups->resolveCoverPath(QString()).isEmpty());
 }
+
+TEST_F(CatalogLookupsTest, CopiesForBookForwardsFromRepository)
+{
+    BookSeed seed = uniqueBookSeed(4);
+    seed.initialCopyCount = 2;
+    const std::int64_t bookId = seedBook(*m_db, seed);
+    ASSERT_GT(bookId, 0);
+
+    const auto copies = m_lookups->copiesForBook(bookId);
+    EXPECT_EQ(copies.size(), 2u);
+    EXPECT_TRUE(m_lookups->copiesForBook(999999).empty());
+}

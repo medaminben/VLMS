@@ -22,6 +22,7 @@ public:
                                 QString* outSource,
                                 QString* outLocalId,
                                 QString* outGlobalCopyId) const override;
+    std::vector<Repositories::BookCopyRecord> copiesForBook(std::int64_t bookId) const override;
     QString resolveCoverPath(const QString& storedPath) const override;
 
 private:

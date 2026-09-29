@@ -2,6 +2,11 @@
 
 #include "ui/workflows/DialogFactory.h"
 
+namespace VLMS {
+class CatalogLookups;
+class OcrService;
+}
+
 namespace VLMS::Repositories {
 class CatalogRepository;
 class CirculationRepository;
@@ -14,7 +19,9 @@ class QtDialogFactory final : public DialogFactory {
 public:
     QtDialogFactory(Repositories::CatalogRepository& catalog,
                     Repositories::MemberRepository& members,
-                    Repositories::CirculationRepository& circulation);
+                    Repositories::CirculationRepository& circulation,
+                    CatalogLookups& catalogLookups,
+                    OcrService& ocr);
 
     std::optional<BookForm> addBook(QWidget* parent) override;
     std::optional<BookForm> editBook(QWidget* parent, const BookForm& initial) override;
@@ -37,6 +44,8 @@ private:
     Repositories::CatalogRepository& m_catalog;
     Repositories::MemberRepository& m_members;
     Repositories::CirculationRepository& m_circulation;
+    CatalogLookups& m_catalogLookups;
+    OcrService& m_ocr;
 };
 
 }  // namespace VLMS

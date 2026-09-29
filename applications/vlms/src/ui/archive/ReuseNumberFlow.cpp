@@ -85,6 +85,9 @@ namespace VLMS {
 
 bool runReuseNumberFlow(QWidget* parent,
                         Repositories::CatalogRepository& catalog,
+                        CatalogLookups& lookups,
+                        OcrService& ocr,
+                        DialogFactory* dialogs,
                         const Repositories::BookCopyRecord& archivedCopy)
 {
     ReuseBookChooser chooser(catalog, archivedCopy, parent);
@@ -100,10 +103,11 @@ bool runReuseNumberFlow(QWidget* parent,
             showRepoError(parent, book.error());
             return false;
         }
-        editor = std::make_unique<BookEditorDialog>(catalog, book.value(), parent);
+        editor = std::make_unique<BookEditorDialog>(lookups, ocr, book.value(), parent);
     } else {
-        editor = std::make_unique<BookEditorDialog>(catalog, parent);
+        editor = std::make_unique<BookEditorDialog>(lookups, ocr, parent);
     }
+    editor->setDialogFactory(dialogs);
     editor->reserveCopyNumber(archivedCopy);
     if (editor->exec() != QDialog::Accepted) {
         return false;

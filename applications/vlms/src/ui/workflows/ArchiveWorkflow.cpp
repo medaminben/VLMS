@@ -141,6 +141,8 @@ Core::Status purgeOne(Repositories::MemberRepository& members,
 ArchiveWorkflow::ArchiveWorkflow(Repositories::MemberRepository& members,
                                  Repositories::CatalogRepository& catalog,
                                  Repositories::CirculationRepository& circulation,
+                                 CatalogLookups& catalogLookups,
+                                 OcrService& ocr,
                                  DialogFactory& dialogs,
                                  ErrorPresenter& errors,
                                  DataEvents& events,
@@ -149,6 +151,8 @@ ArchiveWorkflow::ArchiveWorkflow(Repositories::MemberRepository& members,
     : m_members(members)
     , m_catalog(catalog)
     , m_circulation(circulation)
+    , m_catalogLookups(catalogLookups)
+    , m_ocr(ocr)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
@@ -273,7 +277,7 @@ Core::Status ArchiveWorkflow::reuseNumber(QWidget* parent, qint64 copyId)
         return Core::Status::ok();
     }
 
-    if (!runReuseNumberFlow(parent, m_catalog, found)) {
+    if (!runReuseNumberFlow(parent, m_catalog, m_catalogLookups, m_ocr, &m_dialogs, found)) {
         return Core::Status::ok();
     }
     m_events.emitChanged(Entity::Copies | Entity::Books, {copyId});

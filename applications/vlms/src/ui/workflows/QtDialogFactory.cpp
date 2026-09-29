@@ -31,16 +31,21 @@ BookForm bookFormFromDialog(const BookEditorDialog& dialog)
 
 QtDialogFactory::QtDialogFactory(Repositories::CatalogRepository& catalog,
                                  Repositories::MemberRepository& members,
-                                 Repositories::CirculationRepository& circulation)
+                                 Repositories::CirculationRepository& circulation,
+                                 CatalogLookups& catalogLookups,
+                                 OcrService& ocr)
     : m_catalog(catalog)
     , m_members(members)
     , m_circulation(circulation)
+    , m_catalogLookups(catalogLookups)
+    , m_ocr(ocr)
 {
 }
 
 std::optional<BookForm> QtDialogFactory::addBook(QWidget* parent)
 {
-    BookEditorDialog dialog(m_catalog, parent);
+    BookEditorDialog dialog(m_catalogLookups, m_ocr, parent);
+    dialog.setDialogFactory(this);
     if (dialog.exec() != QDialog::Accepted) {
         return std::nullopt;
     }
@@ -64,7 +69,8 @@ std::optional<BookForm> QtDialogFactory::editBook(QWidget* parent, const BookFor
     book.dimensions = initial.book.dimensions;
     book.language = initial.book.language;
     book.description = initial.book.description;
-    BookEditorDialog dialog(m_catalog, book, parent);
+    BookEditorDialog dialog(m_catalogLookups, m_ocr, book, parent);
+    dialog.setDialogFactory(this);
     if (dialog.exec() != QDialog::Accepted) {
         return std::nullopt;
     }

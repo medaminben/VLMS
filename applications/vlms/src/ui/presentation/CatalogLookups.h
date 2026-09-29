@@ -6,6 +6,7 @@
 #include <QString>
 #include <QStringList>
 
+#include <cstdint>
 #include <vector>
 
 namespace VLMS {
@@ -27,6 +28,8 @@ public:
                                         QString* outSource,
                                         QString* outLocalId,
                                         QString* outGlobalCopyId) const = 0;
+    /// Live copies for a book (empty on error / unknown id).
+    virtual std::vector<Repositories::BookCopyRecord> copiesForBook(std::int64_t bookId) const = 0;
     virtual QString resolveCoverPath(const QString& storedPath) const = 0;
 };
 

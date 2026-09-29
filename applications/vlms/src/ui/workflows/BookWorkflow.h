@@ -12,11 +12,13 @@ class QWidget;
 namespace VLMS {
 
 class BulkRunner;
+class CatalogLookups;
 class DataEvents;
 class LoanWorkflow;
 class DialogFactory;
 class ErrorPresenter;
 class Navigator;
+class OcrService;
 
 namespace Repositories {
 class CatalogRepository;
@@ -27,6 +29,8 @@ class BookWorkflow {
 public:
     BookWorkflow(Repositories::CatalogRepository& catalog,
                  Repositories::CirculationRepository& circulation,
+                 CatalogLookups& lookups,
+                 OcrService& ocr,
                  DialogFactory& dialogs,
                  ErrorPresenter& errors,
                  DataEvents& events,
@@ -43,6 +47,8 @@ public:
 private:
     Repositories::CatalogRepository& m_catalog;
     Repositories::CirculationRepository& m_circulation;
+    CatalogLookups& m_lookups;
+    OcrService& m_ocr;
     DialogFactory& m_dialogs;
     ErrorPresenter& m_errors;
     DataEvents& m_events;

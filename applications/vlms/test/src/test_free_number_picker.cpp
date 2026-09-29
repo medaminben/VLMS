@@ -4,6 +4,7 @@
 
 #include "ui/catalog/BookCopiesTable.h"
 #include "ui/catalog/FreeLocalNumberDelegate.h"
+#include "ui/presentation/QtCatalogLookups.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Locale.h>
@@ -33,11 +34,13 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtCatalogLookups>(*m_catalog);
     }
 
     void TearDown() override
     {
         m_table.reset();
+        m_lookups.reset();
         m_catalog.reset();
         m_db.reset();
     }
@@ -62,13 +65,14 @@ protected:
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<QtCatalogLookups> m_lookups;
     std::unique_ptr<BookCopiesTable> m_table;
 };
 
 TEST_F(test_ui_FreeNumberPicker, ANewRowOpensOnTheNextNumberAndOffersTheGapsBehindIt)
 {
     seedArabicGap();
-    m_table = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_table = std::make_unique<BookCopiesTable>(*m_lookups);
     m_table->addRow(QStringLiteral("ar"));
 
     QTableWidget* grid = gridOf(m_table.get());
@@ -88,7 +92,7 @@ TEST_F(test_ui_FreeNumberPicker, ANewRowOpensOnTheNextNumberAndOffersTheGapsBehi
 TEST_F(test_ui_FreeNumberPicker, TheEditorIsAComboOfThoseNumbersAndStillTakesATypedOne)
 {
     seedArabicGap();
-    m_table = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_table = std::make_unique<BookCopiesTable>(*m_lookups);
     m_table->addRow(QStringLiteral("ar"));
 
     QTableWidget* grid = gridOf(m_table.get());
@@ -138,7 +142,7 @@ TEST_F(test_ui_FreeNumberPicker, ARowLoadedFromTheDatabaseGetsNoDropDown)
     seed.language = "ar";
     seed.initialCopyCount = 1;
     const std::int64_t bookId = seedBook(*m_db, seed);
-    m_table = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_table = std::make_unique<BookCopiesTable>(*m_lookups);
     m_table->loadCopies(bookId);
 
     QTableWidget* grid = gridOf(m_table.get());

@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/catalog/BookEditorDialog.h"
+#include "ui/presentation/QtCatalogLookups.h"
 #include "ui/services/OcrService.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -39,10 +40,14 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
             std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtCatalogLookups>(*m_repository);
+        m_ocr = std::make_unique<OcrService>();
     }
 
     void TearDown() override
     {
+        m_ocr.reset();
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
@@ -91,11 +96,13 @@ protected:
         if (!book) {
             return nullptr;
         }
-        return std::make_unique<BookEditorDialog>(*m_repository, book.value());
+        return std::make_unique<BookEditorDialog>(*m_lookups, *m_ocr, book.value());
     }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_repository;
+    std::unique_ptr<QtCatalogLookups> m_lookups;
+    std::unique_ptr<OcrService> m_ocr;
     int m_seedIndex = 0;
 };
 

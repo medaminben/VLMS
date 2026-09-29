@@ -6,6 +6,12 @@
 
 #include <string>
 
+namespace VLMS {
+class CatalogLookups;
+class DialogFactory;
+class OcrService;
+}
+
 namespace VLMS::Repositories {
 class CatalogRepository;
 }  // namespace VLMS::Repositories
@@ -43,6 +49,9 @@ namespace VLMS {
 /// still holds its number.
 bool runReuseNumberFlow(QWidget* parent,
                         Repositories::CatalogRepository& catalog,
+                        CatalogLookups& lookups,
+                        OcrService& ocr,
+                        DialogFactory* dialogs,
                         const Repositories::BookCopyRecord& archivedCopy);
 
 }  // namespace VLMS

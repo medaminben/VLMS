@@ -25,6 +25,8 @@ namespace VLMS {
 
 BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
                            Repositories::CirculationRepository& circulation,
+                           CatalogLookups& lookups,
+                           OcrService& ocr,
                            DialogFactory& dialogs,
                            ErrorPresenter& errors,
                            DataEvents& events,
@@ -33,6 +35,8 @@ BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
                            LoanWorkflow& loans)
     : m_catalog(catalog)
     , m_circulation(circulation)
+    , m_lookups(lookups)
+    , m_ocr(ocr)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
@@ -80,7 +84,8 @@ Core::Status BookWorkflow::edit(QWidget* parent, qint64 bookId)
 
     // Phase 2: DialogFactory::editBook still rebuilds from BookInput only; open
     // the existing editor with the full record so copies and cover load.
-    BookEditorDialog dialog(m_catalog, book.value(), parent);
+    BookEditorDialog dialog(m_lookups, m_ocr, book.value(), parent);
+    dialog.setDialogFactory(&m_dialogs);
     if (dialog.exec() != QDialog::Accepted) {
         return Core::Status::ok();
     }

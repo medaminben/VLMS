@@ -6,6 +6,8 @@
 #include "ui/catalog/BookCopiesTable.h"
 #include "ui/catalog/BookEditorDialog.h"
 #include "ui/presentation/BookListSpec.h"
+#include "ui/presentation/QtCatalogLookups.h"
+#include "ui/services/OcrService.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -90,10 +92,15 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_lookups = std::make_unique<QtCatalogLookups>(*m_catalog);
+        m_ocr = std::make_unique<OcrService>();
     }
 
     void TearDown() override
     {
+        m_ocr.reset();
+        m_lookups.reset();
+        m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
     }
@@ -117,6 +124,8 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<QtCatalogLookups> m_lookups;
+    std::unique_ptr<OcrService> m_ocr;
 };
 
 TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
@@ -154,7 +163,7 @@ TEST_F(test_ui_ArchiveCatalog, AReservedRowCarriesTheNumberAndCannotBeEdited)
     copy.localId = "7";
     copy.globalCopyId = "AR-7";
 
-    BookEditorDialog dialog(*m_catalog);
+    BookEditorDialog dialog(*m_lookups, *m_ocr);
     dialog.reserveCopyNumber(copy);
 
     const auto inputs = dialog.copyInputs();
@@ -186,7 +195,7 @@ TEST_F(test_ui_ArchiveCatalog, AReservedRowCannotBeRemoved)
     copy.localId = "7";
     copy.globalCopyId = "AR-7";
 
-    BookEditorDialog dialog(*m_catalog);
+    BookEditorDialog dialog(*m_lookups, *m_ocr);
     dialog.reserveCopyNumber(copy);
 
     auto* copies = dialog.findChild<BookCopiesTable*>();
@@ -230,7 +239,7 @@ TEST_F(test_ui_ArchiveCatalog, CancellingReuseLeavesTheArchivedNumberInPlace)
     ASSERT_FALSE(copy.localId.empty());
 
     rejectNextDialog();
-    EXPECT_FALSE(VLMS::runReuseNumberFlow(nullptr, *m_catalog, copy));
+    EXPECT_FALSE(VLMS::runReuseNumberFlow(nullptr, *m_catalog, *m_lookups, *m_ocr, nullptr, copy));
     EXPECT_EQ(m_db->scalar("SELECT local_id FROM book_copies WHERE id = " + std::to_string(copy.id))
                   .toString(),
               copy.localId);

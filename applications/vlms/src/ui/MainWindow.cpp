@@ -258,13 +258,15 @@ void MainWindow::buildUi() {
             m_app.circulation(), *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk);
         m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
-            m_app.catalog(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
+            m_app.catalog(), m_app.circulation(), m_app.catalogLookups(), m_app.ocr(),
+            *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
         m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
             m_app.members(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
         m_archiveWorkflow = std::make_unique<VLMS::ArchiveWorkflow>(
-            m_app.members(), m_app.catalog(), m_app.circulation(), *m_app.dialogs(),
+            m_app.members(), m_app.catalog(), m_app.circulation(),
+            m_app.catalogLookups(), m_app.ocr(), *m_app.dialogs(),
             m_app.errors(), m_app.dataEvents(), *this, *m_bulk);
         m_memberListSpec =
             std::make_unique<VLMS::MemberListSpec>(m_app.members(), *m_memberWorkflow);
