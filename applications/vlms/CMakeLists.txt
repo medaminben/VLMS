@@ -57,6 +57,8 @@ add_library(vlms_ui STATIC
     src/ui/presentation/ArchivedCopySpec.cpp
     src/ui/presentation/ArchivedLoanSpec.cpp
     src/ui/presentation/QtCatalogLookups.cpp
+    src/ui/presentation/QtMemberLookups.cpp
+    src/ui/presentation/QtCirculationLookups.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -125,6 +127,10 @@ add_library(vlms_ui STATIC
     src/ui/presentation/ArchivedLoanSpec.h
     src/ui/presentation/CatalogLookups.h
     src/ui/presentation/QtCatalogLookups.h
+    src/ui/presentation/MemberLookups.h
+    src/ui/presentation/QtMemberLookups.h
+    src/ui/presentation/CirculationLookups.h
+    src/ui/presentation/QtCirculationLookups.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
