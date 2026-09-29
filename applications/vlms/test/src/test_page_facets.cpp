@@ -10,6 +10,7 @@
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/members/MembersPage.h"
 #include "ui/workflows/Navigator.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -124,8 +125,8 @@ protected:
 
 TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 {
-    VLMS::FakeNavigator navigator;
-    MembersPage page(*m_members, *m_circulation, navigator);
+    MemberWorkflowHarness workflows(*m_members, *m_circulation);
+    MembersPage page(*m_members, *m_circulation, workflows.navigator, *workflows.members);
     auto* filters = named<QWidget>(&page, "memberFilters");
     ASSERT_NE(filters, nullptr);
     EXPECT_TRUE(filters->findChildren<QLabel*>().isEmpty())
@@ -359,8 +360,8 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
 
 TEST_F(test_ui_PageFacets, MembersYearIsStillTheYearOfRegistration)
 {
-    VLMS::FakeNavigator navigator;
-    MembersPage page(*m_members, *m_circulation, navigator);
+    MemberWorkflowHarness workflows(*m_members, *m_circulation);
+    MembersPage page(*m_members, *m_circulation, workflows.navigator, *workflows.members);
     auto* years = named<QListWidget>(&page, "yearFilter");
     ASSERT_NE(years, nullptr);
     EXPECT_EQ(years->item(0)->text(), VLMS::T("members.allYears"));

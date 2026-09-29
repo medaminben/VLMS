@@ -3,6 +3,7 @@
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/BookWorkflow.h"
+#include "ui/workflows/MemberWorkflow.h"
 
 #include "Application.h"
 #include <VLMS/Core/Clock.h>
@@ -205,7 +206,11 @@ void MainWindow::buildUi() {
         m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
             m_app.catalog(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk);
-        m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this, m_stack);
+        m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
+            m_app.members(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
+            m_app.dataEvents(), *this, *m_bulk);
+        m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this,
+                                        *m_memberWorkflow, m_stack);
         m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
         m_circulationPage =
             new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(), m_stack);

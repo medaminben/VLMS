@@ -28,3 +28,23 @@ struct BookWorkflowHarness {
             catalog, circulation, dialogs, errors, events, navigator, *bulk);
     }
 };
+
+#include "ui/workflows/MemberWorkflow.h"
+#include <VLMS/Repositories/MemberRepository.h>
+
+struct MemberWorkflowHarness {
+    VLMS::FakeDialogFactory dialogs;
+    VLMS::FakeErrorPresenter errors;
+    VLMS::DataEvents events;
+    VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::BulkRunner> bulk;
+    std::unique_ptr<VLMS::MemberWorkflow> members;
+
+    MemberWorkflowHarness(VLMS::Repositories::MemberRepository& memberRepo,
+                          VLMS::Repositories::CirculationRepository& circulation)
+    {
+        bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
+        members = std::make_unique<VLMS::MemberWorkflow>(
+            memberRepo, circulation, dialogs, errors, events, navigator, *bulk);
+    }
+};

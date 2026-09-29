@@ -48,6 +48,7 @@ add_library(vlms_ui STATIC
     src/ui/workflows/QtDialogFactory.cpp
     src/ui/workflows/BulkRunner.cpp
     src/ui/workflows/BookWorkflow.cpp
+    src/ui/workflows/MemberWorkflow.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -100,6 +101,7 @@ add_library(vlms_ui STATIC
     src/ui/workflows/FakeDialogFactory.h
     src/ui/workflows/BulkRunner.h
     src/ui/workflows/BookWorkflow.h
+    src/ui/workflows/MemberWorkflow.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

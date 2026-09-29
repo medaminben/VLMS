@@ -1,6 +1,7 @@
 #include "ui/members/MembersPage.h"
 
 #include "ui/workflows/Navigator.h"
+#include "ui/workflows/MemberWorkflow.h"
 
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
@@ -80,11 +81,13 @@ QStringList memberDetailLabelKeys() {
 MembersPage::MembersPage(VLMS::Repositories::MemberRepository& repository,
                          VLMS::Repositories::CirculationRepository& circulationRepository,
                          VLMS::Navigator& navigator,
+                         VLMS::MemberWorkflow& members,
                          QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
       m_navigator(navigator),
-      m_circulationRepository(circulationRepository) {
+      m_circulationRepository(circulationRepository),
+      m_membersWorkflow(members) {
     buildUi();
     retranslateUi();
 }
@@ -354,24 +357,7 @@ void MembersPage::onSelectionChanged() {
 }
 
 void MembersPage::showLoanHistory() {
-    const qint64 memberId = selectedMemberId();
-    if (memberId <= 0) {
-        return;
-    }
-
-    const auto member = m_repository.getMember(memberId);
-    if (!member.has_value()) {
-        return;
-    }
-
-    const QString fullName =
-        QStringLiteral("%1 %2").arg(qs(member->firstName), qs(member->lastName)).trimmed();
-
-    MemberLoansDialog dialog(m_circulationRepository, memberId, fullName, this);
-    dialog.exec();
-    // A loan made in there changes the member's loan count behind it.
-    refreshMembers();
-    selectMemberId(memberId);
+    (void)m_membersWorkflow.showLoans(this, selectedMemberId());
 }
 
 void MembersPage::clearMemberDetails() {
@@ -474,145 +460,48 @@ void MembersPage::updatePreview(const VLMS::Repositories::MemberRecord& member) 
 }
 
 void MembersPage::addMember() {
-    MemberEditorDialog dialog(m_repository, this);
-    if (dialog.exec() != QDialog::Accepted) {
+    if (!m_membersWorkflow.add(this)) {
         return;
     }
-
-    VLMS::Repositories::MemberWrite write;
-    write.member = dialog.memberInput();
-    if (dialog.photoChanged()) {
-        write.photoSourcePath = ss(dialog.photoSourcePath());
-    }
-    if (dialog.idImageChanged()) {
-        write.idImageSourcePath = ss(dialog.idImageSourcePath());
-    }
-    write.clearPhoto = dialog.photoRemoved();
-    write.clearIdImage = dialog.idImageRemoved();
-    if (const auto created = m_repository.saveNewMember(write); !created) {
-        VLMS::showRepoError(this, created.error());
-        return;
-    }
-
     refreshAllFilters();
     refreshMembers();
 }
 
 void MembersPage::editMember() {
-    const qint64 memberId = selectedMemberId();
-    if (memberId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("members.editMember"),
-            T("members.selectMemberFirst"));
+    if (!m_membersWorkflow.edit(this, selectedMemberId())) {
         return;
     }
-
-    const auto member = m_repository.getMember(memberId);
-    if (!member) {
-        VLMS::showRepoError(this, member.error());
-        return;
-    }
-
-    MemberEditorDialog dialog(m_repository, member.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    VLMS::Repositories::MemberWrite write;
-    write.member = dialog.memberInput();
-    if (dialog.photoChanged()) {
-        write.photoSourcePath = ss(dialog.photoSourcePath());
-    }
-    if (dialog.idImageChanged()) {
-        write.idImageSourcePath = ss(dialog.idImageSourcePath());
-    }
-    write.clearPhoto = dialog.photoRemoved();
-    write.clearIdImage = dialog.idImageRemoved();
-    if (const auto saved = m_repository.saveExistingMember(memberId, write); !saved) {
-        VLMS::showRepoError(this, saved.error());
-        return;
-    }
-
     refreshAllFilters();
     refreshMembers();
 }
 
 void MembersPage::deleteMember() {
+    QList<qint64> ids;
+    QList<QString> labels;
     if (!m_checks->checkedIds().isEmpty()) {
-        QList<BulkRow> rows;
         for (const int row : m_checks->checkedRows()) {
             const QTableWidgetItem* item = m_membersTable->item(row, 0);
             const QTableWidgetItem* name = m_membersTable->item(row, 1);
             if (item == nullptr) {
                 continue;
             }
-            BulkRow bulk;
-            bulk.id = item->data(Qt::UserRole).toLongLong();
-            bulk.row = row;
-            bulk.label = name != nullptr ? name->text() : item->text();
-            rows.append(bulk);
+            ids.append(item->data(Qt::UserRole).toLongLong());
+            labels.append(name != nullptr ? name->text() : item->text());
         }
-        BulkActionTexts texts;
-        texts.title = T("members.deleteMember");
-        texts.verb = T("bulk.verb.archive");
-        texts.passive = T("bulk.passive.archive");
-        texts.noun = T("bulk.noun.members");
-        const int done = runBulkAction(
-            this, texts, rows,
-            [this](const BulkRow& bulk) { return m_repository.canArchiveMember(bulk.id); },
-            [this](const BulkRow& bulk) { return m_repository.archiveMember(bulk.id); });
-        if (done > 0) {
-            refreshAllFilters();
-            refreshMembers();
+    } else {
+        const qint64 memberId = selectedMemberId();
+        if (memberId > 0) {
+            ids.append(memberId);
+            if (const auto member = m_repository.getMember(memberId)) {
+                labels.append(qs(member->fullName.empty()
+                                     ? member->firstName + " " + member->lastName
+                                     : member->fullName));
+            }
         }
+    }
+    if (!m_membersWorkflow.archive(this, ids, labels)) {
         return;
     }
-
-    const qint64 memberId = selectedMemberId();
-    if (memberId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("members.deleteMember"),
-            T("members.selectMemberFirst"));
-        return;
-    }
-
-    const QString title = T("members.deleteMember");
-
-    // Asked before the confirmation rather than after it: what the librarian is
-    // about to be offered depends on the answer, and being asked "delete this
-    // member?" only to be told afterwards that it was never possible is the
-    // long way round to the same no.
-    const auto block = m_repository.removalBlock(memberId);
-    if (!block) {
-        VLMS::showRepoError(this, block.error());
-        return;
-    }
-    if (block.value() == VLMS::Repositories::MemberRepository::MemberRemovalBlock::OpenLoans) {
-        if (VLMS::showWarningWithAction(
-                this,
-                title,
-                T("members.deleteBlockedByLoans"),
-                T("members.goToLoans"))) {
-            const auto member = m_repository.getMember(memberId);
-            m_navigator.showMemberLoans(member ? qs(member->membershipNumber) : QString());
-        }
-        return;
-    }
-
-    if (!VLMS::askYesNo(this, title, T("members.deleteConfirm"))) {
-        return;
-    }
-
-    // Delete archives, always. Destroying the record is the Archive's, behind
-    // its own button and its own gate -- so a member with borrowing history is
-    // no longer a special case here.
-    if (const auto archived = m_repository.archiveMember(memberId); !archived) {
-        VLMS::showRepoError(this, archived.error());
-        return;
-    }
-
     refreshAllFilters();
     refreshMembers();
 }

@@ -22,6 +22,7 @@ class QLabel;
 
 namespace VLMS {
 class MemberFacetFilters;
+class MemberWorkflow;
 class Navigator;
 class TablePager;
 }
@@ -33,6 +34,7 @@ public:
     explicit MembersPage(VLMS::Repositories::MemberRepository& repository,
                          VLMS::Repositories::CirculationRepository& circulationRepository,
                          VLMS::Navigator& navigator,
+                         VLMS::MemberWorkflow& members,
                          QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -71,6 +73,7 @@ private:
     VLMS::Repositories::MemberRepository& m_repository;
     VLMS::Navigator& m_navigator;
     VLMS::Repositories::CirculationRepository& m_circulationRepository;
+    VLMS::MemberWorkflow& m_membersWorkflow;
 
     QLineEdit* m_searchEdit = nullptr;
     QPushButton* m_loansButton = nullptr;

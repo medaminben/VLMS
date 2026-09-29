@@ -3,6 +3,7 @@
 
 #include "ui/members/MembersPage.h"
 #include "ui/workflows/Navigator.h"
+#include "WorkflowTestSupport.h"
 #include "ui/TablePager.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -57,6 +58,7 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     VLMS::FakeNavigator m_navigator;
+    std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
     std::unique_ptr<MembersPage> m_page;
 };
 
@@ -71,7 +73,8 @@ TEST_F(test_ui_MemberSort, ClickingNumberHeaderSortsAscendingThenDescending)
     early.lastName = "Zzz";
     ASSERT_GT(seedMemberWithNumber(early), 0);
 
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 2);
@@ -91,7 +94,8 @@ TEST_F(test_ui_MemberSort, NoSelectionReturnsToPageOne)
         seed.lastName = std::string(1, static_cast<char>('E' - i));
         ASSERT_GT(seedMemberWithNumber(seed), 0);
     }
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
     auto* table = m_page->findChild<QTableWidget*>();
     auto* pager = m_page->findChild<VLMS::TablePager*>();
     ASSERT_NE(table, nullptr);
@@ -118,7 +122,8 @@ TEST_F(test_ui_MemberSort, SelectedRowKeepsFocusAcrossPages)
             firstId = id;
         }
     }
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
     auto* table = m_page->findChild<QTableWidget*>();
     auto* pager = m_page->findChild<VLMS::TablePager*>();
     ASSERT_NE(table, nullptr);

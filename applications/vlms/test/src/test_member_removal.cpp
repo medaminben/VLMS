@@ -5,6 +5,7 @@
 
 #include "ui/members/MembersPage.h"
 #include "ui/workflows/Navigator.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
@@ -88,7 +89,8 @@ protected:
                                 returnedAt.toStdString()),
                   0);
 
-        m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
         selectFirstMember(m_page.get());
     }
 
@@ -96,6 +98,7 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     VLMS::FakeNavigator m_navigator;
+    std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
     std::unique_ptr<MembersPage> m_page;
     qint64 m_memberId = 0;
 };
@@ -105,7 +108,7 @@ TEST_F(test_ui_MemberRemoval, OpenLoansOfferGoToLoansAndEmitTheMembershipNumber)
     seedMemberWithLoan({});
 
     // Navigator records the jump; no page signal anymore.
-    const int before = m_navigator.showMemberLoansCount;
+    const int before = m_memberWorkflows->navigator.showMemberLoansCount;
     const QString screenshot = qEnvironmentVariable("VLMS_TEST_SHOT_DIR").isEmpty()
         ? QString()
         : QDir(qEnvironmentVariable("VLMS_TEST_SHOT_DIR")).filePath(QStringLiteral("blocked-by-loans.png"));
@@ -118,8 +121,8 @@ TEST_F(test_ui_MemberRemoval, OpenLoansOfferGoToLoansAndEmitTheMembershipNumber)
     EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteBlockedByLoans")));
     EXPECT_FALSE(outcome.hasCheckBox);
     EXPECT_EQ(outcome.buttonLabels.filter(qs(Core::Strings::t("members.goToLoans"))).size(), 1);
-    EXPECT_EQ(m_navigator.showMemberLoansCount, before + 1);
-    EXPECT_EQ(m_navigator.lastMembershipNumber,
+    EXPECT_EQ(m_memberWorkflows->navigator.showMemberLoansCount, before + 1);
+    EXPECT_EQ(m_memberWorkflows->navigator.lastMembershipNumber,
               QString::fromStdString(m_members->getMember(m_memberId)->membershipNumber));
     EXPECT_EQ(m_db->count("members"), 1);
 }
@@ -215,7 +218,8 @@ TEST_F(test_ui_MemberRemoval, TwoTickedMembersAreArchivedAndTheHighlightedThirdS
     const qint64 first = seedMember(*m_db, uniqueMemberSeed(10));
     const qint64 second = seedMember(*m_db, uniqueMemberSeed(11));
     const qint64 highlighted = seedMember(*m_db, uniqueMemberSeed(12));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     for (int row = 0; row < table->rowCount(); ++row) {
@@ -244,7 +248,8 @@ TEST_F(test_ui_MemberRemoval, ATickedMemberWithABookOutStaysWhileTheOtherIsArchi
     ASSERT_GT(rawInsertLoan(*m_db, blocked, copyIdsOf(*m_db, bookId).front(), "2026-09-01",
                             "2026-09-15"),
               0);
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator);
+    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     tickMember(table, blocked);

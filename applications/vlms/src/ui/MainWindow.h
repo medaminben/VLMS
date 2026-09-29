@@ -21,6 +21,7 @@ class QVBoxLayout;
 namespace VLMS {
 class BookWorkflow;
 class BulkRunner;
+class MemberWorkflow;
 class ClickableLabel;
 class LanguageSelector;
 }
@@ -82,4 +83,5 @@ private:
 
     std::unique_ptr<VLMS::BulkRunner> m_bulk;
     std::unique_ptr<VLMS::BookWorkflow> m_bookWorkflow;
+    std::unique_ptr<VLMS::MemberWorkflow> m_memberWorkflow;
 };
