@@ -140,20 +140,24 @@ Application::Application(int& argc, char** argv)
     m_metricsRepository = new VLMS::Repositories::MetricsRepository(m_database->session());
 
     m_catalogLookups = std::make_unique<VLMS::QtCatalogLookups>(*m_catalogRepository);
+    m_memberLookups = std::make_unique<VLMS::QtMemberLookups>(*m_memberRepository);
+    m_circulationLookups = std::make_unique<VLMS::QtCirculationLookups>(*m_circulationRepository);
     m_ocr = std::make_unique<VLMS::OcrService>();
     m_dialogs = std::make_unique<VLMS::QtDialogFactory>(*m_catalogRepository,
-                                                        *m_memberRepository,
-                                                        *m_circulationRepository,
                                                         *m_catalogLookups,
+                                                        *m_memberLookups,
+                                                        *m_circulationLookups,
                                                         *m_ocr);
 }
 
 Application::~Application() {
-    // Factories first (they only hold repository refs), then lookups/ocr,
+    // Factories first (they only hold repository/lookups refs), then lookups/ocr,
     // then repositories, then Connection. DataEvents and ErrorPresenter
     // outlive the window.
     m_dialogs.reset();
     m_ocr.reset();
+    m_circulationLookups.reset();
+    m_memberLookups.reset();
     m_catalogLookups.reset();
 
     delete m_metricsRepository;

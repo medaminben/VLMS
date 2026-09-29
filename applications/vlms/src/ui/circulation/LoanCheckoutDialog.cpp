@@ -1,5 +1,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 
+#include "ui/presentation/CirculationLookups.h"
+
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Repositories/LoanPolicy.h>
 #include <VLMS/Core/Strings.h>
@@ -44,11 +46,11 @@ QString copyOptionLabel(const VLMS::Repositories::LoanCopyOption& copy) {
 
 }  // namespace
 
-LoanCheckoutDialog::LoanCheckoutDialog(VLMS::Repositories::CirculationRepository& repository,
+LoanCheckoutDialog::LoanCheckoutDialog(VLMS::CirculationLookups& lookups,
                                        const LoanScope& scope,
                                        QWidget* parent)
     : QDialog(parent),
-      m_repository(repository),
+      m_lookups(lookups),
       m_scope(scope) {
     buildUi();
     refreshMembers();
@@ -202,12 +204,7 @@ void LoanCheckoutDialog::refreshMembers() {
     const qint64 currentId = m_memberCombo->currentData().toLongLong();
     m_memberCombo->clear();
 
-    const auto membersResult = m_repository.listBorrowableMembers(ss(m_memberSearchEdit->text()));
-    if (!membersResult) {
-        VLMS::showRepoError(this, membersResult.error());
-        return;
-    }
-    const auto& members = membersResult.value();
+    const auto members = m_lookups.borrowableMembers(m_memberSearchEdit->text());
     if (members.empty()) {
         m_memberCombo->addItem(T("loan.noMembers"), 0);
         return;
@@ -227,14 +224,8 @@ void LoanCheckoutDialog::refreshCopies() {
     const qint64 currentId = m_copyCombo->currentData().toLongLong();
     m_copyCombo->clear();
 
-    const std::string search =
-        m_copySearchEdit == nullptr ? std::string() : ss(m_copySearchEdit->text());
-    const auto copiesResult = m_repository.listAvailableCopies(search, m_scope.bookId);
-    if (!copiesResult) {
-        VLMS::showRepoError(this, copiesResult.error());
-        return;
-    }
-    const auto& copies = copiesResult.value();
+    const QString search = m_copySearchEdit == nullptr ? QString() : m_copySearchEdit->text();
+    const auto copies = m_lookups.availableCopies(search, m_scope.bookId);
     if (copies.empty()) {
         // Every copy is out. The dialog still opens and says so — the history
         // behind it names who holds each one.

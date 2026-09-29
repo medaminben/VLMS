@@ -2,6 +2,7 @@
 
 #include "ui/members/BirthDateEdit.h"
 #include "ui/ImageViewerDialog.h"
+#include "ui/presentation/MemberLookups.h"
 
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Strings.h>
@@ -86,24 +87,24 @@ MemberEditorDialog::ImageFilePicker& imageFilePicker()
 
 }  // namespace
 
-MemberEditorDialog::MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, QWidget* parent)
+MemberEditorDialog::MemberEditorDialog(VLMS::MemberLookups& lookups, QWidget* parent)
     : QDialog(parent),
-      m_repository(repository) {
+      m_lookups(lookups) {
     buildUi();
     populateStatuses();
     populateSexes();
-    m_numberLabel->setText(qs(m_repository.suggestMembershipNumber()));
+    m_numberLabel->setText(m_lookups.suggestMembershipNumber());
     retranslateUi();
     connect(m_statusCombo, &QComboBox::currentIndexChanged,
             this, &MemberEditorDialog::updateActiveUntil);
     updateActiveUntil();
 }
 
-MemberEditorDialog::MemberEditorDialog(VLMS::Repositories::MemberRepository& repository,
+MemberEditorDialog::MemberEditorDialog(VLMS::MemberLookups& lookups,
                                        const VLMS::Repositories::MemberRecord& member,
                                        QWidget* parent)
     : QDialog(parent),
-      m_repository(repository),
+      m_lookups(lookups),
       m_isEdit(true),
       m_memberId(member.id) {
     buildUi();
@@ -656,7 +657,7 @@ void MemberEditorDialog::loadMember(const VLMS::Repositories::MemberRecord& memb
     }
 
     if (!member.photoPath.empty()) {
-        const QString photoPath = qs(m_repository.resolveImagePath(member.photoPath));
+        const QString photoPath = m_lookups.resolveImagePath(qs(member.photoPath));
         m_photoButton->setText(QFileInfo(photoPath).fileName());
         updatePhotoPreview(photoPath);
     } else {
@@ -664,7 +665,7 @@ void MemberEditorDialog::loadMember(const VLMS::Repositories::MemberRecord& memb
     }
 
     if (!member.idImagePath.empty()) {
-        const QString idPath = qs(m_repository.resolveImagePath(member.idImagePath));
+        const QString idPath = m_lookups.resolveImagePath(qs(member.idImagePath));
         m_idImageButton->setText(QFileInfo(idPath).fileName());
         updateIdImagePreview(idPath);
     } else {

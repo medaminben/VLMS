@@ -1,10 +1,13 @@
 #pragma once
 
-#include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Repositories/LoanTypes.h>
 
 #include <QDialog>
 #include <QString>
+
+namespace VLMS {
+class CirculationLookups;
+}
 
 class QComboBox;
 class QDateEdit;
@@ -26,9 +29,9 @@ class LoanCheckoutDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    LoanCheckoutDialog(VLMS::Repositories::CirculationRepository& repository,
-                       const LoanScope& scope = {},
-                       QWidget* parent = nullptr);
+    explicit LoanCheckoutDialog(VLMS::CirculationLookups& lookups,
+                                const LoanScope& scope = {},
+                                QWidget* parent = nullptr);
 
     [[nodiscard]] VLMS::Repositories::LoanInput loanInput() const;
 
@@ -41,7 +44,7 @@ private:
     void refreshMembers();
     void refreshCopies();
 
-    VLMS::Repositories::CirculationRepository& m_repository;
+    VLMS::CirculationLookups& m_lookups;
     LoanScope m_scope;
 
     QLineEdit* m_memberSearchEdit = nullptr;

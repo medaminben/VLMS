@@ -7,6 +7,8 @@
 #include <memory>
 
 #include "ui/presentation/QtCatalogLookups.h"
+#include "ui/presentation/QtCirculationLookups.h"
+#include "ui/presentation/QtMemberLookups.h"
 #include "ui/services/OcrService.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
@@ -41,6 +43,8 @@ public:
     [[nodiscard]] VLMS::Repositories::CirculationRepository& circulation() const { return *m_circulationRepository; }
     [[nodiscard]] VLMS::Repositories::MetricsRepository& metrics() const { return *m_metricsRepository; }
     [[nodiscard]] VLMS::CatalogLookups& catalogLookups() { return *m_catalogLookups; }
+    [[nodiscard]] VLMS::MemberLookups& memberLookups() { return *m_memberLookups; }
+    [[nodiscard]] VLMS::CirculationLookups& circulationLookups() { return *m_circulationLookups; }
     [[nodiscard]] VLMS::OcrService& ocr() { return *m_ocr; }
     [[nodiscard]] VLMS::DataEvents& dataEvents() { return *m_dataEvents; }
     [[nodiscard]] VLMS::ErrorPresenter& errors() { return *m_errors; }
@@ -73,6 +77,8 @@ private:
     std::unique_ptr<VLMS::DataEvents> m_dataEvents;
     std::unique_ptr<VLMS::QtErrorPresenter> m_errors;
     std::unique_ptr<VLMS::QtCatalogLookups> m_catalogLookups;
+    std::unique_ptr<VLMS::QtMemberLookups> m_memberLookups;
+    std::unique_ptr<VLMS::QtCirculationLookups> m_circulationLookups;
     std::unique_ptr<VLMS::OcrService> m_ocr;
     std::unique_ptr<VLMS::QtDialogFactory> m_dialogs;
 };

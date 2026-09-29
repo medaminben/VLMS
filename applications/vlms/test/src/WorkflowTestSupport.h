@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ui/presentation/QtCatalogLookups.h"
+#include "ui/presentation/QtCirculationLookups.h"
+#include "ui/presentation/QtMemberLookups.h"
 #include "ui/services/OcrService.h"
 #include "ui/workflows/ArchiveWorkflow.h"
 #include "ui/workflows/BookWorkflow.h"
@@ -23,14 +25,16 @@ struct LoanWorkflowHarness {
     VLMS::FakeErrorPresenter errors;
     VLMS::DataEvents events;
     VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::QtCirculationLookups> lookups;
     std::unique_ptr<VLMS::BulkRunner> bulk;
     std::unique_ptr<VLMS::LoanWorkflow> loans;
 
     explicit LoanWorkflowHarness(VLMS::Repositories::CirculationRepository& circulation)
     {
+        lookups = std::make_unique<VLMS::QtCirculationLookups>(circulation);
         bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
         loans = std::make_unique<VLMS::LoanWorkflow>(
-            circulation, dialogs, errors, events, navigator, *bulk);
+            circulation, *lookups, dialogs, errors, events, navigator, *bulk);
     }
 };
 
@@ -40,6 +44,7 @@ struct BookWorkflowHarness {
     VLMS::DataEvents events;
     VLMS::FakeNavigator navigator;
     std::unique_ptr<VLMS::QtCatalogLookups> lookups;
+    std::unique_ptr<VLMS::QtCirculationLookups> circulationLookups;
     std::unique_ptr<VLMS::OcrService> ocr;
     std::unique_ptr<VLMS::BulkRunner> bulk;
     std::unique_ptr<VLMS::LoanWorkflow> loans;
@@ -49,10 +54,11 @@ struct BookWorkflowHarness {
                         VLMS::Repositories::CirculationRepository& circulation)
     {
         lookups = std::make_unique<VLMS::QtCatalogLookups>(catalog);
+        circulationLookups = std::make_unique<VLMS::QtCirculationLookups>(circulation);
         ocr = std::make_unique<VLMS::OcrService>();
         bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
         loans = std::make_unique<VLMS::LoanWorkflow>(
-            circulation, dialogs, errors, events, navigator, *bulk);
+            circulation, *circulationLookups, dialogs, errors, events, navigator, *bulk);
         books = std::make_unique<VLMS::BookWorkflow>(
             catalog, circulation, *lookups, *ocr, dialogs, errors, events, navigator, *bulk,
             *loans);
@@ -64,6 +70,8 @@ struct MemberWorkflowHarness {
     VLMS::FakeErrorPresenter errors;
     VLMS::DataEvents events;
     VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::QtMemberLookups> lookups;
+    std::unique_ptr<VLMS::QtCirculationLookups> circulationLookups;
     std::unique_ptr<VLMS::BulkRunner> bulk;
     std::unique_ptr<VLMS::LoanWorkflow> loans;
     std::unique_ptr<VLMS::MemberWorkflow> members;
@@ -71,11 +79,13 @@ struct MemberWorkflowHarness {
     MemberWorkflowHarness(VLMS::Repositories::MemberRepository& memberRepo,
                           VLMS::Repositories::CirculationRepository& circulation)
     {
+        lookups = std::make_unique<VLMS::QtMemberLookups>(memberRepo);
+        circulationLookups = std::make_unique<VLMS::QtCirculationLookups>(circulation);
         bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
         loans = std::make_unique<VLMS::LoanWorkflow>(
-            circulation, dialogs, errors, events, navigator, *bulk);
+            circulation, *circulationLookups, dialogs, errors, events, navigator, *bulk);
         members = std::make_unique<VLMS::MemberWorkflow>(
-            memberRepo, circulation, dialogs, errors, events, navigator, *bulk, *loans);
+            memberRepo, circulation, *lookups, dialogs, errors, events, navigator, *bulk, *loans);
     }
 };
 

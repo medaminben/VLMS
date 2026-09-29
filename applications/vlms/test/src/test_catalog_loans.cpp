@@ -6,6 +6,7 @@
 #include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
+#include "ui/presentation/QtCirculationLookups.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -60,6 +61,7 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_lookups = std::make_unique<QtCirculationLookups>(*m_circulation);
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_GT(m_memberId, 0);
     }
@@ -69,6 +71,7 @@ protected:
         m_page.reset();
         m_spec.reset();
         m_workflows.reset();
+        m_lookups.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
@@ -99,6 +102,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<QtCirculationLookups> m_lookups;
     std::unique_ptr<BookWorkflowHarness> m_workflows;
     std::unique_ptr<BookListSpec> m_spec;
     std::unique_ptr<ListPage> m_page;
@@ -156,7 +160,7 @@ TEST_F(test_ui_CatalogLoans, TheScopedCheckoutOffersOnlyThisBooksFreeCopies)
     ::LoanScope scope;
     scope.bookId = wantedId;
     scope.label = QStringLiteral("Wanted Book");
-    LoanCheckoutDialog dialog(*m_circulation, scope);
+    LoanCheckoutDialog dialog(*m_lookups, scope);
 
     const auto combos = dialog.findChildren<QComboBox*>();
     ASSERT_FALSE(combos.isEmpty());

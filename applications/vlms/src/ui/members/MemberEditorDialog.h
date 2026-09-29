@@ -9,6 +9,10 @@
 
 #include <functional>
 
+namespace VLMS {
+class MemberLookups;
+}
+
 class BirthDateEdit;
 class QComboBox;
 class QDialogButtonBox;
@@ -25,8 +29,10 @@ class MemberEditorDialog final : public QDialog {
     Q_OBJECT
 
 public:
-    MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, QWidget* parent = nullptr);
-    MemberEditorDialog(VLMS::Repositories::MemberRepository& repository, const VLMS::Repositories::MemberRecord& member, QWidget* parent = nullptr);
+    explicit MemberEditorDialog(VLMS::MemberLookups& lookups, QWidget* parent = nullptr);
+    MemberEditorDialog(VLMS::MemberLookups& lookups,
+                       const VLMS::Repositories::MemberRecord& member,
+                       QWidget* parent = nullptr);
 
     /// The first rule the current field values break: the string-table key of
     /// the message to show, and the control to put the cursor back into. Both
@@ -101,7 +107,7 @@ private:
     void refreshIdImagePreviewPixmap();
     void syncSideGeometry();
 
-    VLMS::Repositories::MemberRepository& m_repository;
+    VLMS::MemberLookups& m_lookups;
     bool m_isEdit = false;
     qint64 m_memberId = 0;
     QString m_photoSourcePath;

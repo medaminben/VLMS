@@ -16,6 +16,7 @@ class DataEvents;
 class LoanWorkflow;
 class DialogFactory;
 class ErrorPresenter;
+class MemberLookups;
 class Navigator;
 
 namespace Repositories {
@@ -27,6 +28,7 @@ class MemberWorkflow {
 public:
     MemberWorkflow(Repositories::MemberRepository& members,
                    Repositories::CirculationRepository& circulation,
+                   MemberLookups& lookups,
                    DialogFactory& dialogs,
                    ErrorPresenter& errors,
                    DataEvents& events,
@@ -42,6 +44,7 @@ public:
 private:
     Repositories::MemberRepository& m_members;
     Repositories::CirculationRepository& m_circulation;
+    MemberLookups& m_lookups;
     DialogFactory& m_dialogs;
     ErrorPresenter& m_errors;
     DataEvents& m_events;

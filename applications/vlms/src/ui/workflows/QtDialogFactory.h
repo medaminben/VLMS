@@ -4,13 +4,13 @@
 
 namespace VLMS {
 class CatalogLookups;
+class CirculationLookups;
+class MemberLookups;
 class OcrService;
 }
 
 namespace VLMS::Repositories {
 class CatalogRepository;
-class CirculationRepository;
-class MemberRepository;
 }  // namespace VLMS::Repositories
 
 namespace VLMS {
@@ -18,9 +18,9 @@ namespace VLMS {
 class QtDialogFactory final : public DialogFactory {
 public:
     QtDialogFactory(Repositories::CatalogRepository& catalog,
-                    Repositories::MemberRepository& members,
-                    Repositories::CirculationRepository& circulation,
                     CatalogLookups& catalogLookups,
+                    MemberLookups& memberLookups,
+                    CirculationLookups& circulationLookups,
                     OcrService& ocr);
 
     std::optional<BookForm> addBook(QWidget* parent) override;
@@ -42,9 +42,9 @@ public:
 
 private:
     Repositories::CatalogRepository& m_catalog;
-    Repositories::MemberRepository& m_members;
-    Repositories::CirculationRepository& m_circulation;
     CatalogLookups& m_catalogLookups;
+    MemberLookups& m_memberLookups;
+    CirculationLookups& m_circulationLookups;
     OcrService& m_ocr;
 };
 

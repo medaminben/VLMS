@@ -2,6 +2,7 @@
 #include "UiTest.h"
 
 #include "ui/members/MemberEditorDialog.h"
+#include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
@@ -56,21 +57,24 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtMemberLookups>(*m_repository);
     }
 
     void TearDown() override
     {
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::MemberRepository> m_repository;
+    std::unique_ptr<QtMemberLookups> m_lookups;
 };
 
 TEST_F(test_ui_MemberEditorStatus, TheComboOffersActiveAndNotActiveOnly)
 {
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     auto* combo = dialog.findChild<QComboBox*>(QStringLiteral("memberStatusCombo"));
     ASSERT_NE(combo, nullptr);
     ASSERT_EQ(combo->count(), 2);
@@ -82,7 +86,7 @@ TEST_F(test_ui_MemberEditorStatus, TheComboOffersActiveAndNotActiveOnly)
 TEST_F(test_ui_MemberEditorStatus, ANewMemberShowsAYearFromToday)
 {
     const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
     ASSERT_NE(until, nullptr);
     EXPECT_EQ(until->text(), QStringLiteral("2027-09-22"));
@@ -91,7 +95,7 @@ TEST_F(test_ui_MemberEditorStatus, ANewMemberShowsAYearFromToday)
 TEST_F(test_ui_MemberEditorStatus, PickingActiveForAnExpiredMemberShowsTheRenewal)
 {
     const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
-    MemberEditorDialog dialog(*m_repository, memberUntil("2026-01-09", Repositories::MemberStatus::kNonActive));
+    MemberEditorDialog dialog(*m_lookups, memberUntil("2026-01-09", Repositories::MemberStatus::kNonActive));
     auto* combo = dialog.findChild<QComboBox*>(QStringLiteral("memberStatusCombo"));
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
     ASSERT_NE(combo, nullptr);
@@ -108,7 +112,7 @@ TEST_F(test_ui_MemberEditorStatus, PickingActiveForAnExpiredMemberShowsTheRenewa
 TEST_F(test_ui_MemberEditorStatus, PickingNotActiveForAnActiveMemberShowsYesterday)
 {
     const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
-    MemberEditorDialog dialog(*m_repository, memberUntil("2027-03-01", Repositories::MemberStatus::kActive));
+    MemberEditorDialog dialog(*m_lookups, memberUntil("2027-03-01", Repositories::MemberStatus::kActive));
     auto* combo = dialog.findChild<QComboBox*>(QStringLiteral("memberStatusCombo"));
     auto* until = dialog.findChild<QLabel*>(QStringLiteral("memberActiveUntilValue"));
     ASSERT_NE(combo, nullptr);
@@ -126,7 +130,7 @@ TEST_F(test_ui_MemberEditorStatus, TheRowIsLabelledInEveryLanguage)
     for (const char* locale : {"ar", "fr", "en"}) {
         SCOPED_TRACE(locale);
         Core::Locale::setCode(locale);
-        MemberEditorDialog dialog(*m_repository);
+        MemberEditorDialog dialog(*m_lookups);
         bool found = false;
         for (QLabel* label : dialog.findChildren<QLabel*>()) {
             if (label->text().startsWith(qs(Core::Strings::t("member.field.activeUntil")))) {

@@ -3,6 +3,7 @@
 #include "QtBridge.h"
 #include "ui/members/MemberEditorDialog.h"
 #include "ui/members/MemberLoansDialog.h"
+#include "ui/presentation/MemberLookups.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/DataEvents.h"
@@ -25,6 +26,7 @@ namespace VLMS {
 
 MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
                                Repositories::CirculationRepository& circulation,
+                               MemberLookups& lookups,
                                DialogFactory& dialogs,
                                ErrorPresenter& errors,
                                DataEvents& events,
@@ -33,6 +35,7 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
                                LoanWorkflow& loans)
     : m_members(members)
     , m_circulation(circulation)
+    , m_lookups(lookups)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
@@ -45,7 +48,7 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
 
 Core::Status MemberWorkflow::add(QWidget* parent)
 {
-    MemberEditorDialog dialog(m_members, parent);
+    MemberEditorDialog dialog(m_lookups, parent);
     if (dialog.exec() != QDialog::Accepted) {
         return Core::Status::ok();
     }
@@ -82,7 +85,7 @@ Core::Status MemberWorkflow::edit(QWidget* parent, qint64 memberId)
         return Core::asStatus(member);
     }
 
-    MemberEditorDialog dialog(m_members, member.value(), parent);
+    MemberEditorDialog dialog(m_lookups, member.value(), parent);
     if (dialog.exec() != QDialog::Accepted) {
         return Core::Status::ok();
     }

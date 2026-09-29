@@ -3,7 +3,6 @@
 #include <VLMS/Core/Strings.h>
 #include "ui/WidgetTableSort.h"
 #include "ui/UiHelpers.h"
-#include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/circulation/LoanHistoryActions.h"
 #include "ui/workflows/LoanWorkflow.h"
 #include "QtBridge.h"
@@ -157,17 +156,6 @@ void MemberLoansDialog::refresh() {
 }
 
 void MemberLoansDialog::lendABook() {
-    LoanScope scope;
-    scope.memberId = m_memberId;
-    scope.label = m_memberName;
-
-    LoanCheckoutDialog dialog(m_repository, scope, this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-    if (const auto created = m_repository.createLoan(dialog.loanInput()); !created) {
-        VLMS::showRepoError(this, created.error());
-        return;
-    }
+    m_loans.checkout(this, VLMS::LoanCheckoutPrefill{0, m_memberId});
     refresh();
 }

@@ -7,10 +7,12 @@
 #include "ui/circulation/LoanExtendDialog.h"
 #include "ui/circulation/LoanReturnDialog.h"
 #include "ui/members/MemberEditorDialog.h"
+#include "ui/presentation/CatalogLookups.h"
+#include "ui/presentation/CirculationLookups.h"
+#include "ui/presentation/MemberLookups.h"
+#include "ui/services/OcrService.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
-#include <VLMS/Repositories/CirculationRepository.h>
-#include <VLMS/Repositories/MemberRepository.h>
 
 #include <QDialog>
 
@@ -30,14 +32,14 @@ BookForm bookFormFromDialog(const BookEditorDialog& dialog)
 }  // namespace
 
 QtDialogFactory::QtDialogFactory(Repositories::CatalogRepository& catalog,
-                                 Repositories::MemberRepository& members,
-                                 Repositories::CirculationRepository& circulation,
                                  CatalogLookups& catalogLookups,
+                                 MemberLookups& memberLookups,
+                                 CirculationLookups& circulationLookups,
                                  OcrService& ocr)
     : m_catalog(catalog)
-    , m_members(members)
-    , m_circulation(circulation)
     , m_catalogLookups(catalogLookups)
+    , m_memberLookups(memberLookups)
+    , m_circulationLookups(circulationLookups)
     , m_ocr(ocr)
 {
 }
@@ -79,7 +81,7 @@ std::optional<BookForm> QtDialogFactory::editBook(QWidget* parent, const BookFor
 
 std::optional<MemberForm> QtDialogFactory::addMember(QWidget* parent)
 {
-    MemberEditorDialog dialog(m_members, parent);
+    MemberEditorDialog dialog(m_memberLookups, parent);
     if (dialog.exec() != QDialog::Accepted) {
         return std::nullopt;
     }
@@ -102,7 +104,7 @@ std::optional<MemberForm> QtDialogFactory::editMember(QWidget* parent, const Mem
     member.notes = initial.member.notes;
     member.occupation = initial.member.occupation;
     member.fullName = initial.member.fullName;
-    MemberEditorDialog dialog(m_members, member, parent);
+    MemberEditorDialog dialog(m_memberLookups, member, parent);
     if (dialog.exec() != QDialog::Accepted) {
         return std::nullopt;
     }
@@ -114,7 +116,7 @@ std::optional<LoanForm> QtDialogFactory::checkout(QWidget* parent, const LoanFor
     LoanScope scope;
     scope.bookId = prefill.bookId;
     scope.memberId = prefill.memberId;
-    LoanCheckoutDialog dialog(m_circulation, scope, parent);
+    LoanCheckoutDialog dialog(m_circulationLookups, scope, parent);
     if (!dialog.hasLendableCopy()) {
         return std::nullopt;
     }

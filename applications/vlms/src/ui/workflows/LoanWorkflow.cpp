@@ -5,6 +5,7 @@
 #include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/circulation/LoanExtendDialog.h"
 #include "ui/circulation/LoanReturnDialog.h"
+#include "ui/presentation/CirculationLookups.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
@@ -23,12 +24,14 @@ using VLMS::ss;
 namespace VLMS {
 
 LoanWorkflow::LoanWorkflow(Repositories::CirculationRepository& circulation,
+                           CirculationLookups& lookups,
                            DialogFactory& dialogs,
                            ErrorPresenter& errors,
                            DataEvents& events,
                            Navigator& navigator,
                            BulkRunner& bulk)
     : m_circulation(circulation)
+    , m_lookups(lookups)
     , m_dialogs(dialogs)
     , m_errors(errors)
     , m_events(events)
@@ -44,7 +47,7 @@ Core::Status LoanWorkflow::checkout(QWidget* parent, const LoanCheckoutPrefill& 
     LoanScope scope;
     scope.bookId = prefill.bookId;
     scope.memberId = prefill.memberId;
-    LoanCheckoutDialog dialog(m_circulation, scope, parent);
+    LoanCheckoutDialog dialog(m_lookups, scope, parent);
     if (!dialog.hasLendableCopy()) {
         return Core::Status::ok();
     }

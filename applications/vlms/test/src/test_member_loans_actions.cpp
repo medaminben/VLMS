@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/circulation/LoanCheckoutDialog.h"
+#include "ui/presentation/QtCirculationLookups.h"
 #include "WorkflowTestSupport.h"
 #include "ui/members/MemberLoansDialog.h"
 
@@ -44,12 +45,14 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_lookups = std::make_unique<QtCirculationLookups>(*m_circulation);
         m_memberId = seedMember(*m_db, uniqueMemberSeed(1));
         ASSERT_GT(m_memberId, 0);
     }
 
     void TearDown() override
     {
+        m_lookups.reset();
         m_circulation.reset();
         m_db.reset();
         Core::Locale::setCode("en");
@@ -57,6 +60,7 @@ protected:
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<QtCirculationLookups> m_lookups;
     std::int64_t m_memberId = 0;
 };
 
@@ -91,7 +95,7 @@ TEST_F(test_ui_MemberLoansActions, TheScopedCheckoutFixesTheMemberAndOffersEvery
     LoanScope scope;
     scope.memberId = m_memberId;
     scope.label = QStringLiteral("Amina Ben Salah");
-    LoanCheckoutDialog dialog(*m_circulation, scope);
+    LoanCheckoutDialog dialog(*m_lookups, scope);
 
     // One combo only: the copy one. The member is a label now.
     const auto combos = dialog.findChildren<QComboBox*>();
