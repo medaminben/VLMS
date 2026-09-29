@@ -28,6 +28,7 @@ set(TST_SOURCES
     src/test_strings_parity.cpp
     src/test_catalog_repository.cpp
     src/test_catalog_names.cpp
+    src/test_quoted_search.cpp
     src/test_member_repository.cpp
     src/test_member_status_rule.cpp
     src/test_member_status_expiry.cpp

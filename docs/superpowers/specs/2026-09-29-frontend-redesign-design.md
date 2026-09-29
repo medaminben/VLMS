@@ -259,7 +259,9 @@ titles and calls `spec.retranslate()`. The `languageChanged` signal and the
 
 **Navigation.** A blocked member archive offers the jump through
 `DialogFactory::warnWithAction`; on yes, `Navigator::showMemberLoans`
-switches to Circulation with the membership number as search.
+switches to Circulation with the membership number in double quotes as
+search. A quoted term matches whole values only (`"1"` finds member 1 and
+copy 1, not 10 or "Book 1"); an unquoted term still matches anywhere.
 
 ## Error handling
 

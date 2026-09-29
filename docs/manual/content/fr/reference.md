@@ -104,6 +104,10 @@ Chaque page de liste partage les mêmes actions sur le pad de boutons et sur le 
 
 Enter dans le champ de recherche lance encore la recherche tout de suite. Del dans le champ de recherche édite encore le texte.
 
+## Recherche exacte {#exact-search}
+
+La recherche trouve le texte n'importe où dans une valeur : **1** trouve l'adhérent 1, les adhérents 10 à 19, 21, l'exemplaire 1 et « Livre 1 ». Mettez le terme entre guillemets droits pour une correspondance exacte, comme sur un moteur de recherche : **"1"** ne trouve que ce qui vaut exactement 1 — l'adhérent 1 et l'exemplaire 1, pas 10 ni « Livre 1 ». Les guillemets fonctionnent de même pour les noms et les titres : **"Victor Hugo"** trouve ce nom, pas « Victor Hugo Jr ». `Aller aux prêts`, proposé quand un adhérent ne peut pas être archivé, ouvre la Circulation avec le numéro d'adhérent entre guillemets.
+
 ## Numéros locaux {#local-number}
 
 Le numéro local est le numéro d'entrée de la bibliothèque pour un exemplaire. Il est unique parmi les exemplaires encore en service d'un même fonds. Le numéro central est le numéro national de l'exemplaire. La bibliothèque ne le crée pas, et il n'est pas le numéro local.

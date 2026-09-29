@@ -120,7 +120,7 @@ void bindFilters(Database::SqliteStatement& query, const LoanQuery& queryData)
     }
     const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
+        query.bind(":search", Database::SqlText::likePattern(search));
     }
 }
 

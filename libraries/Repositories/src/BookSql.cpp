@@ -23,7 +23,7 @@ std::string withDirection(const std::string& expression, const bool ascending)
 /// "AR-1002" — searches the text fields only.
 std::string localNumberTerm(const BookQuery& query)
 {
-    const std::string term = Core::trim(query.search);
+    const std::string term = Database::SqlText::unquoted(query.search);
     if (term.empty()) {
         return {};
     }
@@ -109,11 +109,14 @@ void bindFilters(Database::SqliteStatement& query, const BookQuery& queryData)
 {
     const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
+        query.bind(":search", Database::SqlText::likePattern(search));
     }
     if (const std::string number = localNumberTerm(queryData); !number.empty()) {
         query.bind(":local_number", number);
-        query.bind(":local_number_prefix", Database::SqlText::escapeLike(number) + "%");
+        // In quotes the number is exact: the prefix arm matches it alone.
+        query.bind(":local_number_prefix",
+                   Database::SqlText::escapeLike(number)
+                       + (Database::SqlText::isQuoted(queryData.search) ? "" : "%"));
     }
     for (std::size_t i = 0; i < queryData.categoryCodes.size(); ++i) {
         query.bind(":category_code_" + std::to_string(i), queryData.categoryCodes[i]);
