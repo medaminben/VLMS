@@ -7,8 +7,11 @@
 #include <QString>
 #include <QStringList>
 
+namespace VLMS {
+class OcrService;
+}
+
 class BookCopiesTable;
-class BookOcrController;
 class QComboBox;
 class QDialogButtonBox;
 class QFormLayout;
@@ -125,5 +128,5 @@ private:
     QStringList m_ocrLanguages;             ///< Tesseract codes, joined with '+'
     bool m_ocrLanguageChosenByUser = false; ///< stop tracking the book's language
 
-    BookOcrController* m_ocr = nullptr;
+    VLMS::OcrService* m_ocr = nullptr;
 };

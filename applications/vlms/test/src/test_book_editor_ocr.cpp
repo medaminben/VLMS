@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/catalog/BookEditorDialog.h"
+#include "ui/services/OcrService.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Ocr/Ocr.h>
@@ -11,6 +12,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QMenu>
+#include <QMetaObject>
 #include <QToolButton>
 
 #include <gtest/gtest.h>
@@ -20,6 +22,14 @@
 
 using namespace VLMS;
 using namespace Test;
+
+TEST(OcrServiceApi, ExposesTextReadySignal)
+{
+    OcrService service;
+    const QMetaObject* meta = service.metaObject();
+    ASSERT_NE(meta, nullptr);
+    EXPECT_GE(meta->indexOfSignal("textReady(QString)"), 0);
+}
 
 class test_ui_BookEditorOcr : public ::testing::Test {
 protected:

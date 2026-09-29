@@ -1,20 +1,11 @@
-#include "ui/catalog/BookOcrController.h"
+#include "ui/services/OcrService.h"
 
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Ocr/Ocr.h>
 #include "ui/UiHelpers.h"
-#include "QtBridge.h"
 
 #include <QProgressDialog>
 #include <QTimer>
-
-using VLMS::T;
-using VLMS::cd;
-using VLMS::qd;
-using VLMS::qs;
-using VLMS::qsl;
-using VLMS::ss;
-using VLMS::svl;
 
 namespace {
 
@@ -22,47 +13,50 @@ constexpr int kOcrPollIntervalMs = 80;
 
 }  // namespace
 
-BookOcrController::BookOcrController(QWidget* dialogParent, QObject* parent)
-    : QObject(parent),
-      m_dialogParent(dialogParent)
+namespace VLMS {
+
+OcrService::OcrService(QObject* parent)
+    : QObject(parent)
 {
     m_pollTimer = new QTimer(this);
     m_pollTimer->setInterval(kOcrPollIntervalMs);
-    connect(m_pollTimer, &QTimer::timeout, this, &BookOcrController::poll);
+    connect(m_pollTimer, &QTimer::timeout, this, &OcrService::poll);
 }
 
-BookOcrController::~BookOcrController()
+OcrService::~OcrService()
 {
     m_job.reset();
-    VLMS::Ocr::releaseCachedEngine();
+    Ocr::releaseCachedEngine();
 }
 
-void BookOcrController::start(const QString& languages)
+void OcrService::start(QWidget* dialogParent, const QString& imagePath, const QString& languages)
 {
     if (m_job != nullptr) {
         return;
     }
 
-    if (!VLMS::Ocr::isAvailable() || languages.isEmpty()) {
-        VLMS::showWarning(
+    m_dialogParent = dialogParent;
+
+    if (!Ocr::isAvailable() || languages.isEmpty()) {
+        showWarning(
             m_dialogParent,
             T("ocr.title"),
             T("ocr.unavailable"));
         return;
     }
 
-    const QString path = VLMS::askForImageFile(
-        m_dialogParent,
-        T("ocr.selectImage"),
-        T("ocr.imageFilter"));
-    if (path.isEmpty()) {
+    if (imagePath.isEmpty()) {
+        showWarning(
+            m_dialogParent,
+            T("ocr.title"),
+            T("ocr.imageMissing"));
         return;
     }
 
-    VLMS::Ocr::Request request;
-    request.imagePath = path.toStdString();
+    Ocr::Request request;
+    request.imagePath = imagePath.toStdString();
     request.languages = languages.toStdString();
-    m_job = VLMS::Ocr::Job::start(std::move(request));
+    m_job = Ocr::Job::start(std::move(request));
 
     m_progress = new QProgressDialog(
         T("ocr.working"),
@@ -88,7 +82,7 @@ void BookOcrController::start(const QString& languages)
     m_pollTimer->start();
 }
 
-void BookOcrController::poll()
+void OcrService::poll()
 {
     if (m_job == nullptr) {
         m_pollTimer->stop();
@@ -106,10 +100,10 @@ void BookOcrController::poll()
         return;
     }
 
-    const VLMS::Ocr::Result result = m_job->take();
+    const Ocr::Result result = m_job->take();
     finish();
 
-    using VLMS::Ocr::Status;
+    using Ocr::Status;
     switch (result.status) {
         case Status::Ok:
             emit textReady(QString::fromStdString(result.text));
@@ -117,25 +111,25 @@ void BookOcrController::poll()
         case Status::Cancelled:
             return;
         case Status::Unavailable:
-            VLMS::showWarning(
+            showWarning(
                 m_dialogParent,
                 T("ocr.title"),
                 T("ocr.unavailable"));
             return;
         case Status::ImageMissing:
-            VLMS::showWarning(
+            showWarning(
                 m_dialogParent,
                 T("ocr.title"),
                 T("ocr.imageMissing"));
             return;
         case Status::StartFailed:
-            VLMS::showWarning(
+            showWarning(
                 m_dialogParent,
                 T("ocr.title"),
                 T("ocr.startFailed"));
             return;
         case Status::Empty:
-            VLMS::showWarning(
+            showWarning(
                 m_dialogParent,
                 T("ocr.title"),
                 T("ocr.empty"));
@@ -143,13 +137,13 @@ void BookOcrController::poll()
         case Status::Failed:
             break;
     }
-    VLMS::showWarning(
+    showWarning(
         m_dialogParent,
         T("ocr.title"),
         T("ocr.failed"));
 }
 
-void BookOcrController::finish()
+void OcrService::finish()
 {
     m_pollTimer->stop();
     m_job.reset();
@@ -159,3 +153,5 @@ void BookOcrController::finish()
         m_progress = nullptr;
     }
 }
+
+}  // namespace VLMS

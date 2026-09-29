@@ -13,15 +13,18 @@ class QProgressDialog;
 class QTimer;
 class QWidget;
 
+namespace VLMS {
+
 /// Owns the OCR worker for the book editor. The dialog stays a composer.
-class BookOcrController final : public QObject {
+class OcrService final : public QObject {
     Q_OBJECT
 
 public:
-    explicit BookOcrController(QWidget* dialogParent, QObject* parent = nullptr);
-    ~BookOcrController() override;
+    explicit OcrService(QObject* parent = nullptr);
+    ~OcrService() override;
 
-    void start(const QString& languages);
+    /// Starts OCR for the current cover image path held by the editor.
+    void start(QWidget* dialogParent, const QString& imagePath, const QString& languages);
 
 signals:
     void textReady(const QString& text);
@@ -31,7 +34,9 @@ private:
     void finish();
 
     QWidget* m_dialogParent = nullptr;
-    std::unique_ptr<VLMS::Ocr::Job> m_job;
+    std::unique_ptr<Ocr::Job> m_job;
     QProgressDialog* m_progress = nullptr;
     QTimer* m_pollTimer = nullptr;
 };
+
+}  // namespace VLMS

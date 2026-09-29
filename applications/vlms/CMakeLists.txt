@@ -24,7 +24,7 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookFacetFilters.cpp
     src/ui/catalog/BookEditorDialog.cpp
     src/ui/catalog/BookCopiesTable.cpp
-    src/ui/catalog/BookOcrController.cpp
+    src/ui/services/OcrService.cpp
     src/ui/catalog/CategoryManagerDialog.cpp
     src/ui/catalog/BookLoansDialog.cpp
     src/ui/catalog/LocalNumberDelegate.cpp
@@ -81,7 +81,7 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookFacetFilters.h
     src/ui/catalog/BookEditorDialog.h
     src/ui/catalog/BookCopiesTable.h
-    src/ui/catalog/BookOcrController.h
+    src/ui/services/OcrService.h
     src/ui/catalog/CategoryManagerDialog.h
     src/ui/catalog/BookLoansDialog.h
     src/ui/catalog/LocalNumberDelegate.h

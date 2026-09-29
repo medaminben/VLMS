@@ -7,8 +7,8 @@
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 #include "ui/catalog/BookCopiesTable.h"
-#include "ui/catalog/BookOcrController.h"
 #include "ui/catalog/CategoryManagerDialog.h"
+#include "ui/services/OcrService.h"
 
 #include <QAbstractSpinBox>
 #include <QAction>
@@ -295,8 +295,8 @@ void BookEditorDialog::buildUi() {
     m_ocrButton->setPopupMode(QToolButton::MenuButtonPopup);
     m_ocrButton->setMenu(new QMenu(m_ocrButton));
     connect(m_ocrButton, &QToolButton::clicked, this, &BookEditorDialog::readDescriptionFromImage);
-    m_ocr = new BookOcrController(this, this);
-    connect(m_ocr, &BookOcrController::textReady, this, &BookEditorDialog::appendRecognizedText);
+    m_ocr = new VLMS::OcrService(this);
+    connect(m_ocr, &VLMS::OcrService::textReady, this, &BookEditorDialog::appendRecognizedText);
 
     m_coverButton = VLMS::makeSecondaryButton({});
     m_coverButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -722,7 +722,7 @@ QString BookEditorDialog::selectedOcrLanguages() const
 
 void BookEditorDialog::readDescriptionFromImage()
 {
-    m_ocr->start(selectedOcrLanguages());
+    m_ocr->start(this, m_coverDisplayPath, selectedOcrLanguages());
 }
 
 
