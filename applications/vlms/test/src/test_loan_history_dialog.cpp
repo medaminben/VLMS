@@ -22,9 +22,9 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
 
 using VLMS::T;
-using namespace VLMS;
 using namespace Test;
 
 namespace {
@@ -61,47 +61,59 @@ void acceptNextDialog()
     poll->start();
 }
 
-class LoanHistoryDialogTest : public ::testing::Test {
-protected:
-    void SetUp() override
+/// Shared DB + workflow + history LoanListSpec for checklist-named TEST() cases.
+/// Suite name must be exactly LoanHistoryDialog (not *Test) so Phase 6
+/// `ctest -R 'LoanHistoryDialog.Book'` matches.
+struct LoanHistoryEnv {
+    LoanHistoryEnv()
     {
-        Core::Locale::setCode("en");
-        m_db = std::make_unique<TestDatabase>();
-        ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
-                                                                      m_db->resourcesDirectory());
-        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(),
-                                                                     m_db->resourcesDirectory());
-        m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
-        m_workflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
-        m_spec = std::make_unique<LoanListSpec>(*m_circulation, *m_catalog, *m_members,
-                                                *m_workflows->loans);
+        VLMS::Core::Locale::setCode("en");
+        db = std::make_unique<TestDatabase>();
+        if (!db->isValid()) {
+            return;
+        }
+        catalog = std::make_unique<VLMS::Repositories::CatalogRepository>(db->session(),
+                                                                          db->resourcesDirectory());
+        members = std::make_unique<VLMS::Repositories::MemberRepository>(db->session(),
+                                                                         db->resourcesDirectory());
+        circulation = std::make_unique<VLMS::Repositories::CirculationRepository>(db->session());
+        workflows = std::make_unique<LoanWorkflowHarness>(*circulation);
+        spec = std::make_unique<VLMS::LoanListSpec>(*circulation, *catalog, *members,
+                                                    *workflows->loans);
     }
 
-    void TearDown() override
+    ~LoanHistoryEnv()
     {
-        m_spec.reset();
-        m_workflows.reset();
-        m_circulation.reset();
-        m_members.reset();
-        m_catalog.reset();
-        m_db.reset();
-        Core::Locale::setCode("en");
+        spec.reset();
+        workflows.reset();
+        circulation.reset();
+        members.reset();
+        catalog.reset();
+        db.reset();
+        VLMS::Core::Locale::setCode("en");
     }
 
-    std::unique_ptr<TestDatabase> m_db;
-    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
-    std::unique_ptr<Repositories::MemberRepository> m_members;
-    std::unique_ptr<Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<LoanWorkflowHarness> m_workflows;
-    std::unique_ptr<LoanListSpec> m_spec;
+    [[nodiscard]] bool ok() const { return db && db->isValid() && spec && workflows; }
+
+    std::unique_ptr<TestDatabase> db;
+    std::unique_ptr<VLMS::Repositories::CatalogRepository> catalog;
+    std::unique_ptr<VLMS::Repositories::MemberRepository> members;
+    std::unique_ptr<VLMS::Repositories::CirculationRepository> circulation;
+    std::unique_ptr<LoanWorkflowHarness> workflows;
+    std::unique_ptr<VLMS::LoanListSpec> spec;
 };
 
-TEST_F(LoanHistoryDialogTest, BookPinSetsQueryStateBookId)
+}  // namespace
+
+TEST(LoanHistoryDialog, BookPinSetsQueryStateBookId)
 {
-    LoanHistoryDialog dialog(*m_spec, *m_workflows->loans, m_workflows->events,
-                             LoanHistoryDialog::Kind::Book, 42, QStringLiteral("Titled"),
-                             Repositories::ArchiveScope::Any);
+    LoanHistoryEnv env;
+    ASSERT_TRUE(env.ok()) << (env.db ? env.db->lastError() : std::string("no db"));
+
+    VLMS::LoanHistoryDialog dialog(*env.spec, *env.workflows->loans, env.workflows->events,
+                                   VLMS::LoanHistoryDialog::Kind::Book, 42,
+                                   QStringLiteral("Titled"),
+                                   VLMS::Repositories::ArchiveScope::Any);
     dialog.show();
     QApplication::processEvents();
 
@@ -109,14 +121,18 @@ TEST_F(LoanHistoryDialogTest, BookPinSetsQueryStateBookId)
     EXPECT_EQ(dialog.queryState().pinned->bookId, 42);
     EXPECT_EQ(dialog.queryState().pinned->memberId, 0);
     EXPECT_EQ(dialog.queryState().pinned->copyId, 0);
-    EXPECT_EQ(dialog.queryState().scope, Repositories::ArchiveScope::Any);
+    EXPECT_EQ(dialog.queryState().scope, VLMS::Repositories::ArchiveScope::Any);
 }
 
-TEST_F(LoanHistoryDialogTest, MemberPinSetsQueryStateMemberId)
+TEST(LoanHistoryDialog, MemberPinSetsQueryStateMemberId)
 {
-    LoanHistoryDialog dialog(*m_spec, *m_workflows->loans, m_workflows->events,
-                             LoanHistoryDialog::Kind::Member, 7, QStringLiteral("Amina"),
-                             Repositories::ArchiveScope::Any);
+    LoanHistoryEnv env;
+    ASSERT_TRUE(env.ok()) << (env.db ? env.db->lastError() : std::string("no db"));
+
+    VLMS::LoanHistoryDialog dialog(*env.spec, *env.workflows->loans, env.workflows->events,
+                                   VLMS::LoanHistoryDialog::Kind::Member, 7,
+                                   QStringLiteral("Amina"),
+                                   VLMS::Repositories::ArchiveScope::Any);
     dialog.show();
     QApplication::processEvents();
 
@@ -126,38 +142,46 @@ TEST_F(LoanHistoryDialogTest, MemberPinSetsQueryStateMemberId)
     EXPECT_EQ(dialog.queryState().pinned->copyId, 0);
 }
 
-TEST_F(LoanHistoryDialogTest, ArchivedScopeUsesArchivedOrAny)
+TEST(LoanHistoryDialog, ArchivedScopeUsesArchivedOrAny)
 {
-    LoanHistoryDialog dialog(*m_spec, *m_workflows->loans, m_workflows->events,
-                             LoanHistoryDialog::Kind::ArchivedMember, 3, QStringLiteral("Archived"),
-                             Repositories::ArchiveScope::Any);
+    LoanHistoryEnv env;
+    ASSERT_TRUE(env.ok()) << (env.db ? env.db->lastError() : std::string("no db"));
+
+    VLMS::LoanHistoryDialog dialog(*env.spec, *env.workflows->loans, env.workflows->events,
+                                   VLMS::LoanHistoryDialog::Kind::ArchivedMember, 3,
+                                   QStringLiteral("Archived"),
+                                   VLMS::Repositories::ArchiveScope::Any);
     dialog.show();
     QApplication::processEvents();
 
-    EXPECT_EQ(dialog.queryState().scope, Repositories::ArchiveScope::Any);
+    EXPECT_EQ(dialog.queryState().scope, VLMS::Repositories::ArchiveScope::Any);
     ASSERT_TRUE(dialog.queryState().pinned.has_value());
     EXPECT_EQ(dialog.queryState().pinned->memberId, 3);
     EXPECT_EQ(buttonWithText(&dialog, T("circulation.checkout")), nullptr)
         << "archive history is read-only";
 }
 
-TEST_F(LoanHistoryDialogTest, ReturnActionCallsLoanWorkflow)
+TEST(LoanHistoryDialog, ReturnActionCallsLoanWorkflow)
 {
-    const std::int64_t memberId = seedMember(*m_db, uniqueMemberSeed(1));
+    LoanHistoryEnv env;
+    ASSERT_TRUE(env.ok()) << (env.db ? env.db->lastError() : std::string("no db"));
+
+    const std::int64_t memberId = seedMember(*env.db, uniqueMemberSeed(1));
     ASSERT_GT(memberId, 0);
     BookSeed seed = uniqueBookSeed(1);
     seed.title = "Open Loan Book";
-    const std::int64_t bookId = seedBook(*m_db, seed);
+    const std::int64_t bookId = seedBook(*env.db, seed);
     ASSERT_GT(bookId, 0);
-    const auto copies = copyIdsOf(*m_db, bookId);
+    const auto copies = copyIdsOf(*env.db, bookId);
     ASSERT_FALSE(copies.empty());
     const std::int64_t loanId =
-        rawInsertLoan(*m_db, memberId, copies.at(0), "2025-02-10", "2025-02-24");
+        rawInsertLoan(*env.db, memberId, copies.at(0), "2025-02-10", "2025-02-24");
     ASSERT_GT(loanId, 0);
 
-    LoanHistoryDialog dialog(*m_spec, *m_workflows->loans, m_workflows->events,
-                             LoanHistoryDialog::Kind::Book, bookId, QStringLiteral("Open Loan Book"),
-                             Repositories::ArchiveScope::Any);
+    VLMS::LoanHistoryDialog dialog(*env.spec, *env.workflows->loans, env.workflows->events,
+                                   VLMS::LoanHistoryDialog::Kind::Book, bookId,
+                                   QStringLiteral("Open Loan Book"),
+                                   VLMS::Repositories::ArchiveScope::Any);
     dialog.show();
     QApplication::processEvents();
 
@@ -174,9 +198,7 @@ TEST_F(LoanHistoryDialogTest, ReturnActionCallsLoanWorkflow)
     ret->click();
     QApplication::processEvents();
 
-    const auto loan = m_circulation->getLoan(loanId);
+    const auto loan = env.circulation->getLoan(loanId);
     ASSERT_TRUE(loan);
     EXPECT_FALSE(loan->returnedAt.empty()) << "return action must complete through LoanWorkflow";
 }
-
-}  // namespace
