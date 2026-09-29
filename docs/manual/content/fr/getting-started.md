@@ -38,7 +38,7 @@ Le Catalogue, les Adhérents, la Circulation et les Archives ont la même forme.
 - Le tableau est la liste. Un clic sur une ligne la surligne. Le panneau de détail montre alors cette ligne.
 - La pagination est sous le tableau. Elle s'ouvre sur `Tous`, donc toute la liste filtrée est chargée. On peut choisir 20, 50 ou 100 à la place. `Premier` et `Dernier` vont aux extrémités, et la case de page va à une page. Quand la liste filtrée a moins de 20 lignes, la pagination se cache.
 - Le panneau de détail est la ligne surlignée, avec son image quand elle en a une.
-- Les boutons sont le travail de cet écran : ajouter, modifier, prêter, supprimer, et le reste. Un bouton suit la ligne surlignée. Il reste gris quand cette ligne ne peut pas recevoir l'action.
+- Les boutons sont le travail de cet écran : ajouter, modifier, prêter, supprimer, et le reste. Un bouton suit la ligne surlignée. Il reste gris quand cette ligne ne peut pas recevoir l'action. Le menu contextuel et les raccourcis clavier sont les mêmes actions, dans le même ordre ; voir [Menus et raccourcis](reference#menus-shortcuts).
 
 ## Tri {#sort}
 

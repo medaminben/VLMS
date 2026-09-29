@@ -88,6 +88,22 @@ Une fiche en service est dans le Catalogue, les Adhérents ou la Circulation. `S
 
 Un prêt archivé compte encore. Il empêche encore un adhérent ou un exemplaire d'être retiré pour de bon, et il apparaît encore dans l'historique `Prêts` d'un ouvrage ou d'un adhérent.
 
+## Menus et raccourcis {#menus-shortcuts}
+
+Chaque page de liste partage les mêmes actions sur le pad de boutons et sur le menu contextuel du tableau, dans le même ordre. Cliquez droit sur une ligne pour le menu.
+
+| Action | Raccourci | Notes |
+|---|---|---|
+| Ajouter / Prêter | Ctrl+N | Au niveau de la page ; Prêter en Circulation |
+| Modifier | Enter | Au niveau du tableau ; inactif en Circulation |
+| Prêts | Ctrl+L | Au niveau du tableau |
+| Supprimer / Restaurer | Del | Au niveau du tableau ; Supprimer sur les listes en service, Restaurer aux Archives |
+| Suppression définitive | Shift+Del | Archives seulement |
+| Tout cocher | Ctrl+A | Au niveau du tableau (la recherche garde Ctrl+A pour le texte) |
+| Actualiser | F5 | Au niveau de la page |
+
+Enter dans le champ de recherche lance encore la recherche tout de suite. Del dans le champ de recherche édite encore le texte.
+
 ## Numéros locaux {#local-number}
 
 Le numéro local est le numéro d'entrée de la bibliothèque pour un exemplaire. Il est unique parmi les exemplaires encore en service d'un même fonds. Le numéro central est le numéro national de l'exemplaire. La bibliothèque ne le crée pas, et il n'est pas le numéro local.
