@@ -4,6 +4,7 @@
 #include "UiTest.h"
 
 #include "ui/catalog/CatalogPage.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -43,7 +44,8 @@ protected:
 
     void openPageAndSelect(std::int64_t bookId)
     {
-        m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation);
+        m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
+        m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation, *m_workflows->books);
         m_table = m_page->findChild<QTableWidget*>();
         ASSERT_NE(m_table, nullptr);
         for (int row = 0; row < m_table->rowCount(); ++row) {
@@ -60,6 +62,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<BookWorkflowHarness> m_workflows;
     std::unique_ptr<CatalogPage> m_page;
     QTableWidget* m_table = nullptr;
 };

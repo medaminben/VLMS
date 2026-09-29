@@ -1,6 +1,8 @@
 #include "ui/MainWindow.h"
 
 #include "ui/workflows/DataEvents.h"
+#include "ui/workflows/BulkRunner.h"
+#include "ui/workflows/BookWorkflow.h"
 
 #include "Application.h"
 #include <VLMS/Core/Clock.h>
@@ -79,6 +81,8 @@ MainWindow::MainWindow(Application& app, QWidget* parent)
     showPage(Page::Catalog);
     retranslateUi();
 }
+
+MainWindow::~MainWindow() = default;
 
 void MainWindow::buildUi() {
     setMinimumSize(1000, 640);
@@ -196,8 +200,13 @@ void MainWindow::buildUi() {
 
     m_stack = new QStackedWidget(mainHost);
     if (m_app.isDatabaseReady()) {
+        m_bulk = std::make_unique<VLMS::BulkRunner>(
+            *m_app.dialogs(), m_app.errors(), m_app.dataEvents());
+        m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
+            m_app.catalog(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
+            m_app.dataEvents(), *this, *m_bulk);
         m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this, m_stack);
-        m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), m_stack);
+        m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
         m_circulationPage =
             new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(), m_stack);
         m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),

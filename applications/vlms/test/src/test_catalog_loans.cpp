@@ -3,6 +3,7 @@
 
 #include "ui/catalog/BookLoansDialog.h"
 #include "ui/catalog/CatalogPage.h"
+#include "WorkflowTestSupport.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -62,7 +63,8 @@ protected:
     /// Builds the page after the rows are seeded: it queries on construction.
     void openPage()
     {
-        m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation);
+        m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
+    m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation, *m_workflows->books);
         m_table = m_page->findChild<QTableWidget*>();
         ASSERT_NE(m_table, nullptr);
     }
@@ -81,6 +83,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<BookWorkflowHarness> m_workflows;
     std::unique_ptr<CatalogPage> m_page;
     QTableWidget* m_table = nullptr;
     std::int64_t m_memberId = 0;

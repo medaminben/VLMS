@@ -5,6 +5,7 @@
 #include "ui/catalog/BookCopiesTable.h"
 #include "ui/catalog/BookEditorDialog.h"
 #include "ui/catalog/CatalogPage.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -119,7 +120,8 @@ protected:
 TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(1));
-    CatalogPage page(*m_catalog, *m_circulation);
+    BookWorkflowHarness workflows(*m_catalog, *m_circulation);
+    CatalogPage page(*m_catalog, *m_circulation, *workflows.books);
     QPushButton* remove = buttonWithText(&page, QStringLiteral("Delete"));
     ASSERT_NE(remove, nullptr);
 

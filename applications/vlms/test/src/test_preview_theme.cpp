@@ -4,6 +4,7 @@
 #include "ui/Theme.h"
 #include "ui/UiHelpers.h"
 #include "ui/catalog/CatalogPage.h"
+#include "WorkflowTestSupport.h"
 #include "ui/circulation/CirculationPage.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -81,7 +82,8 @@ protected:
 
 TEST_F(test_ui_PreviewTheme, ArabicCataloguePlaceholderTurnsDarkWithTheTheme)
 {
-    CatalogPage page(m_catalog, m_circulation);
+    BookWorkflowHarness workflows(m_catalog, m_circulation);
+    CatalogPage page(m_catalog, m_circulation, *workflows.books);
     page.resize(1440, 800);
     page.show();
     QApplication::processEvents();
@@ -153,7 +155,8 @@ TEST_F(test_ui_PreviewTheme, ThemeSwitchKeepsTheSameBookSelected)
     for (const Qt::LayoutDirection direction : {Qt::RightToLeft, Qt::LeftToRight}) {
         qApp->setLayoutDirection(direction);
         applyMode(ThemeMode::Light);
-        CatalogPage page(m_catalog, m_circulation);
+        BookWorkflowHarness workflows(m_catalog, m_circulation);
+    CatalogPage page(m_catalog, m_circulation, *workflows.books);
         page.resize(1440, 800);
         page.show();
         QApplication::processEvents();

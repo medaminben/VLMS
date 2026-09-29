@@ -1,5 +1,7 @@
 #include "ui/catalog/CatalogPage.h"
 
+#include "ui/workflows/BookWorkflow.h"
+
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
 #include "ui/ListPageFrame.h"
@@ -81,10 +83,12 @@ QStringList bookDetailLabelKeys() {
 
 CatalogPage::CatalogPage(VLMS::Repositories::CatalogRepository& repository,
                          VLMS::Repositories::CirculationRepository& circulation,
+                         VLMS::BookWorkflow& books,
                          QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
-      m_circulation(circulation) {
+      m_circulation(circulation),
+      m_books(books) {
     buildUi();
     retranslateUi();
 }
@@ -466,146 +470,54 @@ void CatalogPage::updateCoverPreview(const VLMS::Repositories::BookRecord& book)
 }
 
 void CatalogPage::addBook() {
-    BookEditorDialog dialog(m_repository, this);
-    if (dialog.exec() != QDialog::Accepted) {
+    if (!m_books.add(this)) {
         return;
     }
-
-    VLMS::Repositories::BookWrite write;
-    write.book = dialog.bookInput();
-    write.copies = dialog.copyInputs();
-    if (dialog.coverChanged()) {
-        write.coverSourcePath = ss(dialog.coverSourcePath());
-    }
-    if (const auto created = m_repository.saveNewBook(write); !created) {
-        VLMS::showRepoError(this, created.error());
-        return;
-    }
-
     m_filters->refresh();
     refreshBooks();
 }
 
 void CatalogPage::editBook() {
-    const qint64 bookId = selectedBookId();
-    if (bookId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("catalog.editBook"),
-            T("catalog.selectBookFirst"));
+    if (!m_books.edit(this, selectedBookId())) {
         return;
     }
-
-    const auto book = m_repository.getBook(bookId);
-    if (!book) {
-        VLMS::showRepoError(this, book.error());
-        return;
-    }
-
-    BookEditorDialog dialog(m_repository, book.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    VLMS::Repositories::BookWrite write;
-    write.book = dialog.bookInput();
-    write.copies = dialog.copyInputs();
-    if (dialog.coverChanged()) {
-        write.coverSourcePath = ss(dialog.coverSourcePath());
-    }
-    if (const auto saved = m_repository.saveExistingBook(bookId, write); !saved) {
-        VLMS::showRepoError(this, saved.error());
-        return;
-    }
-
     m_filters->refresh();
     refreshBooks();
 }
 
 void CatalogPage::deleteBook() {
+    QList<qint64> ids;
+    QList<QString> labels;
     if (!m_checks->checkedIds().isEmpty()) {
-        QList<BulkRow> rows;
         for (const int row : m_checks->checkedRows()) {
             const QTableWidgetItem* item = m_booksTable->item(row, 0);
             if (item == nullptr) {
                 continue;
             }
-            BulkRow bulk;
-            bulk.id = item->data(Qt::UserRole).toLongLong();
-            bulk.row = row;
-            bulk.label = item->text();
-            rows.append(bulk);
+            ids.append(item->data(Qt::UserRole).toLongLong());
+            labels.append(item->text());
         }
-        BulkActionTexts texts;
-        texts.title = T("catalog.deleteBook");
-        texts.verb = T("bulk.verb.archive");
-        texts.passive = T("bulk.passive.archive");
-        texts.noun = T("bulk.noun.books");
-        const int done = runBulkAction(
-            this, texts, rows,
-            [this](const BulkRow& bulk) { return m_repository.canArchiveBook(bulk.id); },
-            [this](const BulkRow& bulk) { return m_repository.archiveBook(bulk.id); });
-        if (done > 0) {
-            m_filters->refresh();
-            refreshBooks();
+    } else {
+        const qint64 bookId = selectedBookId();
+        if (bookId > 0) {
+            ids.append(bookId);
+            if (const auto book = m_repository.getBook(bookId)) {
+                labels.append(qs(book->title));
+            }
         }
+    }
+    if (!m_books.archive(this, ids, labels)) {
         return;
     }
-
-    const qint64 bookId = selectedBookId();
-    if (bookId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("catalog.deleteBook"),
-            T("catalog.selectBookFirst"));
-        return;
-    }
-
-    // Asked before the confirmation, as the Members page asks: being offered
-    // "delete this book?" only to be told afterwards that it was never possible
-    // is the long way round to the same no.
-    const auto open = m_repository.bookHasOpenLoans(bookId);
-    if (!open) {
-        VLMS::showRepoError(this, open.error());
-        return;
-    }
-    if (open.value()) {
-        VLMS::showInformation(this, T("catalog.deleteBook"),
-                                    T("error.book.hasActiveLoans"));
-        return;
-    }
-
-    if (!VLMS::askYesNo(this,
-                              T("catalog.deleteBook"),
-                              T("catalog.deleteConfirm"))) {
-        return;
-    }
-
-    // Moves the title and its copies to the Archive; the confirmation text
-    // (catalog.deleteConfirm) says so.
-    if (const auto archived = m_repository.archiveBook(bookId); !archived) {
-        VLMS::showRepoError(this, archived.error());
-        return;
-    }
-
     m_filters->refresh();
     refreshBooks();
 }
 
 void CatalogPage::showLoanHistory() {
     const qint64 bookId = selectedBookId();
-    if (bookId <= 0) {
+    if (!m_books.showLoans(this, bookId)) {
         return;
     }
-
-    const auto book = m_repository.getBook(bookId);
-    if (!book.has_value()) {
-        return;
-    }
-
-    BookLoansDialog dialog(m_circulation, bookId, qs(book->title), this);
-    dialog.exec();
-    // A loan made in there changes the Available column behind it.
     refreshBooks();
     selectBookId(bookId);
 }

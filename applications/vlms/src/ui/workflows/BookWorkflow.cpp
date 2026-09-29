@@ -116,6 +116,15 @@ Core::Status BookWorkflow::archive(QWidget* parent,
     }
 
     if (rows.size() == 1) {
+        const auto open = m_catalog.bookHasOpenLoans(rows.first().id);
+        if (!open) {
+            m_errors.show(parent, open.error());
+            return Core::asStatus(open);
+        }
+        if (open.value()) {
+            showInformation(parent, T("catalog.deleteBook"), T("error.book.hasActiveLoans"));
+            return Core::Status::ok();
+        }
         if (!askYesNo(parent, T("catalog.deleteBook"), T("catalog.deleteConfirm"))) {
             return Core::Status::ok();
         }

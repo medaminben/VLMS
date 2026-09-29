@@ -4,6 +4,7 @@
 #include "ui/workflows/Navigator.h"
 
 #include <QList>
+#include <memory>
 #include <QMainWindow>
 
 class Application;
@@ -18,6 +19,8 @@ class QStackedWidget;
 class QVBoxLayout;
 
 namespace VLMS {
+class BookWorkflow;
+class BulkRunner;
 class ClickableLabel;
 class LanguageSelector;
 }
@@ -27,6 +30,7 @@ class MainWindow final : public QMainWindow, public VLMS::Navigator {
 
 public:
     explicit MainWindow(Application& app, QWidget* parent = nullptr);
+    ~MainWindow() override;
 
     void show(VLMS::PageId page) override;
     void showMemberLoans(const QString& membershipNumber) override;
@@ -75,4 +79,7 @@ private:
     MetricsPage* m_metricsPage = nullptr;
 
     Page m_activePage = Page::Catalog;
+
+    std::unique_ptr<VLMS::BulkRunner> m_bulk;
+    std::unique_ptr<VLMS::BookWorkflow> m_bookWorkflow;
 };

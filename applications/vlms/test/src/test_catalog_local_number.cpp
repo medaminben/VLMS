@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/catalog/CatalogPage.h"
+#include "WorkflowTestSupport.h"
 #include "ui/catalog/LocalNumberDelegate.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -46,7 +47,8 @@ protected:
 
     QTableWidget* openPage()
     {
-        m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation);
+        m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
+    m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation, *m_workflows->books);
         auto* table = m_page->findChild<QTableWidget*>();
         return table;
     }
@@ -94,6 +96,7 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<BookWorkflowHarness> m_workflows;
     std::unique_ptr<CatalogPage> m_page;
 };
 

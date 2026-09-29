@@ -20,6 +20,7 @@ class QListWidget;
 
 namespace VLMS {
 class BookFacetFilters;
+class BookWorkflow;
 class TablePager;
 }
 
@@ -29,6 +30,7 @@ class CatalogPage final : public QWidget {
 public:
     CatalogPage(VLMS::Repositories::CatalogRepository& repository,
                 VLMS::Repositories::CirculationRepository& circulation,
+                VLMS::BookWorkflow& books,
                 QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -65,6 +67,7 @@ private:
 
     VLMS::Repositories::CatalogRepository& m_repository;
     VLMS::Repositories::CirculationRepository& m_circulation;
+    VLMS::BookWorkflow& m_books;
 
     QLineEdit* m_searchEdit = nullptr;
     QPushButton* m_addButton = nullptr;
