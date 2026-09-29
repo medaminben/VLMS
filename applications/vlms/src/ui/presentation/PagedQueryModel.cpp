@@ -1,5 +1,7 @@
 #include "ui/presentation/PagedQueryModel.h"
 
+#include "QtBridge.h"
+
 namespace VLMS {
 
 PagedQueryModel::PagedQueryModel(ListSpec* spec, DataEvents& events, QObject* parent)
@@ -17,6 +19,7 @@ void PagedQueryModel::setSpec(ListSpec* spec)
     }
     m_spec = spec;
     m_checked.clear();
+    m_cellOverrides.clear();
     reload();
 }
 
@@ -32,6 +35,21 @@ void PagedQueryModel::reload()
         return;
     }
     applyLoad(m_spec->load(m_state));
+}
+
+void PagedQueryModel::notifySpecRetranslated()
+{
+    if (m_spec == nullptr) {
+        return;
+    }
+    const int rows = m_spec->rowCount();
+    const int cols = columnCount();
+    if (rows > 0 && cols > 0) {
+        emit dataChanged(index(0, 0), index(rows - 1, cols - 1));
+    }
+    if (cols > 0) {
+        emit headerDataChanged(Qt::Horizontal, 0, cols - 1);
+    }
 }
 
 const QueryState& PagedQueryModel::query() const
@@ -112,6 +130,11 @@ int PagedQueryModel::columnCount(const QModelIndex& parent) const
     return m_spec->columns().size();
 }
 
+QString PagedQueryModel::overrideKey(const qint64 id, const int column, const int role)
+{
+    return QStringLiteral("%1/%2/%3").arg(id).arg(column).arg(role);
+}
+
 QVariant PagedQueryModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || m_spec == nullptr) {
@@ -121,26 +144,41 @@ QVariant PagedQueryModel::data(const QModelIndex& index, int role) const
         const qint64 id = m_spec->idAt(index.row());
         return m_checked.contains(id) ? Qt::Checked : Qt::Unchecked;
     }
+    const qint64 id = m_spec->idAt(index.row());
+    if (id > 0) {
+        const auto it = m_cellOverrides.constFind(overrideKey(id, index.column(), role));
+        if (it != m_cellOverrides.cend()) {
+            return *it;
+        }
+    }
     return m_spec->cell(index.row(), index.column(), role);
 }
 
 bool PagedQueryModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    if (!index.isValid() || m_spec == nullptr || role != Qt::CheckStateRole
-        || index.column() != 0) {
+    if (!index.isValid() || m_spec == nullptr) {
         return false;
     }
     const qint64 id = m_spec->idAt(index.row());
     if (id <= 0) {
         return false;
     }
-    const bool checked = value.toInt() == static_cast<int>(Qt::Checked);
-    if (checked) {
-        m_checked.insert(id);
-    } else {
-        m_checked.remove(id);
+    if (role == Qt::CheckStateRole && index.column() == 0) {
+        const bool checked = value.toInt() == static_cast<int>(Qt::Checked);
+        if (checked) {
+            m_checked.insert(id);
+        } else {
+            m_checked.remove(id);
+        }
+        emit dataChanged(index, index, {Qt::CheckStateRole});
+        return true;
     }
-    emit dataChanged(index, index, {Qt::CheckStateRole});
+    // Ephemeral cell overrides (LocalNumberDelegate pick writes kSelectedRole).
+    if (role == Qt::CheckStateRole) {
+        return false;
+    }
+    m_cellOverrides.insert(overrideKey(id, index.column(), role), value);
+    emit dataChanged(index, index, {role});
     return true;
 }
 
@@ -153,7 +191,7 @@ QVariant PagedQueryModel::headerData(int section, Qt::Orientation orientation, i
     if (section < 0 || section >= cols.size()) {
         return {};
     }
-    return cols.at(section).titleKey;
+    return T(ss(cols.at(section).titleKey));
 }
 
 Qt::ItemFlags PagedQueryModel::flags(const QModelIndex& index) const
@@ -203,6 +241,7 @@ void PagedQueryModel::applyLoad(Core::Status status)
         return;
     }
     beginResetModel();
+    m_cellOverrides.clear();
     pruneCheckedToListed();
     endResetModel();
     emit loaded(m_spec != nullptr ? m_spec->totalCount() : 0);

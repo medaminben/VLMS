@@ -1,8 +1,8 @@
 #include "ModalTest.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
-#include "UiTest.h"
 
+#include "QtBridge.h"
 #include "ui/ListPage.h"
 #include "ui/presentation/MemberListSpec.h"
 #include "ui/workflows/Navigator.h"
@@ -157,13 +157,13 @@ TEST_F(test_ui_MemberRemoval, OpenLoansOfferGoToLoansAndEmitTheMembershipNumber)
         : QDir(qEnvironmentVariable("VLMS_TEST_SHOT_DIR")).filePath(QStringLiteral("blocked-by-loans.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("members.goToLoans")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, T("members.goToLoans"), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteBlockedByLoans")));
+    EXPECT_EQ(outcome.text, T("members.deleteBlockedByLoans"));
     EXPECT_FALSE(outcome.hasCheckBox);
-    EXPECT_EQ(outcome.buttonLabels.filter(qs(Core::Strings::t("members.goToLoans"))).size(), 1);
+    EXPECT_EQ(outcome.buttonLabels.filter(T("members.goToLoans")).size(), 1);
     EXPECT_EQ(m_memberWorkflows->navigator.showMemberLoansCount, before + 1);
     EXPECT_EQ(m_memberWorkflows->navigator.lastMembershipNumber,
               QString::fromStdString(m_members->getMember(m_memberId)->membershipNumber));
@@ -181,11 +181,11 @@ TEST_F(test_ui_MemberRemoval, ConfirmationIsAPlainYesOrNo)
               .filePath(QStringLiteral("confirm-delete.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.no")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, T("common.no"), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
+    EXPECT_EQ(outcome.text, T("members.deleteConfirm"));
     // Delete archives. Destroying a record is the Archive's business now, so
     // there is nothing here to opt out of.
     EXPECT_FALSE(outcome.hasCheckBox);
@@ -200,7 +200,7 @@ TEST_F(test_ui_MemberRemoval, ArchivingRemovesTheMemberFromTheList)
     seedMemberWithLoan(today.addDays(-20).toString(Qt::ISODate));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")), std::nullopt);
+        [this]() { clickDelete(m_page.get()); }, T("common.yes"), std::nullopt);
     EXPECT_TRUE(outcome.appeared);
     EXPECT_EQ(m_db->count("members"), 1);
     EXPECT_EQ(m_db->count("loans"), 1);
@@ -222,8 +222,8 @@ TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecon
     // Delete no longer offers to destroy anything.
     const QList<ModalOutcome> outcomes = runAndAnswerModals(
         [this]() { clickDelete(m_page.get()); },
-        {ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}},
-         ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}}});
+        {ModalAnswer{T("common.yes"), std::nullopt, {}},
+         ModalAnswer{T("common.ok"), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
     EXPECT_FALSE(outcomes.at(1).appeared);
@@ -251,7 +251,7 @@ TEST_F(test_ui_MemberRemoval, TwoTickedMembersAreArchivedAndTheHighlightedThirdS
     tickMember(m_page.get(), second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 members?"));
@@ -273,10 +273,10 @@ TEST_F(test_ui_MemberRemoval, ATickedMemberWithABookOutStaysWhileTheOtherIsArchi
     tickMember(m_page.get(), free);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
+    EXPECT_NE(outcome.text, T("members.deleteConfirm"));
     EXPECT_FALSE(memberArchived(*m_db, blocked));
     EXPECT_TRUE(memberArchived(*m_db, free));
 }

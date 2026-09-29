@@ -1,9 +1,10 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
+#include "ui/ListPage.h"
 #include "ui/Theme.h"
 #include "ui/UiHelpers.h"
-#include "ui/catalog/CatalogPage.h"
+#include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 #include "ui/circulation/CirculationPage.h"
 
@@ -14,7 +15,9 @@
 
 #include <QApplication>
 #include <QImage>
+#include <QItemSelectionModel>
 #include <QLabel>
+#include <QTableView>
 #include <QTableWidget>
 
 #include <gtest/gtest.h>
@@ -83,14 +86,24 @@ protected:
 TEST_F(test_ui_PreviewTheme, ArabicCataloguePlaceholderTurnsDarkWithTheTheme)
 {
     BookWorkflowHarness workflows(m_catalog, m_circulation);
-    CatalogPage page(m_catalog, m_circulation, *workflows.books);
+    BookListSpec spec(m_catalog, *workflows.books);
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.catalog.title");
+    cfg.bodyKey = QStringLiteral("page.catalog.body");
+    cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    ListPage page(&spec, workflows.events, cfg);
     page.resize(1440, 800);
     page.show();
     QApplication::processEvents();
-    auto* table = page.findChild<QTableWidget*>();
+    QTableView* table = page.table();
     auto* cover = page.findChild<QLabel*>(QStringLiteral("bookCover"));
     ASSERT_NE(table, nullptr);
     ASSERT_NE(cover, nullptr);
+    ASSERT_GT(table->model()->rowCount(), 0);
+    VLMS::selectTableRow(table, 0);
+    QApplication::processEvents();
     ASSERT_GT(placeholderLightness(cover), 200);
 
     applyMode(ThemeMode::Dark);
@@ -98,7 +111,8 @@ TEST_F(test_ui_PreviewTheme, ArabicCataloguePlaceholderTurnsDarkWithTheTheme)
     QApplication::processEvents();
 
     // The selection survives the refresh, and the card is repainted dark.
-    EXPECT_FALSE(table->selectedItems().isEmpty());
+    ASSERT_NE(table->selectionModel(), nullptr);
+    EXPECT_FALSE(table->selectionModel()->selectedRows().isEmpty());
     EXPECT_LT(placeholderLightness(cover), 100);
 }
 
@@ -157,22 +171,33 @@ TEST_F(test_ui_PreviewTheme, ThemeSwitchKeepsTheSameBookSelected)
         qApp->setLayoutDirection(direction);
         applyMode(ThemeMode::Light);
         BookWorkflowHarness workflows(m_catalog, m_circulation);
-    CatalogPage page(m_catalog, m_circulation, *workflows.books);
+        BookListSpec spec(m_catalog, *workflows.books);
+        ListPage::Config cfg;
+        cfg.titleKey = QStringLiteral("page.catalog.title");
+        cfg.bodyKey = QStringLiteral("page.catalog.body");
+        cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+        cfg.imageObjectName = QStringLiteral("bookCover");
+        cfg.imageBounds = bookCoverPreviewBounds();
+        ListPage page(&spec, workflows.events, cfg);
         page.resize(1440, 800);
         page.show();
         QApplication::processEvents();
-        auto* table = page.findChild<QTableWidget*>();
+        QTableView* table = page.table();
         ASSERT_NE(table, nullptr);
-        const int before = table->currentRow();
+        ASSERT_GT(table->model()->rowCount(), 0);
+        VLMS::selectTableRow(table, 0);
+        QApplication::processEvents();
+        const int before = table->currentIndex().row();
         ASSERT_EQ(before, 0);
-        const qint64 id = table->item(before, 0)->data(Qt::UserRole).toLongLong();
+        const qint64 id = table->model()->index(before, 0).data(Qt::UserRole).toLongLong();
 
         applyMode(ThemeMode::Dark);
         page.retranslateUi();
         QApplication::processEvents();
 
-        ASSERT_GE(table->currentRow(), 0) << "direction " << direction;
-        EXPECT_EQ(table->item(table->currentRow(), 0)->data(Qt::UserRole).toLongLong(), id)
+        ASSERT_GE(table->currentIndex().row(), 0) << "direction " << direction;
+        EXPECT_EQ(table->model()->index(table->currentIndex().row(), 0).data(Qt::UserRole).toLongLong(),
+                  id)
             << "direction " << direction;
         EXPECT_EQ(table->selectionModel()->selectedRows().size(), 1) << "direction " << direction;
     }

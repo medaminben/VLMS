@@ -1,8 +1,9 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
+#include "ui/ListPage.h"
 #include "ui/catalog/BookLoansDialog.h"
-#include "ui/catalog/CatalogPage.h"
+#include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
 
@@ -15,6 +16,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QTableView>
 #include <QTableWidget>
 
 #include <gtest/gtest.h>
@@ -38,6 +40,17 @@ QPushButton* buttonWithText(QWidget* root, const QString& text)
     return nullptr;
 }
 
+ListPage::Config catalogConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.catalog.title");
+    cfg.bodyKey = QStringLiteral("page.catalog.body");
+    cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
 class test_ui_CatalogLoans : public ::testing::Test {
 protected:
     void SetUp() override
@@ -54,6 +67,8 @@ protected:
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_workflows.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
@@ -64,15 +79,16 @@ protected:
     void openPage()
     {
         m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
-    m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation, *m_workflows->books);
-        m_table = m_page->findChild<QTableWidget*>();
+        m_spec = std::make_unique<BookListSpec>(*m_catalog, *m_workflows->books);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_workflows->events, catalogConfig());
+        m_table = m_page->table();
         ASSERT_NE(m_table, nullptr);
     }
 
     void selectRowWithTitle(const QString& title)
     {
-        for (int row = 0; row < m_table->rowCount(); ++row) {
-            if (m_table->item(row, 0) != nullptr && m_table->item(row, 0)->text() == title) {
+        for (int row = 0; row < m_table->model()->rowCount(); ++row) {
+            if (m_table->model()->index(row, 0).data(Qt::DisplayRole).toString() == title) {
                 m_table->selectRow(row);
                 return;
             }
@@ -84,8 +100,9 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<BookWorkflowHarness> m_workflows;
-    std::unique_ptr<CatalogPage> m_page;
-    QTableWidget* m_table = nullptr;
+    std::unique_ptr<BookListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
+    QTableView* m_table = nullptr;
     std::int64_t m_memberId = 0;
 };
 
@@ -96,7 +113,7 @@ TEST_F(test_ui_CatalogLoans, TheLoansButtonOpensEvenWithNoHistory)
     ASSERT_GT(seedBook(*m_db, untouched), 0);
 
     openPage();
-    auto* loans = buttonWithText(m_page.get(), T("catalog.loans"));
+    auto* loans = m_page->findChild<QPushButton*>(QStringLiteral("listAction_loans"));
     ASSERT_NE(loans, nullptr);
 
     selectRowWithTitle(QStringLiteral("Untouched Book"));
@@ -136,7 +153,7 @@ TEST_F(test_ui_CatalogLoans, TheScopedCheckoutOffersOnlyThisBooksFreeCopies)
     other.initialCopyCount = 2;
     ASSERT_GT(seedBook(*m_db, other), 0);
 
-    LoanScope scope;
+    ::LoanScope scope;
     scope.bookId = wantedId;
     scope.label = QStringLiteral("Wanted Book");
     LoanCheckoutDialog dialog(*m_circulation, scope);

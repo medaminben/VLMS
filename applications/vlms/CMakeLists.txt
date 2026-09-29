@@ -21,7 +21,6 @@ add_library(vlms_ui STATIC
     src/ui/FacetList.cpp
     src/ui/PreviewImages.cpp
     src/ui/MainWindow.cpp
-    src/ui/catalog/CatalogPage.cpp
     src/ui/catalog/BookFacetFilters.cpp
     src/ui/catalog/BookEditorDialog.cpp
     src/ui/catalog/BookCopiesTable.cpp
@@ -73,7 +72,6 @@ add_library(vlms_ui STATIC
     src/ui/FacetList.h
     src/ui/PreviewImages.h
     src/ui/MainWindow.h
-    src/ui/catalog/CatalogPage.h
     src/ui/catalog/BookFacetFilters.h
     src/ui/catalog/BookEditorDialog.h
     src/ui/catalog/BookCopiesTable.h

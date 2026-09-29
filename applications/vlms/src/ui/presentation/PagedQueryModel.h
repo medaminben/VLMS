@@ -7,8 +7,11 @@
 #include <VLMS/Core/Result.h>
 
 #include <QAbstractTableModel>
+#include <QHash>
 #include <QList>
 #include <QSet>
+#include <QString>
+#include <QVariant>
 
 namespace VLMS {
 
@@ -20,6 +23,8 @@ public:
     void setSpec(ListSpec* spec);  // Archive type switch
     void setQuery(const QueryState& state);
     void reload();
+    /// After ListSpec::retranslate rebuilt cells/headers without a reload.
+    void notifySpecRetranslated();
     [[nodiscard]] const QueryState& query() const;
 
     [[nodiscard]] QList<qint64> checkedIds() const;
@@ -46,10 +51,14 @@ private:
     void applyLoad(Core::Status status);
     void pruneCheckedToListed();
 
+    [[nodiscard]] static QString overrideKey(qint64 id, int column, int role);
+
     ListSpec* m_spec = nullptr;
     DataEvents& m_events;
     QueryState m_state;
     QSet<qint64> m_checked;
+    /// Ephemeral cell overrides (e.g. LocalNumberDelegate::kSelectedRole picks).
+    QHash<QString, QVariant> m_cellOverrides;
 };
 
 }  // namespace VLMS

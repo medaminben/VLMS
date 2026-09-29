@@ -14,7 +14,6 @@ build_gtest_executable(
         src/test_member_editor_status.cpp
         src/test_member_image_viewer.cpp
         src/test_circulation_filters.cpp
-        src/test_catalog_sort.cpp
         src/test_book_editor_ocr.cpp
         src/test_list_page_frame.cpp
         src/test_theme_modes.cpp

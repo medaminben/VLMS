@@ -23,6 +23,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QObject>
 #include <QPushButton>
 #include <QTableView>
 #include <QTest>
@@ -130,7 +131,7 @@ protected:
                                            m_page->filterColumn());
         m_filters->refresh();
         m_page->addFilterWidget(m_filters, 1);
-        connect(m_filters, &MemberFacetFilters::changed, m_page.get(), [this]() {
+        QObject::connect(m_filters, &MemberFacetFilters::changed, m_page.get(), [this]() {
             const Repositories::MemberFacets facets = m_filters->facets();
             QHash<QString, QStringList> mapped;
             mapped.insert(QStringLiteral("status"), qsl(facets.statuses));

@@ -1,10 +1,11 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
+#include "ui/ListPage.h"
 #include "ui/archive/ReuseNumberFlow.h"
 #include "ui/catalog/BookCopiesTable.h"
 #include "ui/catalog/BookEditorDialog.h"
-#include "ui/catalog/CatalogPage.h"
+#include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -16,6 +17,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTableView>
 #include <QTableWidget>
 #include <QTimer>
 
@@ -121,9 +123,20 @@ TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(1));
     BookWorkflowHarness workflows(*m_catalog, *m_circulation);
-    CatalogPage page(*m_catalog, *m_circulation, *workflows.books);
-    QPushButton* remove = buttonWithText(&page, QStringLiteral("Delete"));
+    BookListSpec spec(*m_catalog, *workflows.books);
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.catalog.title");
+    cfg.bodyKey = QStringLiteral("page.catalog.body");
+    cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    ListPage page(&spec, workflows.events, cfg);
+    QPushButton* remove = page.findChild<QPushButton*>(QStringLiteral("listAction_archive"));
     ASSERT_NE(remove, nullptr);
+    QTableView* table = page.table();
+    ASSERT_NE(table, nullptr);
+    ASSERT_GT(table->model()->rowCount(), 0);
+    table->selectRow(0);
 
     answerNextBoxYes();
     remove->click();

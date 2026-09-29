@@ -175,10 +175,15 @@ void ListPage::retranslateUi()
     }
     if (m_spec != nullptr) {
         m_spec->retranslate();
+        if (m_model != nullptr) {
+            m_model->notifySpecRetranslated();
+        }
         const QList<PageAction> actions = orderedActions();
         for (int i = 0; i < m_actionButtons.size() && i < actions.size(); ++i) {
             m_actionButtons.at(i)->setText(T(ss(actions.at(i).labelKey)));
         }
+        // Refresh preview artwork so theme-dependent placeholders repaint.
+        onSelectionChanged();
     }
 }
 

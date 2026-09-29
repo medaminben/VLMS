@@ -1,9 +1,10 @@
 #include "ModalTest.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
-#include "UiTest.h"
 
-#include "ui/catalog/CatalogPage.h"
+#include "QtBridge.h"
+#include "ui/ListPage.h"
+#include "ui/presentation/BookListSpec.h"
 #include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
@@ -11,7 +12,9 @@
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
-#include <QTableWidget>
+#include <QAbstractItemModel>
+#include <QPushButton>
+#include <QTableView>
 
 #include <gtest/gtest.h>
 
@@ -20,6 +23,47 @@
 
 using namespace VLMS;
 using namespace Test;
+
+namespace {
+
+ListPage::Config catalogConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.catalog.title");
+    cfg.bodyKey = QStringLiteral("page.catalog.body");
+    cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
+void clickDelete(ListPage* page)
+{
+    auto* button = page->findChild<QPushButton*>(QStringLiteral("listAction_archive"));
+    ASSERT_NE(button, nullptr);
+    button->click();
+}
+
+void tickBook(ListPage* page, std::int64_t bookId)
+{
+    QTableView* table = page->table();
+    ASSERT_NE(table, nullptr);
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        if (table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == bookId) {
+            ASSERT_TRUE(table->model()->setData(table->model()->index(row, 0), Qt::Checked,
+                                                Qt::CheckStateRole));
+            return;
+        }
+    }
+    FAIL() << "book " << bookId << " is not on the catalogue page";
+}
+
+bool isArchived(TestDatabase& db, std::int64_t bookId)
+{
+    return !db.scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId)).isNull();
+}
+
+}  // namespace
 
 class test_ui_CatalogRemoval : public ::testing::Test {
 protected:
@@ -30,13 +74,16 @@ protected:
     {
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
-        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(),
+                                                                      m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
     }
 
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_workflows.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
@@ -45,11 +92,12 @@ protected:
     void openPageAndSelect(std::int64_t bookId)
     {
         m_workflows = std::make_unique<BookWorkflowHarness>(*m_catalog, *m_circulation);
-        m_page = std::make_unique<CatalogPage>(*m_catalog, *m_circulation, *m_workflows->books);
-        m_table = m_page->findChild<QTableWidget*>();
+        m_spec = std::make_unique<BookListSpec>(*m_catalog, *m_workflows->books);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_workflows->events, catalogConfig());
+        m_table = m_page->table();
         ASSERT_NE(m_table, nullptr);
-        for (int row = 0; row < m_table->rowCount(); ++row) {
-            if (m_table->item(row, 0)->data(Qt::UserRole).toLongLong() == bookId) {
+        for (int row = 0; row < m_table->model()->rowCount(); ++row) {
+            if (m_table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == bookId) {
                 m_table->selectRow(row);
                 return;
             }
@@ -57,14 +105,13 @@ protected:
         FAIL() << "book " << bookId << " is not on the catalogue page";
     }
 
-    void clickDelete() { clickButtonWithText(m_page.get(), qs(Core::Strings::t("catalog.delete"))); }
-
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     std::unique_ptr<BookWorkflowHarness> m_workflows;
-    std::unique_ptr<CatalogPage> m_page;
-    QTableWidget* m_table = nullptr;
+    std::unique_ptr<BookListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
+    QTableView* m_table = nullptr;
 };
 
 TEST_F(test_ui_CatalogRemoval, ABookWithACopyOutIsRefusedBeforeTheConfirmationIsAsked)
@@ -77,14 +124,13 @@ TEST_F(test_ui_CatalogRemoval, ABookWithACopyOutIsRefusedBeforeTheConfirmationIs
               0);
     openPageAndSelect(bookId);
 
-    // One box, and it is the refusal -- not a confirmation followed by a no.
-    const QList<ModalOutcome> outcomes =
-        runAndAnswerModals([this]() { clickDelete(); },
-                           {ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}},
-                            ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}}});
+    const QList<ModalOutcome> outcomes = runAndAnswerModals(
+        [this]() { clickDelete(m_page.get()); },
+        {ModalAnswer{T("common.ok"), std::nullopt, {}},
+         ModalAnswer{T("common.yes"), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
-    EXPECT_EQ(outcomes.at(0).text, qs(Core::Strings::t("error.book.hasActiveLoans")));
+    EXPECT_EQ(outcomes.at(0).text, T("error.book.hasActiveLoans"));
     EXPECT_FALSE(outcomes.at(1).appeared);
     EXPECT_TRUE(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId))
                     .isNull());
@@ -99,38 +145,16 @@ TEST_F(test_ui_CatalogRemoval, ABookWhoseCopiesAreAllInArchivesTheTitleOnYes)
     openPageAndSelect(bookId);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("catalog.deleteConfirm")));
+    EXPECT_EQ(outcome.text, T("catalog.deleteConfirm"));
     EXPECT_FALSE(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId))
                      .isNull());
-    // Archived, never destroyed -- and the neighbour is untouched.
     EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM books").toInt(), 2);
     EXPECT_TRUE(m_db->scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bystander))
                     .isNull());
 }
-
-namespace {
-
-void tickBook(QTableWidget* table, std::int64_t bookId)
-{
-    for (int row = 0; row < table->rowCount(); ++row) {
-        QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == bookId) {
-            item->setCheckState(Qt::Checked);
-            return;
-        }
-    }
-    FAIL() << "book " << bookId << " is not on the catalogue page";
-}
-
-bool isArchived(TestDatabase& db, std::int64_t bookId)
-{
-    return !db.scalar("SELECT archived_at FROM books WHERE id = " + std::to_string(bookId)).isNull();
-}
-
-}  // namespace
 
 TEST_F(test_ui_CatalogRemoval, TwoTickedBooksAreArchivedAndTheHighlightedThirdStays)
 {
@@ -138,11 +162,11 @@ TEST_F(test_ui_CatalogRemoval, TwoTickedBooksAreArchivedAndTheHighlightedThirdSt
     const std::int64_t second = seedBook(*m_db, uniqueBookSeed(11));
     const std::int64_t highlighted = seedBook(*m_db, uniqueBookSeed(12));
     openPageAndSelect(highlighted);
-    tickBook(m_table, first);
-    tickBook(m_table, second);
+    tickBook(m_page.get(), first);
+    tickBook(m_page.get(), second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 books?"));
@@ -160,14 +184,14 @@ TEST_F(test_ui_CatalogRemoval, ATickedBookOnLoanStaysWhileTheOtherIsArchived)
                             "2026-09-15"),
               0);
     openPageAndSelect(onLoan);
-    tickBook(m_table, onLoan);
-    tickBook(m_table, free);
+    tickBook(m_page.get(), onLoan);
+    tickBook(m_page.get(), free);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Core::Strings::t("catalog.deleteConfirm")));
+    EXPECT_NE(outcome.text, T("catalog.deleteConfirm"));
     EXPECT_FALSE(isArchived(*m_db, onLoan));
     EXPECT_TRUE(isArchived(*m_db, free));
 }

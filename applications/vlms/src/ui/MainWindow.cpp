@@ -19,12 +19,14 @@
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 #include "ui/archive/ArchivePage.h"
-#include "ui/catalog/CatalogPage.h"
+#include "ui/catalog/BookFacetFilters.h"
+#include "ui/catalog/LocalNumberDelegate.h"
 #include "ui/LanguageSelector.h"
 #include "ui/ListPage.h"
 #include "ui/circulation/CirculationPage.h"
 #include "ui/members/MemberFacetFilters.h"
 #include "ui/metrics/MetricsPage.h"
+#include "ui/presentation/BookListSpec.h"
 #include "ui/presentation/MemberListSpec.h"
 
 #include <QApplication>
@@ -39,6 +41,7 @@
 #include <QScreen>
 #include <QStackedWidget>
 #include <QStandardPaths>
+#include <QTableView>
 #include <QVBoxLayout>
 
 using VLMS::T;
@@ -53,6 +56,7 @@ namespace {
 // Breathing room above and below the tallest thing in the header row, which is
 // the brand banner.
 constexpr int kHeaderPadding = 8;
+constexpr int kCatalogLocalNumberColumn = 3;
 
 QStringList existingBrowsers(const QStringList& candidates)
 {
@@ -71,6 +75,19 @@ QStringList existingBrowsers(const QStringList& candidates)
         }
     }
     return kept;
+}
+
+QStringList coverFacetTokens(const VLMS::Repositories::CoverFilter filter)
+{
+    switch (filter) {
+    case VLMS::Repositories::CoverFilter::WithCover:
+        return {QStringLiteral("with")};
+    case VLMS::Repositories::CoverFilter::WithoutCover:
+        return {QStringLiteral("without")};
+    case VLMS::Repositories::CoverFilter::All:
+        break;
+    }
+    return {QStringLiteral("all")};
 }
 }  // namespace
 
@@ -248,7 +265,35 @@ void MainWindow::buildUi() {
             mapped.insert(QStringLiteral("city"), qsl(facets.cities));
             m_membersPage->setFacets(mapped);
         });
-        m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
+        m_bookListSpec =
+            std::make_unique<VLMS::BookListSpec>(m_app.catalog(), *m_bookWorkflow);
+        VLMS::ListPage::Config catalogCfg;
+        catalogCfg.titleKey = QStringLiteral("page.catalog.title");
+        catalogCfg.bodyKey = QStringLiteral("page.catalog.body");
+        catalogCfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+        catalogCfg.imageObjectName = QStringLiteral("bookCover");
+        catalogCfg.imageBounds = VLMS::bookCoverPreviewBounds();
+        m_catalogPage = new VLMS::ListPage(m_bookListSpec.get(), m_app.dataEvents(),
+                                           catalogCfg, m_stack);
+        m_bookFilters = new VLMS::BookFacetFilters(
+            m_app.catalog(), VLMS::Repositories::ArchiveScope::Live,
+            m_catalogPage->filterColumn());
+        m_bookFilters->refresh();
+        m_catalogPage->addFilterWidget(m_bookFilters, 1);
+        connect(m_bookFilters, &VLMS::BookFacetFilters::changed, this, [this]() {
+            if (m_catalogPage == nullptr || m_bookFilters == nullptr) {
+                return;
+            }
+            QHash<QString, QStringList> mapped;
+            mapped.insert(QStringLiteral("language"), m_bookFilters->languages());
+            mapped.insert(QStringLiteral("category"), m_bookFilters->categoryCodes());
+            mapped.insert(QStringLiteral("cover"), coverFacetTokens(m_bookFilters->coverFilter()));
+            m_catalogPage->setFacets(mapped);
+        });
+        if (QTableView* catalogTable = m_catalogPage->table()) {
+            catalogTable->setItemDelegateForColumn(
+                kCatalogLocalNumberColumn, new LocalNumberDelegate(catalogTable));
+        }
         m_circulationPage =
             new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(),
                                 *m_loanWorkflow, m_stack);
@@ -260,6 +305,8 @@ void MainWindow::buildUi() {
         m_memberFilters = nullptr;
         m_memberListSpec.reset();
         m_catalogPage = nullptr;
+        m_bookFilters = nullptr;
+        m_bookListSpec.reset();
         m_circulationPage = nullptr;
         m_archivePage = nullptr;
         m_metricsPage = nullptr;
@@ -536,6 +583,9 @@ void MainWindow::retranslateUi()
     }
     if (m_catalogPage != nullptr) {
         m_catalogPage->retranslateUi();
+        if (m_bookFilters != nullptr) {
+            m_bookFilters->refresh();
+        }
     }
     if (m_circulationPage != nullptr) {
         m_circulationPage->retranslateUi();
@@ -584,7 +634,7 @@ void MainWindow::showBook(qint64 bookId)
 {
     showPage(Page::Catalog);
     if (m_catalogPage != nullptr) {
-        m_catalogPage->selectBookId(bookId);
+        m_catalogPage->revealId(bookId);
     }
 }
 
@@ -615,8 +665,8 @@ void MainWindow::showArchive(VLMS::ArchiveType type)
 void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
 {
     if ((what & VLMS::Entity::Books) || (what & VLMS::Entity::Copies)) {
-        if (m_catalogPage != nullptr) {
-            m_catalogPage->retranslateUi();
+        if (m_bookFilters != nullptr) {
+            m_bookFilters->refresh();
         }
     }
     if (what & VLMS::Entity::Members) {
