@@ -53,6 +53,10 @@ add_library(vlms_ui STATIC
     src/ui/presentation/MemberListSpec.cpp
     src/ui/presentation/BookListSpec.cpp
     src/ui/presentation/LoanListSpec.cpp
+    src/ui/presentation/ArchivedMemberSpec.cpp
+    src/ui/presentation/ArchivedBookSpec.cpp
+    src/ui/presentation/ArchivedCopySpec.cpp
+    src/ui/presentation/ArchivedLoanSpec.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -116,6 +120,10 @@ add_library(vlms_ui STATIC
     src/ui/presentation/MemberListSpec.h
     src/ui/presentation/BookListSpec.h
     src/ui/presentation/LoanListSpec.h
+    src/ui/presentation/ArchivedMemberSpec.h
+    src/ui/presentation/ArchivedBookSpec.h
+    src/ui/presentation/ArchivedCopySpec.h
+    src/ui/presentation/ArchivedLoanSpec.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

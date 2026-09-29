@@ -109,6 +109,10 @@ build_gtest_executable(
         src/test_member_list_spec.cpp
         src/test_book_list_spec.cpp
         src/test_loan_list_spec.cpp
+        src/test_archived_member_spec.cpp
+        src/test_archived_book_spec.cpp
+        src/test_archived_copy_spec.cpp
+        src/test_archived_loan_spec.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui
