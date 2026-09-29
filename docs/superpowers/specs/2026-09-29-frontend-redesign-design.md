@@ -332,7 +332,7 @@ Rules:
 | 17 | Restore or purge | `ArchivePage` + `runBulkAction` | `ArchiveWorkflow::restore/purge` | `ArchiveWorkflow.Restore*`, `ArchiveWorkflow.Purge*` |
 | 18 | Reuse an archived copy's number | `ReuseNumberFlow` | `ArchiveWorkflow::reuseNumber` | `ArchiveWorkflow.ReuseNumber*` |
 | 19 | Archived loan history | `ArchiveLoansDialog` | `LoanHistoryDialog`, archived scope | `LoanHistoryDialog.Archived*` |
-| 20 | Metrics, activity periods, top categories | `MetricsPage` | `DashboardPage`, reloads on any change | `DashboardPage.*` |
+| 20 | Metrics, activity periods, top categories | `MetricsPage` | `DashboardPage`, reloads on any change | `MetricsPage.*` (page still named `MetricsPage`; `DashboardPage` rename deferred) |
 | 21 | Switch language, including RTL | `LanguageSelector` + `retranslateUi` chain | `QEvent::LanguageChange` | `LanguageChange.*` |
 | 22 | Theme toggle, manual, licence | `MainWindow`, `Theme`, `LicenceDialog` | unchanged in the shell | existing tests, ported |
 
