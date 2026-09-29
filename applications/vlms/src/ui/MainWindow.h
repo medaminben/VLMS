@@ -19,6 +19,7 @@ class QStackedWidget;
 class QVBoxLayout;
 
 namespace VLMS {
+class ArchiveWorkflow;
 class BookWorkflow;
 class BulkRunner;
 class LoanWorkflow;
@@ -86,4 +87,5 @@ private:
     std::unique_ptr<VLMS::LoanWorkflow> m_loanWorkflow;
     std::unique_ptr<VLMS::BookWorkflow> m_bookWorkflow;
     std::unique_ptr<VLMS::MemberWorkflow> m_memberWorkflow;
+    std::unique_ptr<VLMS::ArchiveWorkflow> m_archiveWorkflow;
 };

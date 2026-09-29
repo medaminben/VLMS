@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/workflows/ArchiveWorkflow.h"
 #include "ui/workflows/BookWorkflow.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/DataEvents.h"
@@ -68,5 +69,23 @@ struct MemberWorkflowHarness {
             circulation, dialogs, errors, events, navigator, *bulk);
         members = std::make_unique<VLMS::MemberWorkflow>(
             memberRepo, circulation, dialogs, errors, events, navigator, *bulk, *loans);
+    }
+};
+
+struct ArchiveWorkflowHarness {
+    VLMS::FakeDialogFactory dialogs;
+    VLMS::FakeErrorPresenter errors;
+    VLMS::DataEvents events;
+    VLMS::FakeNavigator navigator;
+    std::unique_ptr<VLMS::BulkRunner> bulk;
+    std::unique_ptr<VLMS::ArchiveWorkflow> archive;
+
+    ArchiveWorkflowHarness(VLMS::Repositories::MemberRepository& members,
+                           VLMS::Repositories::CatalogRepository& catalog,
+                           VLMS::Repositories::CirculationRepository& circulation)
+    {
+        bulk = std::make_unique<VLMS::BulkRunner>(dialogs, errors, events);
+        archive = std::make_unique<VLMS::ArchiveWorkflow>(
+            members, catalog, circulation, dialogs, errors, events, navigator, *bulk);
     }
 };

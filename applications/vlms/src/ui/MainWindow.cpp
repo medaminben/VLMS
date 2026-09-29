@@ -2,6 +2,7 @@
 
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/BulkRunner.h"
+#include "ui/workflows/ArchiveWorkflow.h"
 #include "ui/workflows/BookWorkflow.h"
 #include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/MemberWorkflow.h"
@@ -213,6 +214,9 @@ void MainWindow::buildUi() {
         m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
             m_app.members(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
             m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
+        m_archiveWorkflow = std::make_unique<VLMS::ArchiveWorkflow>(
+            m_app.members(), m_app.catalog(), m_app.circulation(), *m_app.dialogs(),
+            m_app.errors(), m_app.dataEvents(), *this, *m_bulk);
         m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this,
                                         *m_memberWorkflow, m_stack);
         m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
@@ -220,7 +224,7 @@ void MainWindow::buildUi() {
             new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(),
                                 *m_loanWorkflow, m_stack);
         m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),
-                                        m_app.dataEvents(), m_stack);
+                                        *m_archiveWorkflow, m_stack);
         m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
     } else {
         m_membersPage = nullptr;

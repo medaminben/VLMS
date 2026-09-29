@@ -5,8 +5,8 @@
 
 #include "ui/Theme.h"
 #include "ui/archive/ArchivePage.h"
-#include "ui/workflows/DataEvents.h"
 #include "ui/archive/ReuseNumberFlow.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -116,7 +116,9 @@ protected:
                                  "2026-09-01", "2026-09-15", "2026-09-10");
         ASSERT_TRUE(m_circulation->archiveLoan(m_loanId));
 
-        m_page = std::make_unique<ArchivePage>(*m_members, *m_catalog, *m_circulation, m_events);
+        m_workflows = std::make_unique<ArchiveWorkflowHarness>(*m_members, *m_catalog, *m_circulation);
+        m_page = std::make_unique<ArchivePage>(*m_members, *m_catalog, *m_circulation,
+                                               *m_workflows->archive);
         m_typeList = m_page->findChild<QListWidget*>(QStringLiteral("archiveType"));
         m_table = m_page->findChild<QTableWidget*>();
         m_restore = buttonWithText(m_page.get(), QStringLiteral("Restore"));
@@ -132,6 +134,7 @@ protected:
     void TearDown() override
     {
         m_page.reset();
+        m_workflows.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_members.reset();
@@ -152,7 +155,7 @@ protected:
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
-    VLMS::DataEvents m_events;
+    std::unique_ptr<ArchiveWorkflowHarness> m_workflows;
     std::unique_ptr<ArchivePage> m_page;
     QListWidget* m_typeList = nullptr;
     QTableWidget* m_table = nullptr;
@@ -249,7 +252,7 @@ TEST_F(test_ui_ArchivePage, ReuseComesBeforeRestoreOnTheButtonPad)
 
 TEST_F(test_ui_ArchivePage, RestoreSendsTheMemberBackToTheLiveList)
 {
-    QSignalSpy restored(&m_events, &VLMS::DataEvents::changed);
+    QSignalSpy restored(&m_workflows->events, &VLMS::DataEvents::changed);
     answerNextBoxYes();
     m_restore->click();
 
@@ -265,7 +268,6 @@ TEST_F(test_ui_ArchivePage, ReuseOpensTheChooserAndCancelKeepsTheNumber)
     const std::string number =
         m_db->scalar("SELECT local_id FROM book_copies WHERE id = " + std::to_string(m_numberedCopyId))
             .toString();
-    QSignalSpy requested(m_page.get(), &ArchivePage::reuseNumberRequested);
 
     // On the stack, so a dialog that never opens cannot leave the poll running
     // into the next test.
@@ -286,8 +288,6 @@ TEST_F(test_ui_ArchivePage, ReuseOpensTheChooserAndCancelKeepsTheNumber)
     poll.stop();
 
     EXPECT_TRUE(chooserOpened);
-    ASSERT_EQ(requested.count(), 1);
-    EXPECT_EQ(requested.at(0).at(0).toLongLong(), m_numberedCopyId);
     EXPECT_EQ(m_db->scalar("SELECT local_id FROM book_copies WHERE id = "
                            + std::to_string(m_numberedCopyId))
                   .toString(),
@@ -429,7 +429,7 @@ TEST_F(test_ui_ArchivePage, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
     tickId(m_table, m_memberId);
     tickId(m_table, second);
 
-    QSignalSpy spy(&m_events, &VLMS::DataEvents::changed);
+    QSignalSpy spy(&m_workflows->events, &VLMS::DataEvents::changed);
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
 

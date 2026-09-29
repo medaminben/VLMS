@@ -1,13 +1,11 @@
 #include "ui/archive/ArchivePage.h"
 
-#include "ui/workflows/DataEvents.h"
-#include "ui/archive/ReuseNumberFlow.h"
-#include "ui/archive/ArchiveLoansDialog.h"
+#include "ui/workflows/ArchiveWorkflow.h"
+#include "ui/workflows/Navigator.h"
 
 #include <VLMS/Core/Strings.h>
 
 #include "QtBridge.h"
-#include "ui/BulkAction.h"
 #include "ui/PreviewImages.h"
 #include "ui/catalog/BookFacetFilters.h"
 #include "ui/members/MemberFacetFilters.h"
@@ -105,18 +103,62 @@ QString memberName(const VLMS::Repositories::MemberRecord& member)
     return qs(member.firstName + " " + member.lastName);
 }
 
+VLMS::ArchiveType toArchiveType(const ArchivePage::Type type)
+{
+    switch (type) {
+    case ArchivePage::Type::Members:
+        return VLMS::ArchiveType::Members;
+    case ArchivePage::Type::Books:
+        return VLMS::ArchiveType::Books;
+    case ArchivePage::Type::Copies:
+        return VLMS::ArchiveType::Copies;
+    case ArchivePage::Type::Loans:
+        return VLMS::ArchiveType::Loans;
+    }
+    return VLMS::ArchiveType::Members;
+}
+
+QString cellText(const QTableWidget* table, int row, int column)
+{
+    const QTableWidgetItem* item = table->item(row, column);
+    return item != nullptr ? item->text() : QString();
+}
+
+QString labelForRow(const QTableWidget* table, const ArchivePage::Type type, const int row)
+{
+    const QTableWidgetItem* first = table->item(row, 0);
+    if (first == nullptr) {
+        return {};
+    }
+    switch (type) {
+    case ArchivePage::Type::Members:
+        return cellText(table, row, 1);
+    case ArchivePage::Type::Books:
+        return first->text();
+    case ArchivePage::Type::Copies:
+        return first->text() + QStringLiteral(" — ") + cellText(table, row, 2);
+    case ArchivePage::Type::Loans: {
+        const QString copyTitle = cellText(table, row, 1);
+        const int slash = copyTitle.indexOf(QStringLiteral(" / "));
+        const QString title = slash >= 0 ? copyTitle.mid(slash + 3) : copyTitle;
+        return first->text() + QStringLiteral(" — ") + title;
+    }
+    }
+    return first->text();
+}
+
 }  // namespace
 
 ArchivePage::ArchivePage(VLMS::Repositories::MemberRepository& members,
                          VLMS::Repositories::CatalogRepository& catalog,
                          VLMS::Repositories::CirculationRepository& circulation,
-                         VLMS::DataEvents& events,
+                         VLMS::ArchiveWorkflow& workflow,
                          QWidget* parent)
     : QWidget(parent),
       m_members(members),
       m_catalog(catalog),
       m_circulation(circulation),
-      m_events(events)
+      m_workflow(workflow)
 {
     buildUi();
     retranslateUi();
@@ -328,26 +370,6 @@ void ArchivePage::onTypeChanged()
     onSelectionChanged();
 }
 
-
-void ArchivePage::notifyRestored(const QList<qint64>& ids)
-{
-    VLMS::EntitySet what;
-    switch (m_type) {
-    case Type::Members:
-        what = VLMS::Entity::Members;
-        break;
-    case Type::Books:
-        what = VLMS::Entity::Books;
-        break;
-    case Type::Copies:
-        what = VLMS::Entity::Copies;
-        break;
-    case Type::Loans:
-        what = VLMS::Entity::Loans;
-        break;
-    }
-    m_events.emitChanged(what, ids);
-}
 
 void ArchivePage::setType(Type type)
 {
@@ -637,14 +659,12 @@ bool ArchivePage::selectedHasLoans() const
 void ArchivePage::showLoanHistory()
 {
     const qint64 id = selectedId();
-    if (id <= 0) {
+    if (id <= 0 || m_type == Type::Loans) {
         return;
     }
-    VLMS::Repositories::LoanQuery query;
     QString name;
     switch (m_type) {
     case Type::Members:
-        query.memberId = id;
         for (const VLMS::Repositories::MemberRecord& member : m_memberRows) {
             if (member.id == id) {
                 name = memberName(member);
@@ -652,7 +672,6 @@ void ArchivePage::showLoanHistory()
         }
         break;
     case Type::Books:
-        query.bookId = id;
         for (const VLMS::Repositories::BookRecord& book : m_bookRows) {
             if (book.id == id) {
                 name = qs(book.title);
@@ -660,17 +679,17 @@ void ArchivePage::showLoanHistory()
         }
         break;
     case Type::Copies:
-        query.copyId = id;
         if (const VLMS::Repositories::BookCopyRecord* copy = selectedCopy()) {
             name = VLMS::dashIfEmpty(copy->localId) + QStringLiteral(" / ")
                 + qs(copy->bookTitle);
         }
         break;
     case Type::Loans:
+        break;
+    }
+    if (!m_workflow.showLoans(this, toArchiveType(m_type), id, name)) {
         return;
     }
-    ArchiveLoansDialog dialog(m_circulation, query, name, this);
-    dialog.exec();
 }
 
 void ArchivePage::onSelectionChanged()
@@ -816,124 +835,44 @@ void ArchivePage::renderImages()
     }
 }
 
-namespace {
-
-const char* bulkNounKey(const ArchivePage::Type type)
+void ArchivePage::collectSelected(QList<qint64>* ids, QList<QString>* labels) const
 {
-    switch (type) {
-    case ArchivePage::Type::Members:
-        return "bulk.noun.members";
-    case ArchivePage::Type::Books:
-        return "bulk.noun.books";
-    case ArchivePage::Type::Copies:
-        return "bulk.noun.copies";
-    case ArchivePage::Type::Loans:
-        return "bulk.noun.loans";
-    }
-    return "bulk.noun.books";
-}
-
-QString cellText(const QTableWidget* table, int row, int column)
-{
-    const QTableWidgetItem* item = table->item(row, column);
-    return item != nullptr ? item->text() : QString();
-}
-
-QList<BulkRow> tickedArchiveRows(const TableRowChecks* checks,
-                                 const QTableWidget* table,
-                                 const ArchivePage::Type type)
-{
-    QList<BulkRow> rows;
-    for (const int row : checks->checkedRows()) {
-        const QTableWidgetItem* first = table->item(row, 0);
-        if (first == nullptr) {
-            continue;
-        }
-        BulkRow bulk;
-        bulk.id = first->data(Qt::UserRole).toLongLong();
-        bulk.row = row;
-        switch (type) {
-        case ArchivePage::Type::Members:
-            bulk.label = cellText(table, row, 1);
-            break;
-        case ArchivePage::Type::Books:
-            bulk.label = first->text();
-            break;
-        case ArchivePage::Type::Copies:
-            bulk.label = first->text() + QStringLiteral(" — ") + cellText(table, row, 2);
-            break;
-        case ArchivePage::Type::Loans: {
-            const QString copyTitle = cellText(table, row, 1);
-            const int slash = copyTitle.indexOf(QStringLiteral(" / "));
-            const QString title = slash >= 0 ? copyTitle.mid(slash + 3) : copyTitle;
-            bulk.label = first->text() + QStringLiteral(" — ") + title;
-            break;
-        }
-        }
-        rows.append(bulk);
-    }
-    return rows;
-}
-
-}  // namespace
-
-void ArchivePage::restoreSelected()
-{
+    ids->clear();
+    labels->clear();
     if (!m_checks->checkedIds().isEmpty()) {
-        BulkActionTexts texts;
-        texts.title = T("archive.restore");
-        texts.verb = T("bulk.verb.restore");
-        texts.passive = T("bulk.passive.restore");
-        texts.noun = T(bulkNounKey(m_type));
-        const int done = runBulkAction(
-            this, texts, tickedArchiveRows(m_checks, m_table, m_type),
-            [](const BulkRow&) { return VLMS::Core::Status::ok(); },
-            [this](const BulkRow& bulk) {
-                switch (m_type) {
-                case Type::Members:
-                    return m_members.restoreMember(bulk.id);
-                case Type::Books:
-                    return m_catalog.restoreBook(bulk.id);
-                case Type::Copies:
-                    return m_catalog.restoreCopy(bulk.id);
-                case Type::Loans:
-                    return m_circulation.restoreLoan(bulk.id);
-                }
-                return VLMS::Core::Status::ok();
-            });
-        if (done > 0) {
-            refreshRows();
-            notifyRestored({});
+        for (const int row : m_checks->checkedRows()) {
+            const QTableWidgetItem* first = m_table->item(row, 0);
+            if (first == nullptr) {
+                continue;
+            }
+            ids->append(first->data(Qt::UserRole).toLongLong());
+            labels->append(labelForRow(m_table, m_type, row));
         }
         return;
     }
-
     const qint64 id = selectedId();
     if (id <= 0) {
         return;
     }
-    if (!VLMS::askYesNo(this, T("archive.restore"), T("archive.restoreConfirm"))) {
+    ids->append(id);
+    const auto items = m_table->selectedItems();
+    if (!items.isEmpty()) {
+        labels->append(labelForRow(m_table, m_type, items.first()->row()));
+    }
+}
+
+void ArchivePage::restoreSelected()
+{
+    QList<qint64> ids;
+    QList<QString> labels;
+    collectSelected(&ids, &labels);
+    if (ids.isEmpty()) {
         return;
     }
-    const auto restored = [&]() -> VLMS::Core::Status {
-        switch (m_type) {
-        case Type::Members:
-            return m_members.restoreMember(id);
-        case Type::Books:
-            return m_catalog.restoreBook(id);
-        case Type::Copies:
-            return m_catalog.restoreCopy(id);
-        case Type::Loans:
-            return m_circulation.restoreLoan(id);
-        }
-        return VLMS::Core::Status::ok();
-    }();
-    if (!restored) {
-        VLMS::showRepoError(this, restored.error());
+    if (!m_workflow.restore(this, toArchiveType(m_type), ids, labels)) {
         return;
     }
     refreshRows();
-    notifyRestored({});
 }
 
 void ArchivePage::reuseSelected()
@@ -942,102 +881,23 @@ void ArchivePage::reuseSelected()
     if (selected == nullptr || selected->localId.empty()) {
         return;
     }
-    // Copied: the flow's save refreshes nothing here, but the next refresh
-    // would free m_copyRows under a pointer into it.
-    const VLMS::Repositories::BookCopyRecord copy = *selected;
-    emit reuseNumberRequested(copy.id);
-    if (VLMS::runReuseNumberFlow(this, m_catalog, copy)) {
-        refreshRows();
-        notifyRestored({});
+    const qint64 copyId = selected->id;
+    if (!m_workflow.reuseNumber(this, copyId)) {
+        return;
     }
+    refreshRows();
 }
 
 void ArchivePage::purgeSelected()
 {
-    if (!m_checks->checkedIds().isEmpty()) {
-        BulkActionTexts texts;
-        texts.title = T("archive.purge");
-        texts.verb = T("bulk.verb.purge");
-        texts.passive = T("bulk.passive.purge");
-        texts.noun = T(bulkNounKey(m_type));
-        const int done = runBulkAction(
-            this, texts, tickedArchiveRows(m_checks, m_table, m_type),
-            [this](const BulkRow& bulk) {
-                switch (m_type) {
-                case Type::Members:
-                    return m_members.canPurgeMember(bulk.id);
-                case Type::Books:
-                    return m_catalog.canPurgeBook(bulk.id);
-                case Type::Copies:
-                    return m_catalog.canPurgeCopy(bulk.id);
-                case Type::Loans:
-                    return m_circulation.canPurgeLoan(bulk.id);
-                }
-                return VLMS::Core::Status::ok();
-            },
-            [this](const BulkRow& bulk) {
-                switch (m_type) {
-                case Type::Members:
-                    return m_members.purgeMember(bulk.id);
-                case Type::Books:
-                    return m_catalog.purgeBook(bulk.id);
-                case Type::Copies:
-                    return m_catalog.purgeCopy(bulk.id);
-                case Type::Loans:
-                    return m_circulation.purgeLoan(bulk.id);
-                }
-                return VLMS::Core::Status::ok();
-            });
-        if (done > 0) {
-            refreshRows();
-        }
+    QList<qint64> ids;
+    QList<QString> labels;
+    collectSelected(&ids, &labels);
+    if (ids.isEmpty()) {
         return;
     }
-
-    const qint64 id = selectedId();
-    if (id <= 0) {
+    if (!m_workflow.purge(this, toArchiveType(m_type), ids, labels)) {
         return;
     }
-    const char* confirmKey = "archive.purgeConfirmMember";
-    switch (m_type) {
-    case Type::Members:
-        confirmKey = "archive.purgeConfirmMember";
-        break;
-    case Type::Books:
-        confirmKey = "archive.purgeConfirmBook";
-        break;
-    case Type::Copies:
-        confirmKey = "archive.purgeConfirmCopy";
-        break;
-    case Type::Loans:
-        confirmKey = "archive.purgeConfirmLoan";
-        break;
-    }
-    if (!VLMS::askYesNo(this, T("archive.purge"), T(confirmKey))) {
-        return;
-    }
-
-    const auto removed = [&]() -> VLMS::Core::Status {
-        switch (m_type) {
-        case Type::Members:
-            return m_members.purgeMember(id);
-        case Type::Books:
-            return m_catalog.purgeBook(id);
-        case Type::Copies:
-            return m_catalog.purgeCopy(id);
-        case Type::Loans:
-            return m_circulation.purgeLoan(id);
-        }
-        return VLMS::Core::Status::ok();
-    }();
-    if (!removed) {
-        // The button is disabled when the gate is shut, so this is a race or a
-        // rule the row could not see -- either way it is the repository's word.
-        VLMS::showRepoError(this, removed.error());
-        return;
-    }
-
-    // No DataEvents emit: nothing went back to a live page, and the live lists
-    // never showed this row.
     refreshRows();
 }

@@ -19,8 +19,8 @@ class QTableWidget;
 class TableRowChecks;
 
 namespace VLMS {
+class ArchiveWorkflow;
 class BookFacetFilters;
-class DataEvents;
 class MemberFacetFilters;
 class TableHeaderSort;
 class TablePager;
@@ -38,7 +38,7 @@ public:
     ArchivePage(VLMS::Repositories::MemberRepository& members,
                 VLMS::Repositories::CatalogRepository& catalog,
                 VLMS::Repositories::CirculationRepository& circulation,
-                VLMS::DataEvents& events,
+                VLMS::ArchiveWorkflow& workflow,
                 QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -46,10 +46,6 @@ public:
     void refresh();
     [[nodiscard]] Type currentType() const { return m_type; }
     void setType(Type type);
-
-signals:
-    /// Reuse was pressed on an archived copy that still holds its number.
-    void reuseNumberRequested(qint64 copyId);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -88,12 +84,12 @@ private:
     [[nodiscard]] bool selectedMayBePurged() const;
     /// True when the highlighted member, title or copy has ever been lent.
     [[nodiscard]] bool selectedHasLoans() const;
-    void notifyRestored(const QList<qint64>& ids);
+    void collectSelected(QList<qint64>* ids, QList<QString>* labels) const;
 
     VLMS::Repositories::MemberRepository& m_members;
     VLMS::Repositories::CatalogRepository& m_catalog;
     VLMS::Repositories::CirculationRepository& m_circulation;
-    VLMS::DataEvents& m_events;
+    VLMS::ArchiveWorkflow& m_workflow;
     Type m_type = Type::Members;
 
     QListWidget* m_typeList = nullptr;
