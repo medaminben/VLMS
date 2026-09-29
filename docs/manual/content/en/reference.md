@@ -90,6 +90,22 @@ Delete does not destroy a title, a copy, a member, or a loan. It archives it. Th
 
 An archived loan still counts. It still stops a member or a copy from being permanently removed, and it still appears in a book's or a member's `Loans` history.
 
+## Menus and shortcuts {#menus-shortcuts}
+
+Every list page shares the same actions on the button pad and on the table's context menu, in the same order. Right-click a row for the menu.
+
+| Action | Shortcut | Notes |
+|---|---|---|
+| Add / Checkout | Ctrl+N | Page-scoped; Checkout on Circulation |
+| Edit | Enter | Table-scoped; inactive on Circulation |
+| Loans | Ctrl+L | Table-scoped |
+| Archive / Restore | Del | Table-scoped; Archive on live lists, Restore on Archive |
+| Purge | Shift+Del | Archive only |
+| Tick all | Ctrl+A | Table-scoped (search box keeps Ctrl+A for text) |
+| Refresh | F5 | Page-scoped |
+
+Enter in the search box still runs search immediately. Del in the search box still edits text.
+
 ## Local numbers {#local-number}
 
 The local number is this library's own number for a copy. It is unique among Arabic stock, and unique among Foreign stock: the same number may belong to one Arabic copy and one Foreign copy. The central number is a national serial. It is stored when a copy has one, and this application does not assign a new one.

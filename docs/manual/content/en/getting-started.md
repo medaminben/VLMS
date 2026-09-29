@@ -38,7 +38,7 @@ Catalogue, Members, Circulation, and Archive are the same shape.
 - The table is the list. Click a row to highlight it. The details panel then shows that row.
 - The pager sits under the table. It opens on `ALL`, so the whole filtered list is loaded. You can choose 20, 50, or 100 instead. `First` and `Last` jump to the ends, and the page box jumps to a page. When the filtered list has fewer than 20 rows, the pager hides.
 - The details panel is the highlighted row, including its picture when it has one.
-- The button pad is the work for this screen: add, edit, lend, delete, and so on. A button follows the highlighted row. It stays grey when that row cannot take the action.
+- The button pad is the work for this screen: add, edit, lend, delete, and so on. A button follows the highlighted row. It stays grey when that row cannot take the action. The context menu and the keyboard shortcuts are the same actions, in the same order; see [Menus and shortcuts](reference#menus-shortcuts).
 
 ## Sorting {#sort}
 
