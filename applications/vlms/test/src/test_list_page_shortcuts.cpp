@@ -209,7 +209,7 @@ TEST(ListPageShortcuts, CirculationCheckoutIsCtrlN)
 
     QShortcut* ctrlN = findShortcut(&page, QKeySequence(QStringLiteral("Ctrl+N")));
     ASSERT_NE(ctrlN, nullptr) << "checkout must map to Ctrl+N like add";
-    EXPECT_EQ(ctrlN->parentWidget(), &page) << "Ctrl+N must be page-scoped";
+    EXPECT_EQ(ctrlN->parent(), &page) << "Ctrl+N must be page-scoped";
 
     QTest::keyClick(&page, Qt::Key_N, Qt::ControlModifier);
     QTest::qWait(0);

@@ -192,6 +192,7 @@ void BookEditorDialog::buildUi() {
     m_form->setLabelAlignment(Qt::AlignLeading | Qt::AlignVCenter);
 
     m_titleEdit = new QLineEdit(bookTab);
+    m_titleEdit->setObjectName(QStringLiteral("bookTitleEdit"));
     m_form->addRow(makeFieldLabel(bookTab), m_titleEdit);
 
     m_authorEdit = new QLineEdit(bookTab);

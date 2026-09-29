@@ -140,10 +140,15 @@ TEST(VlmsBench, CatalogShowAllRefreshUnderBudget)
     QueryState searched = showAll;
     searched.search = QStringLiteral("the");
 
-    // Warm once (first Show-All load).
+    // First Show-All load, reported on its own; only refreshes have a budget.
+    QElapsedTimer firstLoad;
+    firstLoad.start();
     model.setQuery(showAll);
-    ASSERT_EQ(model.rowCount(), liveTotal.value());
     view.viewport()->repaint();
+    const qint64 firstLoadMs = firstLoad.elapsed();
+    ASSERT_EQ(model.rowCount(), liveTotal.value());
+    RecordProperty("firstLoadMs", static_cast<int>(firstLoadMs));
+    std::cout << "Catalog Show-All first load: " << firstLoadMs << " ms\n";
 
     std::vector<qint64> samples;
     samples.reserve(kTrials);

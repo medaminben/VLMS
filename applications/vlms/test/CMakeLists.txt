@@ -129,6 +129,32 @@ set_target_properties(test_vlms_workflows PROPERTIES
 )
 target_sources(test_vlms_workflows PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
 
+# End-to-end passes through the real dialogs (spec: test_vlms_smoke).
+build_gtest_executable(
+    NAME test_vlms_smoke
+    SRC
+        src/test_main.cpp
+        src/test_vlms_smoke.cpp
+    DEPENDS
+        vlms_testsupport
+        vlms_ui
+        ${CMAKE_ROOT_NAME}::Ocr
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Test
+    DISCOVER ON
+    NO_GTEST_MAIN
+    LABELS ui
+)
+target_include_directories(test_vlms_smoke PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+set_target_properties(test_vlms_smoke PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+)
+target_sources(test_vlms_smoke PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+
 # Presentation ListSpec adapters (Member/Book/Loan/Archive). Kept separate from
 # the large widget suite so discovery and -L ui stay fast as specs grow.
 build_gtest_executable(
