@@ -23,7 +23,7 @@ Use-case coverage (22/22 rows with named passing tests):
 
 Also verified on this branch (see checklist status doc):
 
-- `ctest -L ui` → 375/375 PASS
+- `ctest -L ui` → 422/422 PASS (includes `test_vlms_smoke` and `ui_layer_deps`)
 - `ctest -L bench` → 1/1 PASS
 
 ## Ordered merge path
@@ -62,7 +62,7 @@ step 7.
 
 ## Test plan
 - [ ] CI green on Beta (default + sanitizers)
-- [ ] ctest -L ui
+- [ ] ctest -L ui (includes test_vlms_smoke and ui_layer_deps)
 - [ ] ctest -L bench
 - [ ] Spot-check manual en/fr/ar screenshots
 - [ ] Tag v1.3.0 pushed before merge
@@ -78,7 +78,7 @@ gh pr create --base main --head Beta --title "Release: frontend redesign (minor)
 
 ## Test plan
 - [ ] CI green on Beta (default + sanitizers)
-- [ ] ctest -L ui
+- [ ] ctest -L ui (includes test_vlms_smoke and ui_layer_deps)
 - [ ] ctest -L bench
 - [ ] Spot-check manual en/fr/ar screenshots
 - [ ] Tag v1.3.0 pushed before merge

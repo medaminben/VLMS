@@ -258,7 +258,7 @@ TEST_F(MemberListSpec, PreviewLoadsPhotoPathAndFields)
     EXPECT_TRUE(sawStatus);
 }
 
-TEST_F(MemberListSpec, DependsOnMembers)
+TEST_F(MemberListSpec, DependsOnMembersAndLoans)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("members"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Members | Entity::Loans);

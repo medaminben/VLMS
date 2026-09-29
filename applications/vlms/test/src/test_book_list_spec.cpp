@@ -275,7 +275,7 @@ TEST_F(BookListSpec, PreviewLoadsCoverPathAndFields)
     EXPECT_TRUE(sawLanguage);
 }
 
-TEST_F(BookListSpec, DependsOnBooksAndCopies)
+TEST_F(BookListSpec, DependsOnBooksCopiesAndCategories)
 {
     EXPECT_EQ(m_spec->id(), QStringLiteral("books"));
     EXPECT_EQ(m_spec->dependsOn(), Entity::Books | Entity::Copies | Entity::Categories);
