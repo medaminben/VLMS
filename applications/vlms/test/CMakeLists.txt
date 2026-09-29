@@ -71,3 +71,31 @@ set_target_properties(test_vlms_ui PROPERTIES
 # every placeholder pixmap is null here, and a test of what a placeholder looks
 # like in either theme would pass on an empty label.
 target_sources(test_vlms_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+
+build_gtest_executable(
+    NAME test_vlms_workflows
+    SRC
+        src/test_main.cpp
+        src/test_book_workflow.cpp
+        src/test_member_workflow.cpp
+        src/test_loan_workflow.cpp
+        src/test_archive_workflow.cpp
+    DEPENDS
+        vlms_testsupport
+        vlms_ui
+        ${CMAKE_ROOT_NAME}::Ocr
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Test
+    DISCOVER ON
+    NO_GTEST_MAIN
+    LABELS ui
+)
+target_include_directories(test_vlms_workflows PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+set_target_properties(test_vlms_workflows PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+)
+target_sources(test_vlms_workflows PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
