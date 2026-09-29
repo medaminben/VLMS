@@ -45,6 +45,7 @@ build_gtest_executable(
         src/test_image_viewer_dialog.cpp
         src/test_manual_location.cpp
         src/test_page_facets.cpp
+        src/test_data_events.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui

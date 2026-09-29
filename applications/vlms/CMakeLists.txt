@@ -43,6 +43,7 @@ add_library(vlms_ui STATIC
     src/ui/archive/ArchivePage.cpp
     src/ui/archive/ArchiveLoansDialog.cpp
     src/ui/archive/ReuseNumberFlow.cpp
+    src/ui/workflows/DataEvents.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -84,6 +85,7 @@ add_library(vlms_ui STATIC
     src/ui/archive/ArchivePage.h
     src/ui/archive/ArchiveLoansDialog.h
     src/ui/archive/ReuseNumberFlow.h
+    src/ui/workflows/DataEvents.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
