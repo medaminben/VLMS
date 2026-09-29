@@ -109,7 +109,8 @@ TEST_F(test_ui_PreviewTheme, ArabicCirculationPlaceholderTurnsDarkWithTheTheme)
     ASSERT_GT(rawInsertLoan(m_db, member, copyIdsOf(m_db, book).front(), "2026-09-01",
                             "2026-09-15"),
               0);
-    CirculationPage page(m_circulation, m_catalog, m_memberRepo);
+    LoanWorkflowHarness workflows(m_circulation);
+    CirculationPage page(m_circulation, m_catalog, m_memberRepo, *workflows.loans);
     page.resize(1440, 800);
     page.show();
     QApplication::processEvents();

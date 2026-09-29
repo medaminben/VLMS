@@ -4,6 +4,7 @@
 #include "UiTest.h"
 
 #include "ui/circulation/CirculationPage.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
@@ -75,7 +76,8 @@ protected:
 
     void openAndSelect(std::int64_t loanId)
     {
-        m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+        m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
         m_table = m_page->findChild<QTableWidget*>();
         ASSERT_NE(m_table, nullptr);
         for (int row = 0; row < m_table->rowCount(); ++row) {
@@ -93,6 +95,7 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<LoanWorkflowHarness> m_loanWorkflows;
     std::unique_ptr<CirculationPage> m_page;
     QTableWidget* m_table = nullptr;
 };

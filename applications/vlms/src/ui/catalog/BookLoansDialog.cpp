@@ -5,6 +5,7 @@
 #include "ui/UiHelpers.h"
 #include "ui/circulation/LoanCheckoutDialog.h"
 #include "ui/circulation/LoanHistoryActions.h"
+#include "ui/workflows/LoanWorkflow.h"
 #include "QtBridge.h"
 
 #include <QAbstractItemView>
@@ -22,11 +23,13 @@ using VLMS::qs;
 BookLoansDialog::BookLoansDialog(VLMS::Repositories::CirculationRepository& repository,
                                  const qint64 bookId,
                                  const QString& bookTitle,
+                                 VLMS::LoanWorkflow& loans,
                                  QWidget* parent)
     : QDialog(parent),
       m_repository(repository),
       m_bookId(bookId),
-      m_bookTitle(bookTitle) {
+      m_bookTitle(bookTitle),
+      m_loans(loans) {
     resize(820, 420);
     buildUi();
     retranslateUi();
@@ -60,7 +63,7 @@ void BookLoansDialog::buildUi() {
     m_emptyLabel->setVisible(false);
     layout->addWidget(m_emptyLabel, 1);
 
-    m_actions = new LoanHistoryActions(m_repository, m_table, this);
+    m_actions = new LoanHistoryActions(m_repository, m_loans, m_table, this);
     connect(m_actions, &LoanHistoryActions::loanRequested, this, &BookLoansDialog::lendACopy);
     connect(m_actions, &LoanHistoryActions::loansChanged, this, &BookLoansDialog::refresh);
 

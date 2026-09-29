@@ -4,6 +4,7 @@
 #include "ui/members/MemberEditorDialog.h"
 #include "ui/members/MemberLoansDialog.h"
 #include "ui/workflows/BulkRunner.h"
+#include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
@@ -28,7 +29,8 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
                                ErrorPresenter& errors,
                                DataEvents& events,
                                Navigator& navigator,
-                               BulkRunner& bulk)
+                               BulkRunner& bulk,
+                               LoanWorkflow& loans)
     : m_members(members)
     , m_circulation(circulation)
     , m_dialogs(dialogs)
@@ -36,6 +38,7 @@ MemberWorkflow::MemberWorkflow(Repositories::MemberRepository& members,
     , m_events(events)
     , m_navigator(navigator)
     , m_bulk(bulk)
+    , m_loanWorkflow(loans)
 {
     (void)m_dialogs;
 }
@@ -175,7 +178,7 @@ Core::Status MemberWorkflow::showLoans(QWidget* parent, qint64 memberId)
     const QString fullName = qs(member->fullName.empty()
                                     ? member->firstName + " " + member->lastName
                                     : member->fullName);
-    MemberLoansDialog dialog(m_circulation, memberId, fullName, parent);
+    MemberLoansDialog dialog(m_circulation, memberId, fullName, m_loanWorkflow, parent);
     dialog.exec();
     return Core::Status::ok();
 }

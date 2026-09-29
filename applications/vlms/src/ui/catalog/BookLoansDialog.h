@@ -7,6 +7,7 @@
 class QLabel;
 class QTableWidget;
 class LoanHistoryActions;
+namespace VLMS { class LoanWorkflow; }
 
 /// Every loan ever made of one book, across every copy it has ever had.
 /// The member dialog's twin; they differ in their query, their title and one
@@ -18,6 +19,7 @@ public:
     BookLoansDialog(VLMS::Repositories::CirculationRepository& repository,
                     qint64 bookId,
                     const QString& bookTitle,
+                    VLMS::LoanWorkflow& loans,
                     QWidget* parent = nullptr);
 
 private:
@@ -30,6 +32,7 @@ private:
     VLMS::Repositories::CirculationRepository& m_repository;
     qint64 m_bookId = 0;
     QString m_bookTitle;
+    VLMS::LoanWorkflow& m_loans;
     QTableWidget* m_table = nullptr;
     QLabel* m_emptyLabel = nullptr;
     LoanHistoryActions* m_actions = nullptr;

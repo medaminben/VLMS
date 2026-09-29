@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/circulation/CirculationPage.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
@@ -131,6 +132,7 @@ protected:
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_memberRepo;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<LoanWorkflowHarness> m_loanWorkflows;
     std::unique_ptr<CirculationPage> m_page;
     std::int64_t m_memberId = 0;
     std::int64_t m_openId = 0;
@@ -141,7 +143,8 @@ protected:
 TEST_F(test_ui_CirculationFilters, FilterListIncludesEveryStateAndDefaultsToAll)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     ASSERT_NE(list, nullptr);
@@ -163,7 +166,8 @@ TEST_F(test_ui_CirculationFilters, FilterListIncludesEveryStateAndDefaultsToAll)
 TEST_F(test_ui_CirculationFilters, SelectingOverdueShowsOnlyLoansPastTheirDueDate)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     auto* table = m_page->findChild<QTableWidget*>();
@@ -179,7 +183,8 @@ TEST_F(test_ui_CirculationFilters, SelectingOverdueShowsOnlyLoansPastTheirDueDat
 TEST_F(test_ui_CirculationFilters, SelectingReturnedShowsOnlyReturnedLoans)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     auto* table = m_page->findChild<QTableWidget*>();
@@ -196,7 +201,8 @@ TEST_F(test_ui_CirculationFilters, SelectingReturnedShowsOnlyReturnedLoans)
 TEST_F(test_ui_CirculationFilters, SelectingOpenAgainShowsOnlyOpenLoans)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     auto* table = m_page->findChild<QTableWidget*>();
@@ -214,7 +220,8 @@ TEST_F(test_ui_CirculationFilters, SelectingOpenAgainShowsOnlyOpenLoans)
 TEST_F(test_ui_CirculationFilters, SelectingAllShowsEveryLoan)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
 
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("loanFilter"));
     auto* table = m_page->findChild<QTableWidget*>();
@@ -242,7 +249,8 @@ TEST_F(test_ui_CirculationFilters, JumpingFromMembersShowsOverdueLoansToo)
     // Members sends the librarian here when a member still has books out.
     // Overdue books are out as well, and are usually the ones that matter.
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
     auto* table = m_page->findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
 
@@ -266,7 +274,8 @@ TEST_F(test_ui_CirculationFilters, JumpingFromMembersShowsOverdueLoansToo)
 TEST_F(test_ui_CirculationFilters, FilterSitsAtTheTopOfItsColumn)
 {
     seedOpenOverdueAndReturned();
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
     m_page->resize(1200, 800);
     m_page->show();
     QApplication::processEvents();
@@ -278,7 +287,8 @@ TEST_F(test_ui_CirculationFilters, FilterSitsAtTheTopOfItsColumn)
 
 TEST_F(test_ui_CirculationFilters, ReturnSitsBetweenTheSearchAndCheckout)
 {
-    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo);
+    m_loanWorkflows = std::make_unique<LoanWorkflowHarness>(*m_circulation);
+    m_page = std::make_unique<CirculationPage>(*m_circulation, *m_catalog, *m_memberRepo, *m_loanWorkflows->loans);
     QPushButton* returnButton = nullptr;
     QPushButton* checkoutButton = nullptr;
     for (QPushButton* button : m_page->findChildren<QPushButton*>()) {

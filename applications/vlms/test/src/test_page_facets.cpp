@@ -135,7 +135,8 @@ TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 
 TEST_F(test_ui_PageFacets, CirculationFiltersLoansByTheBorrowersSex)
 {
-    CirculationPage page(*m_circulation, *m_catalog, *m_members);
+    LoanWorkflowHarness workflows(*m_circulation);
+    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
     auto* table = named<QTableWidget>(&page, "listTable");
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 2);
@@ -147,7 +148,8 @@ TEST_F(test_ui_PageFacets, CirculationFiltersLoansByTheBorrowersSex)
 
 TEST_F(test_ui_PageFacets, CirculationShowsTheCoverBesideTheBorrowersPhoto)
 {
-    CirculationPage page(*m_circulation, *m_catalog, *m_members);
+    LoanWorkflowHarness workflows(*m_circulation);
+    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
     auto* cover = named<QLabel>(&page, "bookCover");
     auto* photo = named<QLabel>(&page, "loanMemberPhoto");
     ASSERT_NE(cover, nullptr);
@@ -345,7 +347,8 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
                                              "2024-05-01", "2024-05-15", "2024-05-10");
     ASSERT_GT(older, 0);
 
-    CirculationPage page(*m_circulation, *m_catalog, *m_members);
+    LoanWorkflowHarness workflows(*m_circulation);
+    CirculationPage page(*m_circulation, *m_catalog, *m_members, *workflows.loans);
     auto* table = named<QTableWidget>(&page, "listTable");
     auto* years = named<QListWidget>(&page, "yearFilter");
     ASSERT_NE(years, nullptr);

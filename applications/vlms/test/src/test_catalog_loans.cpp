@@ -110,7 +110,8 @@ TEST_F(test_ui_CatalogLoans, AnEmptyHistorySaysSoAndHidesTheGrid)
     const std::int64_t bookId = seedBook(*m_db, untouched);
     ASSERT_GT(bookId, 0);
 
-    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Untouched Book"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Untouched Book"), *workflows.loans);
     auto* empty = dialog.findChild<QLabel*>(QStringLiteral("loanHistoryEmpty"));
     ASSERT_NE(empty, nullptr);
     EXPECT_TRUE(empty->isVisibleTo(&dialog));
@@ -163,7 +164,8 @@ TEST_F(test_ui_CatalogLoans, ExtendAndReturnFollowTheSelectedRow)
                             "2025-01-10", "2025-01-24", "2025-01-20"), 0);
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, copies.at(1), "2025-02-10", "2025-02-24"), 0);
 
-    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Two States"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Two States"), *workflows.loans);
     auto* table = dialog.findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 2);
@@ -219,7 +221,8 @@ TEST_F(test_ui_CatalogLoans, TheHistoryListsEveryLoanOfEveryCopy)
     ASSERT_FALSE(otherCopies.empty());
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, otherCopies.at(0), "2025-04-10", "2025-04-24"), 0);
 
-    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Two Copies"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Two Copies"), *workflows.loans);
     auto* table = dialog.findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     EXPECT_EQ(table->rowCount(), 3) << "the history covers both copies, and only this book";
@@ -254,7 +257,8 @@ TEST_F(test_ui_CatalogLoans, TheHistoryNamesTheMemberNotTheTitle)
     ASSERT_FALSE(otherCopies.empty());
     ASSERT_GT(rawInsertLoan(*m_db, m_memberId, otherCopies.at(0), "2025-05-10", "2025-05-24"), 0);
 
-    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Named Book"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Named Book"), *workflows.loans);
     auto* table = dialog.findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     ASSERT_EQ(table->rowCount(), 1);
@@ -271,7 +275,8 @@ TEST_F(test_ui_CatalogLoans, TheWindowTitleCarriesTheBookTitle)
     const std::int64_t bookId = seedBook(*m_db, seed);
     ASSERT_GT(bookId, 0);
 
-    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Titled Book"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    BookLoansDialog dialog(*m_circulation, bookId, QStringLiteral("Titled Book"), *workflows.loans);
     EXPECT_TRUE(dialog.windowTitle().contains(QStringLiteral("Titled Book")));
     EXPECT_FALSE(dialog.windowTitle().contains(QStringLiteral("{name}")))
         << "the placeholder was not replaced";

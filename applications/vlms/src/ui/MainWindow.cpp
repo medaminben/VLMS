@@ -3,6 +3,7 @@
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/BulkRunner.h"
 #include "ui/workflows/BookWorkflow.h"
+#include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/MemberWorkflow.h"
 
 #include "Application.h"
@@ -203,17 +204,21 @@ void MainWindow::buildUi() {
     if (m_app.isDatabaseReady()) {
         m_bulk = std::make_unique<VLMS::BulkRunner>(
             *m_app.dialogs(), m_app.errors(), m_app.dataEvents());
+        m_loanWorkflow = std::make_unique<VLMS::LoanWorkflow>(
+            m_app.circulation(), *m_app.dialogs(), m_app.errors(),
+            m_app.dataEvents(), *this, *m_bulk);
         m_bookWorkflow = std::make_unique<VLMS::BookWorkflow>(
             m_app.catalog(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
-            m_app.dataEvents(), *this, *m_bulk);
+            m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
         m_memberWorkflow = std::make_unique<VLMS::MemberWorkflow>(
             m_app.members(), m_app.circulation(), *m_app.dialogs(), m_app.errors(),
-            m_app.dataEvents(), *this, *m_bulk);
+            m_app.dataEvents(), *this, *m_bulk, *m_loanWorkflow);
         m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this,
                                         *m_memberWorkflow, m_stack);
         m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
         m_circulationPage =
-            new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(), m_stack);
+            new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(),
+                                *m_loanWorkflow, m_stack);
         m_archivePage = new ArchivePage(m_app.members(), m_app.catalog(), m_app.circulation(),
                                         m_app.dataEvents(), m_stack);
         m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);

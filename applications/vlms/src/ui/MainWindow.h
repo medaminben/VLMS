@@ -21,6 +21,7 @@ class QVBoxLayout;
 namespace VLMS {
 class BookWorkflow;
 class BulkRunner;
+class LoanWorkflow;
 class MemberWorkflow;
 class ClickableLabel;
 class LanguageSelector;
@@ -82,6 +83,7 @@ private:
     Page m_activePage = Page::Catalog;
 
     std::unique_ptr<VLMS::BulkRunner> m_bulk;
+    std::unique_ptr<VLMS::LoanWorkflow> m_loanWorkflow;
     std::unique_ptr<VLMS::BookWorkflow> m_bookWorkflow;
     std::unique_ptr<VLMS::MemberWorkflow> m_memberWorkflow;
 };

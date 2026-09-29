@@ -2,6 +2,7 @@
 #include "TestSeed.h"
 
 #include "ui/circulation/LoanCheckoutDialog.h"
+#include "WorkflowTestSupport.h"
 #include "ui/members/MemberLoansDialog.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -61,7 +62,8 @@ protected:
 
 TEST_F(test_ui_MemberLoansActions, AnEmptyHistorySaysSo)
 {
-    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"), *workflows.loans);
     auto* empty = dialog.findChild<QLabel*>(QStringLiteral("loanHistoryEmpty"));
     ASSERT_NE(empty, nullptr);
     EXPECT_TRUE(empty->isVisibleTo(&dialog));
@@ -70,7 +72,8 @@ TEST_F(test_ui_MemberLoansActions, AnEmptyHistorySaysSo)
 
 TEST_F(test_ui_MemberLoansActions, TheDialogCarriesTheThreeActions)
 {
-    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"), *workflows.loans);
     EXPECT_NE(buttonWithText(&dialog, T("circulation.checkout")), nullptr);
     EXPECT_NE(buttonWithText(&dialog, T("circulation.extend")), nullptr);
     EXPECT_NE(buttonWithText(&dialog, T("circulation.return")), nullptr);
@@ -125,7 +128,8 @@ TEST_F(test_ui_MemberLoansActions, TheHistoryShowsWhatThisMemberBorrowed)
     ASSERT_FALSE(otherCopies.empty());
     ASSERT_GT(rawInsertLoan(*m_db, otherMember, otherCopies.at(0), "2025-02-10", "2025-02-24"), 0);
 
-    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"));
+    LoanWorkflowHarness workflows(*m_circulation);
+    MemberLoansDialog dialog(*m_circulation, m_memberId, QStringLiteral("Amina Ben Salah"), *workflows.loans);
     auto* table = dialog.findChild<QTableWidget*>();
     ASSERT_NE(table, nullptr);
     EXPECT_EQ(table->rowCount(), 1);

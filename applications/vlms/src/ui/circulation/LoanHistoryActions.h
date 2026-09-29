@@ -7,6 +7,10 @@
 class QPushButton;
 class QTableWidget;
 
+namespace VLMS {
+class LoanWorkflow;
+}
+
 /// The Loan / Extend / Return row both loan-history dialogs carry. Extend and
 /// Return follow the table's selected row and are disabled unless that row is
 /// a loan still out; Loan means something different on each page, so it leaves
@@ -16,6 +20,7 @@ class LoanHistoryActions final : public QWidget {
 
 public:
     LoanHistoryActions(VLMS::Repositories::CirculationRepository& repository,
+                       VLMS::LoanWorkflow& loans,
                        QTableWidget* table,
                        QWidget* parent = nullptr);
 
@@ -32,6 +37,7 @@ private:
     [[nodiscard]] qint64 selectedLoanId() const;
 
     VLMS::Repositories::CirculationRepository& m_repository;
+    VLMS::LoanWorkflow& m_loans;
     QTableWidget* m_table = nullptr;
     QPushButton* m_loanButton = nullptr;
     QPushButton* m_extendButton = nullptr;

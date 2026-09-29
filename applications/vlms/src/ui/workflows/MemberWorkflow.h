@@ -13,6 +13,7 @@ namespace VLMS {
 
 class BulkRunner;
 class DataEvents;
+class LoanWorkflow;
 class DialogFactory;
 class ErrorPresenter;
 class Navigator;
@@ -30,7 +31,8 @@ public:
                    ErrorPresenter& errors,
                    DataEvents& events,
                    Navigator& navigator,
-                   BulkRunner& bulk);
+                   BulkRunner& bulk,
+                   LoanWorkflow& loans);
 
     Core::Status add(QWidget* parent);
     Core::Status edit(QWidget* parent, qint64 memberId);
@@ -45,6 +47,7 @@ private:
     DataEvents& m_events;
     Navigator& m_navigator;
     BulkRunner& m_bulk;
+    LoanWorkflow& m_loanWorkflow;
 };
 
 }  // namespace VLMS

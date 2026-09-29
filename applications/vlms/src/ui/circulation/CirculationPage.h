@@ -21,6 +21,7 @@ class QTableWidget;
 class TableRowChecks;
 
 namespace VLMS {
+class LoanWorkflow;
 class MemberFacetFilters;
 class TablePager;
 }
@@ -32,6 +33,7 @@ public:
     CirculationPage(VLMS::Repositories::CirculationRepository& repository,
                     VLMS::Repositories::CatalogRepository& catalogRepository,
                     VLMS::Repositories::MemberRepository& memberRepository,
+                    VLMS::LoanWorkflow& loans,
                     QWidget* parent = nullptr);
 
     void retranslateUi();
@@ -86,6 +88,7 @@ private:
     QString loanStatusLabel(const VLMS::Repositories::LoanRecord& loan) const;
 
     VLMS::Repositories::CirculationRepository& m_repository;
+    VLMS::LoanWorkflow& m_loans;
     VLMS::Repositories::CatalogRepository& m_catalogRepository;
     VLMS::Repositories::MemberRepository& m_memberRepository;
     bool m_updatingFilter = false;

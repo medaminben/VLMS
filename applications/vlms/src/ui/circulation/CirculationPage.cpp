@@ -1,5 +1,7 @@
 #include "ui/circulation/CirculationPage.h"
 
+#include "ui/workflows/LoanWorkflow.h"
+
 #include <VLMS/Core/Strings.h>
 #include "ui/BulkAction.h"
 #include "ui/ListPageFrame.h"
@@ -67,9 +69,11 @@ QStringList loanDetailLabelKeys() {
 CirculationPage::CirculationPage(VLMS::Repositories::CirculationRepository& repository,
                                  VLMS::Repositories::CatalogRepository& catalogRepository,
                                  VLMS::Repositories::MemberRepository& memberRepository,
+                                 VLMS::LoanWorkflow& loans,
                                  QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
+      m_loans(loans),
       m_catalogRepository(catalogRepository),
       m_memberRepository(memberRepository) {
     buildUi();
@@ -578,132 +582,47 @@ void CirculationPage::updatePreview(const VLMS::Repositories::LoanRecord& loan) 
 }
 
 void CirculationPage::extendLoan() {
-    const qint64 loanId = selectedLoanId();
-    if (loanId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("circulation.extend"),
-            T("circulation.selectLoanFirst"));
+    if (!m_loans.extend(this, selectedLoanId())) {
         return;
     }
-
-    const auto loan = m_repository.getLoan(loanId);
-    if (!loan) {
-        VLMS::showRepoError(this, loan.error());
-        return;
-    }
-    if (!loan->returnedAt.empty()) {
-        VLMS::showInformation(
-            this,
-            T("circulation.extend"),
-            T("circulation.alreadyReturned"));
-        return;
-    }
-
-    LoanExtendDialog dialog(loan.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    if (const auto extended = m_repository.extendLoan(loanId, ss(dialog.dueAt())); !extended) {
-        VLMS::showRepoError(this, extended.error());
-        return;
-    }
-
     refreshLoans();
 }
 
 void CirculationPage::checkoutLoan() {
-    LoanCheckoutDialog dialog(m_repository, {}, this);
-    if (dialog.exec() != QDialog::Accepted) {
+    if (!m_loans.checkout(this)) {
         return;
     }
-
-    if (const auto created = m_repository.createLoan(dialog.loanInput()); !created) {
-        VLMS::showRepoError(this, created.error());
-        return;
-    }
-
     refreshLoans();
 }
 
 void CirculationPage::returnLoan() {
-    const qint64 loanId = selectedLoanId();
-    if (loanId <= 0) {
-        VLMS::showInformation(
-            this,
-            T("circulation.return"),
-            T("circulation.selectLoanFirst"));
+    if (!m_loans.returnLoan(this, selectedLoanId())) {
         return;
     }
-
-    const auto loan = m_repository.getLoan(loanId);
-    if (!loan) {
-        VLMS::showRepoError(this, loan.error());
-        return;
-    }
-    if (!loan->returnedAt.empty()) {
-        VLMS::showInformation(
-            this,
-            T("circulation.return"),
-            T("circulation.alreadyReturned"));
-        return;
-    }
-
-    LoanReturnDialog dialog(loan.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    if (const auto returned = m_repository.returnLoan(loanId, ss(dialog.returnedAt()), ss(dialog.notes()));
-        !returned) {
-        VLMS::showRepoError(this, returned.error());
-        return;
-    }
-
     refreshLoans();
 }
 
 void CirculationPage::archiveLoan() {
+    QList<qint64> ids;
+    QList<QString> labels;
     if (!m_checks->checkedIds().isEmpty()) {
-        QList<BulkRow> rows;
         for (const int row : m_checks->checkedRows()) {
             const QTableWidgetItem* member = m_loansTable->item(row, 0);
             const QTableWidgetItem* title = m_loansTable->item(row, 2);
             if (member == nullptr) {
                 continue;
             }
-            BulkRow bulk;
-            bulk.id = member->data(Qt::UserRole).toLongLong();
-            bulk.row = row;
-            bulk.label = member->text() + QStringLiteral(" — ")
-                + (title != nullptr ? title->text() : QString());
-            rows.append(bulk);
+            ids.append(member->data(Qt::UserRole).toLongLong());
+            labels.append(member->text() + QStringLiteral(" — ")
+                + (title != nullptr ? title->text() : QString()));
         }
-        BulkActionTexts texts;
-        texts.title = T("circulation.delete");
-        texts.verb = T("bulk.verb.archive");
-        texts.passive = T("bulk.passive.archive");
-        texts.noun = T("bulk.noun.loans");
-        const int done = runBulkAction(
-            this, texts, rows,
-            [this](const BulkRow& bulk) { return m_repository.canArchiveLoan(bulk.id); },
-            [this](const BulkRow& bulk) { return m_repository.archiveLoan(bulk.id); });
-        if (done > 0) {
-            refreshLoans();
+    } else {
+        const qint64 loanId = selectedLoanId();
+        if (loanId > 0) {
+            ids.append(loanId);
         }
-        return;
     }
-
-    const qint64 loanId = selectedLoanId();
-    if (loanId <= 0) {
-        return;
-    }
-    if (!VLMS::askYesNo(this, T("circulation.delete"), T("circulation.archiveLoan"))) {
-        return;
-    }
-    if (const auto archived = m_repository.archiveLoan(loanId); !archived) {
-        VLMS::showRepoError(this, archived.error());
+    if (!m_loans.archive(this, ids, labels)) {
         return;
     }
     refreshLoans();

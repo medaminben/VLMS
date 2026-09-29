@@ -49,6 +49,7 @@ add_library(vlms_ui STATIC
     src/ui/workflows/BulkRunner.cpp
     src/ui/workflows/BookWorkflow.cpp
     src/ui/workflows/MemberWorkflow.cpp
+    src/ui/workflows/LoanWorkflow.cpp
 
     src/Application.h
     src/ui/Theme.h
@@ -102,6 +103,7 @@ add_library(vlms_ui STATIC
     src/ui/workflows/BulkRunner.h
     src/ui/workflows/BookWorkflow.h
     src/ui/workflows/MemberWorkflow.h
+    src/ui/workflows/LoanWorkflow.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

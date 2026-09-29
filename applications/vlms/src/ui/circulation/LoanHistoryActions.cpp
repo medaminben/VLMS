@@ -2,8 +2,7 @@
 
 #include <VLMS/Core/Strings.h>
 #include "ui/UiHelpers.h"
-#include "ui/circulation/LoanExtendDialog.h"
-#include "ui/circulation/LoanReturnDialog.h"
+#include "ui/workflows/LoanWorkflow.h"
 #include "QtBridge.h"
 
 #include <QHBoxLayout>
@@ -11,13 +10,14 @@
 #include <QTableWidget>
 
 using VLMS::T;
-using VLMS::ss;
 
 LoanHistoryActions::LoanHistoryActions(VLMS::Repositories::CirculationRepository& repository,
+                                       VLMS::LoanWorkflow& loans,
                                        QTableWidget* table,
                                        QWidget* parent)
     : QWidget(parent),
       m_repository(repository),
+      m_loans(loans),
       m_table(table) {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -61,8 +61,6 @@ qint64 LoanHistoryActions::selectedLoanId() const {
 }
 
 void LoanHistoryActions::updateEnabled() {
-    // Extend and Return only mean something for a loan still out. The Status
-    // column already says why they are grey, so no warning box is needed.
     const qint64 loanId = selectedLoanId();
     bool stillOut = false;
     if (loanId > 0) {
@@ -75,46 +73,14 @@ void LoanHistoryActions::updateEnabled() {
 }
 
 void LoanHistoryActions::extendLoan() {
-    const qint64 loanId = selectedLoanId();
-    if (loanId <= 0) {
-        return;
-    }
-    const auto loan = m_repository.getLoan(loanId);
-    if (!loan) {
-        VLMS::showRepoError(this, loan.error());
-        return;
-    }
-
-    LoanExtendDialog dialog(loan.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-    if (const auto extended = m_repository.extendLoan(loanId, ss(dialog.dueAt())); !extended) {
-        VLMS::showRepoError(this, extended.error());
+    if (!m_loans.extend(this, selectedLoanId())) {
         return;
     }
     emit loansChanged();
 }
 
 void LoanHistoryActions::returnLoan() {
-    const qint64 loanId = selectedLoanId();
-    if (loanId <= 0) {
-        return;
-    }
-    const auto loan = m_repository.getLoan(loanId);
-    if (!loan) {
-        VLMS::showRepoError(this, loan.error());
-        return;
-    }
-
-    LoanReturnDialog dialog(loan.value(), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-    if (const auto returned =
-            m_repository.returnLoan(loanId, ss(dialog.returnedAt()), ss(dialog.notes()));
-        !returned) {
-        VLMS::showRepoError(this, returned.error());
+    if (!m_loans.returnLoan(this, selectedLoanId())) {
         return;
     }
     emit loansChanged();

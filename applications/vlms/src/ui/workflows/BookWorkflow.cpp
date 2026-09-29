@@ -4,6 +4,7 @@
 #include "ui/catalog/BookEditorDialog.h"
 #include "ui/catalog/BookLoansDialog.h"
 #include "ui/workflows/BulkRunner.h"
+#include "ui/workflows/LoanWorkflow.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
@@ -28,7 +29,8 @@ BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
                            ErrorPresenter& errors,
                            DataEvents& events,
                            Navigator& navigator,
-                           BulkRunner& bulk)
+                           BulkRunner& bulk,
+                           LoanWorkflow& loans)
     : m_catalog(catalog)
     , m_circulation(circulation)
     , m_dialogs(dialogs)
@@ -36,6 +38,7 @@ BookWorkflow::BookWorkflow(Repositories::CatalogRepository& catalog,
     , m_events(events)
     , m_navigator(navigator)
     , m_bulk(bulk)
+    , m_loanWorkflow(loans)
 {
     (void)m_navigator;
 }
@@ -160,7 +163,7 @@ Core::Status BookWorkflow::showLoans(QWidget* parent, qint64 bookId)
         m_errors.show(parent, book.error());
         return Core::asStatus(book);
     }
-    BookLoansDialog dialog(m_circulation, bookId, qs(book->title), parent);
+    BookLoansDialog dialog(m_circulation, bookId, qs(book->title), m_loanWorkflow, parent);
     dialog.exec();
     return Core::Status::ok();
 }
