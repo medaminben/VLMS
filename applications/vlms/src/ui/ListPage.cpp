@@ -121,6 +121,25 @@ void ListPage::addFilterWidget(QWidget* widget, const int stretch)
     m_filterLayout->addWidget(widget, stretch);
 }
 
+QWidget* ListPage::filterColumn() const
+{
+    return m_filterColumn;
+}
+
+void ListPage::setFacets(const QHash<QString, QStringList>& facets)
+{
+    if (m_model == nullptr) {
+        return;
+    }
+    QueryState state = m_model->query();
+    state.facets = facets;
+    state.page = 1;
+    if (m_pager != nullptr) {
+        m_pager->resetToFirstPage();
+    }
+    m_model->setQuery(state);
+}
+
 void ListPage::rebuildChrome()
 {
     rebuildActions();
@@ -613,8 +632,37 @@ void ListPage::runAction(const PageAction& action)
         }
         return;
     }
+    if (action.id == QStringLiteral("refresh")) {
+        if (m_model != nullptr) {
+            m_model->reload();
+        }
+        if (action.run) {
+            (void)action.run(currentContext());
+        }
+        return;
+    }
+
+    // Best-effort reveal after add/edit: workflows emit DataEvents with the id.
+    QList<qint64> revealIds;
+    QMetaObject::Connection revealConn;
+    const bool wantReveal =
+        action.id == QStringLiteral("add") || action.id == QStringLiteral("edit");
+    if (wantReveal) {
+        revealConn = connect(&m_events, &DataEvents::changed, this,
+                             [&revealIds](EntitySet, const QList<qint64>& ids) {
+                                 if (ids.size() == 1 && ids.first() > 0) {
+                                     revealIds = ids;
+                                 }
+                             });
+    }
     if (action.run) {
         (void)action.run(currentContext());
+    }
+    if (revealConn) {
+        disconnect(revealConn);
+    }
+    if (revealIds.size() == 1) {
+        revealId(revealIds.first());
     }
 }
 

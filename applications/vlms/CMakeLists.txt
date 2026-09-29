@@ -30,7 +30,6 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookLoansDialog.cpp
     src/ui/catalog/LocalNumberDelegate.cpp
     src/ui/catalog/FreeLocalNumberDelegate.cpp
-    src/ui/members/MembersPage.cpp
     src/ui/members/MemberFacetFilters.cpp
     src/ui/members/MemberEditorDialog.cpp
     src/ui/members/BirthDateEdit.cpp
@@ -82,7 +81,6 @@ add_library(vlms_ui STATIC
     src/ui/catalog/BookLoansDialog.h
     src/ui/catalog/LocalNumberDelegate.h
     src/ui/catalog/FreeLocalNumberDelegate.h
-    src/ui/members/MembersPage.h
     src/ui/members/MemberFacetFilters.h
     src/ui/members/MemberEditorDialog.h
     src/ui/members/BirthDateEdit.h

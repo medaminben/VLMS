@@ -11,7 +11,6 @@ class Application;
 class ArchivePage;
 class CatalogPage;
 class CirculationPage;
-class MembersPage;
 class MetricsPage;
 class QLabel;
 class QPushButton;
@@ -22,7 +21,10 @@ namespace VLMS {
 class ArchiveWorkflow;
 class BookWorkflow;
 class BulkRunner;
+class ListPage;
 class LoanWorkflow;
+class MemberFacetFilters;
+class MemberListSpec;
 class MemberWorkflow;
 class ClickableLabel;
 class LanguageSelector;
@@ -75,7 +77,7 @@ private:
     QPushButton* m_archiveNav = nullptr;
     QPushButton* m_metricsNav = nullptr;
 
-    MembersPage* m_membersPage = nullptr;
+    VLMS::ListPage* m_membersPage = nullptr;
     CatalogPage* m_catalogPage = nullptr;
     CirculationPage* m_circulationPage = nullptr;
     ArchivePage* m_archivePage = nullptr;
@@ -88,4 +90,6 @@ private:
     std::unique_ptr<VLMS::BookWorkflow> m_bookWorkflow;
     std::unique_ptr<VLMS::MemberWorkflow> m_memberWorkflow;
     std::unique_ptr<VLMS::ArchiveWorkflow> m_archiveWorkflow;
+    std::unique_ptr<VLMS::MemberListSpec> m_memberListSpec;
+    VLMS::MemberFacetFilters* m_memberFilters = nullptr;
 };

@@ -3,7 +3,8 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/members/MembersPage.h"
+#include "ui/ListPage.h"
+#include "ui/presentation/MemberListSpec.h"
 #include "ui/workflows/Navigator.h"
 #include "WorkflowTestSupport.h"
 
@@ -21,7 +22,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalSpy>
-#include <QTableWidget>
+#include <QTableView>
 #include <QTest>
 #include <QTimer>
 
@@ -36,17 +37,50 @@ using namespace Test;
 
 namespace {
 
-void clickDelete(MembersPage* page)
+ListPage::Config membersConfig()
 {
-    clickButtonWithText(page, qs(Core::Strings::t("members.delete")));
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.members.title");
+    cfg.bodyKey = QStringLiteral("page.members.body");
+    cfg.searchPlaceholderKey = QStringLiteral("members.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("memberPhoto");
+    cfg.imageBounds = memberPhotoPreviewBounds();
+    return cfg;
 }
 
-void selectFirstMember(MembersPage* page)
+void clickDelete(ListPage* page)
 {
-    auto* table = page->findChild<QTableWidget*>();
+    auto* button = page->findChild<QPushButton*>(QStringLiteral("listAction_archive"));
+    ASSERT_NE(button, nullptr);
+    button->click();
+}
+
+void selectFirstMember(ListPage* page)
+{
+    QTableView* table = page->table();
     ASSERT_NE(table, nullptr);
-    ASSERT_GT(table->rowCount(), 0);
+    ASSERT_GT(table->model()->rowCount(), 0);
     table->selectRow(0);
+}
+
+void tickMember(ListPage* page, qint64 memberId)
+{
+    QTableView* table = page->table();
+    ASSERT_NE(table, nullptr);
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        if (table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == memberId) {
+            ASSERT_TRUE(table->model()->setData(table->model()->index(row, 0),
+                                                Qt::Checked, Qt::CheckStateRole));
+            return;
+        }
+    }
+    FAIL() << "member " << memberId << " is not on the page";
+}
+
+bool memberArchived(TestDatabase& db, qint64 memberId)
+{
+    return !db.scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId))
+                .isNull();
 }
 
 }  // namespace
@@ -66,9 +100,18 @@ protected:
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_memberWorkflows.reset();
         m_circulation.reset();
         m_members.reset();
         m_db.reset();
+    }
+
+    void openPage()
+    {
+        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
+        m_spec = std::make_unique<MemberListSpec>(*m_members, *m_memberWorkflows->members);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_memberWorkflows->events, membersConfig());
     }
 
     void seedMemberWithLoan(const QString& returnedAt)
@@ -89,8 +132,7 @@ protected:
                                 returnedAt.toStdString()),
                   0);
 
-        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
+        openPage();
         selectFirstMember(m_page.get());
     }
 
@@ -99,7 +141,8 @@ protected:
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
     VLMS::FakeNavigator m_navigator;
     std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
-    std::unique_ptr<MembersPage> m_page;
+    std::unique_ptr<MemberListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
     qint64 m_memberId = 0;
 };
 
@@ -165,9 +208,9 @@ TEST_F(test_ui_MemberRemoval, ArchivingRemovesTheMemberFromTheList)
         m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(m_memberId))
             .isNull());
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    QTableView* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    EXPECT_EQ(table->rowCount(), 0);
+    EXPECT_EQ(table->model()->rowCount(), 0);
 }
 
 TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecondQuestion)
@@ -191,44 +234,21 @@ TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecon
             .isNull());
 }
 
-namespace {
-
-void tickMember(QTableWidget* table, qint64 memberId)
-{
-    for (int row = 0; row < table->rowCount(); ++row) {
-        QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == memberId) {
-            item->setCheckState(Qt::Checked);
-            return;
-        }
-    }
-    FAIL() << "member " << memberId << " is not on the page";
-}
-
-bool memberArchived(TestDatabase& db, qint64 memberId)
-{
-    return !db.scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId))
-                .isNull();
-}
-
-}  // namespace
-
 TEST_F(test_ui_MemberRemoval, TwoTickedMembersAreArchivedAndTheHighlightedThirdStays)
 {
     const qint64 first = seedMember(*m_db, uniqueMemberSeed(10));
     const qint64 second = seedMember(*m_db, uniqueMemberSeed(11));
     const qint64 highlighted = seedMember(*m_db, uniqueMemberSeed(12));
-    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
-    auto* table = m_page->findChild<QTableWidget*>();
+    openPage();
+    QTableView* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    for (int row = 0; row < table->rowCount(); ++row) {
-        if (table->item(row, 0)->data(Qt::UserRole).toLongLong() == highlighted) {
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        if (table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == highlighted) {
             table->selectRow(row);
         }
     }
-    tickMember(table, first);
-    tickMember(table, second);
+    tickMember(m_page.get(), first);
+    tickMember(m_page.get(), second);
 
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
@@ -248,12 +268,9 @@ TEST_F(test_ui_MemberRemoval, ATickedMemberWithABookOutStaysWhileTheOtherIsArchi
     ASSERT_GT(rawInsertLoan(*m_db, blocked, copyIdsOf(*m_db, bookId).front(), "2026-09-01",
                             "2026-09-15"),
               0);
-    m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation);
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation, m_navigator, *m_memberWorkflows->members);
-    auto* table = m_page->findChild<QTableWidget*>();
-    ASSERT_NE(table, nullptr);
-    tickMember(table, blocked);
-    tickMember(table, free);
+    openPage();
+    tickMember(m_page.get(), blocked);
+    tickMember(m_page.get(), free);
 
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));

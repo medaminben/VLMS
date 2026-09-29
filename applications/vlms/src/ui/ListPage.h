@@ -9,8 +9,10 @@
 
 #include <VLMS/Core/Result.h>
 
+#include <QHash>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QWidget>
 
 class QEvent;
@@ -50,6 +52,9 @@ public:
     void setSearchText(const QString& text);  // Navigator focusMemberLoans
     void focusSearch();
     void addFilterWidget(QWidget* widget, int stretch = 0);
+    [[nodiscard]] QWidget* filterColumn() const;
+    /// Replace QueryState.facets and reload from page 1 (facet widget adapter).
+    void setFacets(const QHash<QString, QStringList>& facets);
 
     /// Rebuild action buttons/menus from spec->actions() and retranslate titles.
     void rebuildChrome();

@@ -7,7 +7,6 @@
 #include "ui/catalog/BookFacetFilters.h"
 #include "ui/circulation/CirculationPage.h"
 #include "ui/members/MemberFacetFilters.h"
-#include "ui/members/MembersPage.h"
 #include "ui/workflows/Navigator.h"
 #include "WorkflowTestSupport.h"
 
@@ -124,11 +123,9 @@ protected:
 
 TEST_F(test_ui_PageFacets, MemberFiltersCarryNoHeadings)
 {
-    MemberWorkflowHarness workflows(*m_members, *m_circulation);
-    MembersPage page(*m_members, *m_circulation, workflows.navigator, *workflows.members);
-    auto* filters = named<QWidget>(&page, "memberFilters");
-    ASSERT_NE(filters, nullptr);
-    EXPECT_TRUE(filters->findChildren<QLabel*>().isEmpty())
+    MemberFacetFilters filters(*m_members, Repositories::ArchiveScope::Live);
+    filters.refresh();
+    EXPECT_TRUE(filters.findChildren<QLabel*>().isEmpty())
         << "each list's own All row names it";
 }
 
@@ -362,9 +359,9 @@ TEST_F(test_ui_PageFacets, CirculationYearIsTheYearOfTheLoan)
 
 TEST_F(test_ui_PageFacets, MembersYearIsStillTheYearOfRegistration)
 {
-    MemberWorkflowHarness workflows(*m_members, *m_circulation);
-    MembersPage page(*m_members, *m_circulation, workflows.navigator, *workflows.members);
-    auto* years = named<QListWidget>(&page, "yearFilter");
+    MemberFacetFilters filters(*m_members, Repositories::ArchiveScope::Live);
+    filters.refresh();
+    auto* years = named<QListWidget>(&filters, "yearFilter");
     ASSERT_NE(years, nullptr);
     EXPECT_EQ(years->item(0)->text(), VLMS::T("members.allYears"));
 }

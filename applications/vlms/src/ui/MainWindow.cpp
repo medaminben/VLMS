@@ -21,11 +21,14 @@
 #include "ui/archive/ArchivePage.h"
 #include "ui/catalog/CatalogPage.h"
 #include "ui/LanguageSelector.h"
+#include "ui/ListPage.h"
 #include "ui/circulation/CirculationPage.h"
-#include "ui/members/MembersPage.h"
+#include "ui/members/MemberFacetFilters.h"
 #include "ui/metrics/MetricsPage.h"
+#include "ui/presentation/MemberListSpec.h"
 
 #include <QApplication>
+#include <QHash>
 #include <QDate>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -217,8 +220,34 @@ void MainWindow::buildUi() {
         m_archiveWorkflow = std::make_unique<VLMS::ArchiveWorkflow>(
             m_app.members(), m_app.catalog(), m_app.circulation(), *m_app.dialogs(),
             m_app.errors(), m_app.dataEvents(), *this, *m_bulk);
-        m_membersPage = new MembersPage(m_app.members(), m_app.circulation(), *this,
-                                        *m_memberWorkflow, m_stack);
+        m_memberListSpec =
+            std::make_unique<VLMS::MemberListSpec>(m_app.members(), *m_memberWorkflow);
+        VLMS::ListPage::Config membersCfg;
+        membersCfg.titleKey = QStringLiteral("page.members.title");
+        membersCfg.bodyKey = QStringLiteral("page.members.body");
+        membersCfg.searchPlaceholderKey = QStringLiteral("members.searchPlaceholder");
+        membersCfg.imageObjectName = QStringLiteral("memberPhoto");
+        membersCfg.imageBounds = VLMS::memberPhotoPreviewBounds();
+        m_membersPage = new VLMS::ListPage(m_memberListSpec.get(), m_app.dataEvents(),
+                                           membersCfg, m_stack);
+        m_memberFilters = new VLMS::MemberFacetFilters(
+            m_app.members(), VLMS::Repositories::ArchiveScope::Live,
+            m_membersPage->filterColumn());
+        m_memberFilters->refresh();
+        m_membersPage->addFilterWidget(m_memberFilters, 1);
+        connect(m_memberFilters, &VLMS::MemberFacetFilters::changed, this, [this]() {
+            if (m_membersPage == nullptr || m_memberFilters == nullptr) {
+                return;
+            }
+            const VLMS::Repositories::MemberFacets facets = m_memberFilters->facets();
+            QHash<QString, QStringList> mapped;
+            mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+            mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+            mapped.insert(QStringLiteral("year"), qsl(facets.inscriptionYears));
+            mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+            mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+            m_membersPage->setFacets(mapped);
+        });
         m_catalogPage = new CatalogPage(m_app.catalog(), m_app.circulation(), *m_bookWorkflow, m_stack);
         m_circulationPage =
             new CirculationPage(m_app.circulation(), m_app.catalog(), m_app.members(),
@@ -228,6 +257,8 @@ void MainWindow::buildUi() {
         m_metricsPage = new MetricsPage(m_app.metrics(), m_stack);
     } else {
         m_membersPage = nullptr;
+        m_memberFilters = nullptr;
+        m_memberListSpec.reset();
         m_catalogPage = nullptr;
         m_circulationPage = nullptr;
         m_archivePage = nullptr;
@@ -499,6 +530,9 @@ void MainWindow::retranslateUi()
 
     if (m_membersPage != nullptr) {
         m_membersPage->retranslateUi();
+        if (m_memberFilters != nullptr) {
+            m_memberFilters->refresh();
+        }
     }
     if (m_catalogPage != nullptr) {
         m_catalogPage->retranslateUi();
@@ -586,8 +620,8 @@ void MainWindow::onDataChanged(VLMS::EntitySet what, QList<qint64>)
         }
     }
     if (what & VLMS::Entity::Members) {
-        if (m_membersPage != nullptr) {
-            m_membersPage->retranslateUi();
+        if (m_memberFilters != nullptr) {
+            m_memberFilters->refresh();
         }
     }
     if (what & VLMS::Entity::Loans) {
