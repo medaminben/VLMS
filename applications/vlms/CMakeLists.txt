@@ -17,6 +17,7 @@ add_library(vlms_ui STATIC
     src/ui/TableRowChecks.cpp
     src/ui/BulkAction.cpp
     src/ui/ListPageFrame.cpp
+    src/ui/ListPage.cpp
     src/ui/FacetList.cpp
     src/ui/PreviewImages.cpp
     src/ui/MainWindow.cpp
@@ -67,6 +68,7 @@ add_library(vlms_ui STATIC
     src/ui/TableRowChecks.h
     src/ui/BulkAction.h
     src/ui/ListPageFrame.h
+    src/ui/ListPage.h
     src/ui/FacetList.h
     src/ui/PreviewImages.h
     src/ui/MainWindow.h
