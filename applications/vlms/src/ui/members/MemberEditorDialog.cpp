@@ -94,7 +94,7 @@ MemberEditorDialog::MemberEditorDialog(VLMS::MemberLookups& lookups, QWidget* pa
     populateStatuses();
     populateSexes();
     m_numberLabel->setText(m_lookups.suggestMembershipNumber());
-    retranslateUi();
+    applyLabels();
     connect(m_statusCombo, &QComboBox::currentIndexChanged,
             this, &MemberEditorDialog::updateActiveUntil);
     updateActiveUntil();
@@ -111,7 +111,7 @@ MemberEditorDialog::MemberEditorDialog(VLMS::MemberLookups& lookups,
     populateStatuses();
     populateSexes();
     loadMember(member);
-    retranslateUi();
+    applyLabels();
     connect(m_statusCombo, &QComboBox::currentIndexChanged,
             this, &MemberEditorDialog::updateActiveUntil);
     updateActiveUntil();
@@ -342,7 +342,15 @@ MemberEditorDialog::ValidationFailure MemberEditorDialog::firstValidationFailure
     return {};
 }
 
-void MemberEditorDialog::retranslateUi() {
+void MemberEditorDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void MemberEditorDialog::applyLabels() {
     setWindowTitle(m_isEdit ? T("member.editTitle")
                             : T("member.addTitle"));
 

@@ -4,6 +4,8 @@
 #include <VLMS/Repositories/MemberTypes.h>
 
 #include <QDialog>
+
+class QEvent;
 #include <QList>
 #include <QString>
 
@@ -63,6 +65,7 @@ public:
     static void setImageFilePickerForTesting(ImageFilePicker picker);
 
 protected:
+    void changeEvent(QEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -85,7 +88,7 @@ private:
                       QWidget* field,
                       const QString& secondLabelKey,
                       QWidget* secondField);
-    void retranslateUi();
+    void applyLabels();
     void growToLayoutMinimum();
     void populateStatuses();
     void populateSexes();

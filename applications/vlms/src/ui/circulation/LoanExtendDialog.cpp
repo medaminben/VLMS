@@ -8,6 +8,7 @@
 #include "QtBridge.h"
 
 #include <QDate>
+#include <QEvent>
 #include <QDateEdit>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -28,8 +29,9 @@ namespace {
 
 LoanExtendDialog::LoanExtendDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
     : QDialog(parent) {
+    m_loan = loan;
     buildUi(loan);
-    retranslateUi(loan);
+    applyLabels();
 }
 
 void LoanExtendDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
@@ -77,21 +79,29 @@ void LoanExtendDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     layout->addWidget(buttons);
 }
 
-void LoanExtendDialog::retranslateUi(const VLMS::Repositories::LoanRecord& loan) {
+void LoanExtendDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void LoanExtendDialog::applyLabels() {
     setWindowTitle(T("loan.extendTitle"));
 
     VLMS::retranslateStandardButtons(findChild<QDialogButtonBox*>());
 
     if (auto* summary = findChild<QLabel*>(QStringLiteral("loanExtendSummary"))) {
         QString text = T("loan.returnSummary");
-        text.replace(QStringLiteral("{member}"), qs(loan.memberName));
-        text.replace(QStringLiteral("{number}"), qs(loan.membershipNumber));
-        text.replace(QStringLiteral("{title}"), qs(loan.bookTitle));
-        text.replace(QStringLiteral("{copy}"), qs(loan.copyCode));
+        text.replace(QStringLiteral("{member}"), qs(m_loan.memberName));
+        text.replace(QStringLiteral("{number}"), qs(m_loan.membershipNumber));
+        text.replace(QStringLiteral("{title}"), qs(m_loan.bookTitle));
+        text.replace(QStringLiteral("{copy}"), qs(m_loan.copyCode));
         summary->setText(text);
     }
 
-    m_currentDueLabel->setText(qs(loan.dueAt));
+    m_currentDueLabel->setText(qs(m_loan.dueAt));
 
     QFormLayout* form = findChild<QFormLayout*>();
     if (form == nullptr) {

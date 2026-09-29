@@ -4,6 +4,8 @@
 
 #include <QDialog>
 
+class QEvent;
+
 class QPushButton;
 class QTableWidget;
 
@@ -19,9 +21,12 @@ private slots:
     void editCategory();
     void deleteCategory();
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void buildUi();
-    void retranslateUi();
+    void applyLabels();
     int selectedCategoryId() const;
 
     VLMS::Repositories::CatalogRepository& m_repository;

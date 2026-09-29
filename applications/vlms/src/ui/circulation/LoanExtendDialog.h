@@ -4,6 +4,8 @@
 
 #include <QDialog>
 
+class QEvent;
+
 class QDateEdit;
 class QLabel;
 
@@ -15,10 +17,14 @@ public:
 
     [[nodiscard]] QString dueAt() const;
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void buildUi(const VLMS::Repositories::LoanRecord& loan);
-    void retranslateUi(const VLMS::Repositories::LoanRecord& loan);
+    void applyLabels();
 
+    VLMS::Repositories::LoanRecord m_loan;
     QDateEdit* m_dueDateEdit = nullptr;
     QLabel* m_currentDueLabel = nullptr;
 };

@@ -5,6 +5,8 @@
 #include <VLMS/Repositories/ArchiveTypes.h>
 
 #include <QDialog>
+
+class QEvent;
 #include <QString>
 
 #include <cstdint>
@@ -42,9 +44,12 @@ public:
     [[nodiscard]] PagedQueryModel* model() const;
     [[nodiscard]] QTableView* table() const;
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void buildUi();
-    void retranslateUi();
+    void applyLabels();
     void applyPinnedQuery();
     void updateEmptyState();
     void updateActionEnabled();

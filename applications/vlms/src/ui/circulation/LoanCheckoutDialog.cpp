@@ -11,6 +11,7 @@
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
+#include <QEvent>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -55,7 +56,7 @@ LoanCheckoutDialog::LoanCheckoutDialog(VLMS::CirculationLookups& lookups,
     buildUi();
     refreshMembers();
     refreshCopies();
-    retranslateUi();
+    applyLabels();
 }
 
 void LoanCheckoutDialog::buildUi() {
@@ -150,7 +151,15 @@ void LoanCheckoutDialog::buildUi() {
     layout->addWidget(m_buttons);
 }
 
-void LoanCheckoutDialog::retranslateUi() {
+void LoanCheckoutDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void LoanCheckoutDialog::applyLabels() {
     setWindowTitle(m_scope.label.isEmpty()
                        ? T("loan.checkoutTitle")
                        : QStringLiteral("%1 — %2").arg(T("loan.checkoutTitle"), m_scope.label));

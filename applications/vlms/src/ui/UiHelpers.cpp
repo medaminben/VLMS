@@ -98,7 +98,7 @@ private:
     std::function<void()> m_relabel;
 };
 
-// Idempotent: retranslateUi relocalizes the same button box on every switch.
+// Idempotent: applyLabels relocalizes the same button box on every switch.
 void keepButtonLabels(QDialogButtonBox* box, std::function<void()> relabel)
 {
     if (box != nullptr

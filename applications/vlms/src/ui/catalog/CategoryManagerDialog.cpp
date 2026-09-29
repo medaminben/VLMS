@@ -5,6 +5,7 @@
 #include "ui/UiHelpers.h"
 #include "QtBridge.h"
 
+#include <QEvent>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -30,7 +31,7 @@ CategoryManagerDialog::CategoryManagerDialog(VLMS::Repositories::CatalogReposito
       m_repository(repository) {
     resize(640, 420);
     buildUi();
-    retranslateUi();
+    applyLabels();
     refresh();
 }
 
@@ -70,7 +71,15 @@ void CategoryManagerDialog::buildUi() {
     layout->addWidget(closeBox);
 }
 
-void CategoryManagerDialog::retranslateUi()
+void CategoryManagerDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void CategoryManagerDialog::applyLabels()
 {
     setWindowTitle(T("category.manageTitle"));
 

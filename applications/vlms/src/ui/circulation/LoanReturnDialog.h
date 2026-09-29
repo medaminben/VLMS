@@ -4,6 +4,8 @@
 
 #include <QDialog>
 
+class QEvent;
+
 class QDateEdit;
 class QPlainTextEdit;
 
@@ -16,10 +18,14 @@ public:
     [[nodiscard]] QString returnedAt() const;
     [[nodiscard]] QString notes() const;
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void buildUi(const VLMS::Repositories::LoanRecord& loan);
-    void retranslateUi(const VLMS::Repositories::LoanRecord& loan);
+    void applyLabels();
 
+    VLMS::Repositories::LoanRecord m_loan;
     QDateEdit* m_returnedDateEdit = nullptr;
     QPlainTextEdit* m_notesEdit = nullptr;
 };

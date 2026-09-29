@@ -17,7 +17,7 @@ class QLabel;
  * given a path and a way to pick another file, and reports what happened.
  * It writes nothing; the caller decides what the outcome means.
  *
- * No retranslateUi: it is modal over a modal dialog, so the language
+ * No applyLabels: it is modal over a modal dialog, so the language
  * selector cannot be reached while it is open. LicenceDialog is the same.
  */
 class ImageViewerDialog final : public QDialog {

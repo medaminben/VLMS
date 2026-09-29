@@ -6,6 +6,7 @@
 #include "QtBridge.h"
 
 #include <QDate>
+#include <QEvent>
 #include <QDateEdit>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -27,8 +28,9 @@ namespace {
 
 LoanReturnDialog::LoanReturnDialog(const VLMS::Repositories::LoanRecord& loan, QWidget* parent)
     : QDialog(parent) {
+    m_loan = loan;
     buildUi(loan);
-    retranslateUi(loan);
+    applyLabels();
 }
 
 void LoanReturnDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
@@ -78,17 +80,25 @@ void LoanReturnDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
     layout->addWidget(buttons);
 }
 
-void LoanReturnDialog::retranslateUi(const VLMS::Repositories::LoanRecord& loan) {
+void LoanReturnDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void LoanReturnDialog::applyLabels() {
     setWindowTitle(T("loan.returnTitle"));
 
     VLMS::retranslateStandardButtons(findChild<QDialogButtonBox*>());
 
     if (auto* summary = findChild<QLabel*>(QStringLiteral("loanReturnSummary"))) {
         QString text = T("loan.returnSummary");
-        text.replace(QStringLiteral("{member}"), qs(loan.memberName));
-        text.replace(QStringLiteral("{number}"), qs(loan.membershipNumber));
-        text.replace(QStringLiteral("{title}"), qs(loan.bookTitle));
-        text.replace(QStringLiteral("{copy}"), qs(loan.copyCode));
+        text.replace(QStringLiteral("{member}"), qs(m_loan.memberName));
+        text.replace(QStringLiteral("{number}"), qs(m_loan.membershipNumber));
+        text.replace(QStringLiteral("{title}"), qs(m_loan.bookTitle));
+        text.replace(QStringLiteral("{copy}"), qs(m_loan.copyCode));
         summary->setText(text);
     }
 

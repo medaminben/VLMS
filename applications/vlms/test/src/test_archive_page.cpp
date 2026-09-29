@@ -202,9 +202,10 @@ struct ArchiveListHarness {
                                  + margins.bottom());
     }
 
-    void retranslateUi()
+    void applyLabels()
     {
-        page->retranslateUi();
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(page.get(), &languageChange);
         for (int row = 0; row < typeList->count(); ++row) {
             typeList->item(row)->setText(T(kArchiveTypes[row].labelKey));
         }
@@ -618,7 +619,7 @@ TEST_F(test_ui_ArchiveList, EveryTypeStaysVisibleWhateverTypeIsPicked)
     QFont big = m_typeList->font();
     big.setPixelSize(22);
     m_typeList->setFont(big);
-    m_harness->retranslateUi();
+    m_harness->applyLabels();
     m_harness->page->resize(1200, 800);
     m_harness->page->show();
     QApplication::processEvents();

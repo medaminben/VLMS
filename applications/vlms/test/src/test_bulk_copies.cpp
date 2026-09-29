@@ -12,6 +12,8 @@
 #include <VLMS/Core/Strings.h>
 
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QEvent>
 #include <QImage>
 #include <QStyle>
 #include <QStyleOptionViewItem>
@@ -64,7 +66,8 @@ protected:
 
     void clickRemove()
     {
-        m_copies->retranslateUi();
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(m_copies.get(), &languageChange);
         clickButtonWithText(m_copies.get(), qs(Core::Strings::t("book.copy.remove")));
     }
 

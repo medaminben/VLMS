@@ -1,5 +1,7 @@
 #include "ui/catalog/BookEditorDialog.h"
 
+#include <QCoreApplication>
+#include <QEvent>
 #include <VLMS/Core/DateText.h>
 #include <VLMS/Core/Strings.h>
 #include <VLMS/Ocr/Ocr.h>
@@ -131,7 +133,7 @@ BookEditorDialog::BookEditorDialog(VLMS::CatalogLookups& lookups, VLMS::OcrServi
     buildUi();
     populateCategories();
     populateLanguages();
-    retranslateUi();
+    applyLabels();
 }
 
 BookEditorDialog::BookEditorDialog(VLMS::CatalogLookups& lookups,
@@ -147,7 +149,7 @@ BookEditorDialog::BookEditorDialog(VLMS::CatalogLookups& lookups,
     populateCategories();
     populateLanguages();
     loadBook(book);
-    retranslateUi();
+    applyLabels();
 }
 
 BookEditorDialog::~BookEditorDialog()
@@ -392,7 +394,15 @@ void BookEditorDialog::buildUi() {
     root->addLayout(sideColumn, 0);
 }
 
-void BookEditorDialog::retranslateUi()
+void BookEditorDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void BookEditorDialog::applyLabels()
 {
     setWindowTitle(m_isEdit ? T("book.editTitle")
                             : T("book.addTitle"));
@@ -430,7 +440,8 @@ void BookEditorDialog::retranslateUi()
         m_tabs->setTabText(1, T("book.tab.copies"));
     }
     if (m_copies != nullptr) {
-        m_copies->retranslateUi();
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(m_copies, &languageChange);
     }
     if (m_coverLabel != nullptr) {
         m_coverLabel->setText(T("book.field.cover"));

@@ -4,6 +4,8 @@
 
 #include <QWidget>
 
+class QEvent;
+
 namespace VLMS {
 class CatalogLookups;
 }
@@ -19,7 +21,6 @@ class BookCopiesTable final : public QWidget {
 public:
     explicit BookCopiesTable(VLMS::CatalogLookups& lookups, QWidget* parent = nullptr);
 
-    void retranslateUi();
     void loadCopies(qint64 bookId);
     void addRow(const QString& language);
     /// A new copy row whose number comes from an archived copy (Archive ->
@@ -29,11 +30,15 @@ public:
     [[nodiscard]] int copyCount() const;
     [[nodiscard]] bool validate(QWidget* dialogParent);
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 signals:
     void requestCopiesTab();
     void addRequested();
 
 private:
+    void applyLabels();
     void appendCopyRow(const VLMS::Repositories::BookCopyRecord& copy);
     void sizeCopyColumns();
     void removeSelectedRow();

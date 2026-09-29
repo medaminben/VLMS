@@ -8,6 +8,7 @@
 #include "ui/workflows/LoanWorkflow.h"
 
 #include <QAbstractItemView>
+#include <QEvent>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -41,7 +42,7 @@ LoanHistoryDialog::LoanHistoryDialog(LoanListSpec& loansSpec,
 {
     resize(mutableKind() ? 900 : 960, 420);
     buildUi();
-    retranslateUi();
+    applyLabels();
     applyPinnedQuery();
     updateEmptyState();
     updateActionEnabled();
@@ -148,7 +149,15 @@ void LoanHistoryDialog::buildUi()
     });
 }
 
-void LoanHistoryDialog::retranslateUi()
+void LoanHistoryDialog::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QDialog::changeEvent(event);
+}
+
+void LoanHistoryDialog::applyLabels()
 {
     QString title = T(ss(titleKey()));
     title.replace(QStringLiteral("{name}"), m_titleName);

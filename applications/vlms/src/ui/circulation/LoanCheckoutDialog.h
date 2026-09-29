@@ -3,6 +3,8 @@
 #include <VLMS/Repositories/LoanTypes.h>
 
 #include <QDialog>
+
+class QEvent;
 #include <QString>
 
 namespace VLMS {
@@ -38,9 +40,12 @@ public:
     /// False when the scope left nothing to lend — every copy is out.
     [[nodiscard]] bool hasLendableCopy() const;
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void buildUi();
-    void retranslateUi();
+    void applyLabels();
     void refreshMembers();
     void refreshCopies();
 

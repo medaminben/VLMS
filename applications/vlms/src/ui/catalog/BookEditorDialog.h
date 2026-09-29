@@ -3,6 +3,8 @@
 #include <VLMS/Repositories/CatalogTypes.h>
 
 #include <QDialog>
+
+class QEvent;
 #include <QString>
 #include <QStringList>
 
@@ -56,12 +58,13 @@ public:
     [[nodiscard]] bool coverChanged() const { return m_coverChanged; }
 
 protected:
+    void changeEvent(QEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
     void buildUi();
-    void retranslateUi();
+    void applyLabels();
     void populateCategories();
     void manageCategories();
     void populateLanguages();

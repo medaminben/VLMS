@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include <QAbstractItemView>
+#include <QEvent>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -106,9 +107,19 @@ BookCopiesTable::BookCopiesTable(VLMS::CatalogLookups& lookups, QWidget* parent)
     buttons->addWidget(m_removeButton);
     buttons->addStretch(1);
     layout->addLayout(buttons);
+
+    applyLabels();
 }
 
-void BookCopiesTable::retranslateUi()
+void BookCopiesTable::changeEvent(QEvent* event)
+{
+    if (event != nullptr && event->type() == QEvent::LanguageChange) {
+        applyLabels();
+    }
+    QWidget::changeEvent(event);
+}
+
+void BookCopiesTable::applyLabels()
 {
     QStringList headers;
     headers.reserve(kCopyColumnKeys.size());

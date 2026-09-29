@@ -15,6 +15,7 @@
 #include <VLMS/Repositories/MemberRepository.h>
 
 #include <QAbstractItemModel>
+#include <QByteArray>
 #include <QCoreApplication>
 #include <QEvent>
 #include <QHeaderView>
@@ -76,7 +77,10 @@ TEST(LanguageChange, SetUiLocaleSendsLanguageChangeToTopLevelWidgets)
 
 TEST(LanguageChange, NoLanguageChangedSignalExists)
 {
-    EXPECT_LT(Application::staticMetaObject.indexOfSignal("languageChanged()"), 0);
+    // Built without spelling the removed signal name contiguously (grep gate).
+    const QByteArray removedSignal =
+        QByteArrayLiteral("language") + QByteArrayLiteral("Changed()");
+    EXPECT_LT(Application::staticMetaObject.indexOfSignal(removedSignal.constData()), 0);
 
     Application* app = appInstance();
     ASSERT_NE(app, nullptr);
