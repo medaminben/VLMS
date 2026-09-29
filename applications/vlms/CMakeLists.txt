@@ -111,6 +111,7 @@ add_library(vlms_ui STATIC
     src/ui/presentation/FacetSpec.h
     src/ui/presentation/PageAction.h
     src/ui/presentation/PreviewContent.h
+    src/ui/presentation/ListSpec.h
 )
 
 target_include_directories(vlms_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
