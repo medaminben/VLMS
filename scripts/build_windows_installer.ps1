@@ -231,8 +231,7 @@ function Copy-InstallerRuntimeData {
     Write-Warning @"
 No pre-populated database or resources found.
 The installer will create an empty database on first run.
-For a full catalog build, run scripts/import_catalog.py locally or
-scripts/fetch_installer_data.ps1 (downloads VLMS_installer_data.zip from releases).
+For a full catalog build, run scripts/fetch_installer_data.ps1 (downloads VLMS_installer_data.zip from releases).
 "@
   }
 }

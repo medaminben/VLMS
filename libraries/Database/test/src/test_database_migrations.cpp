@@ -996,9 +996,9 @@ TEST_F(test_core_DatabaseMigrations, FreshDatabaseAlreadyHasThePublicationDateOr
 
 // --- re-normalisation for imported catalogs (v2 -> v3) ---------------------
 //
-// scripts/import_catalog.py loads the real library catalog straight
+// The catalog import loads the real library catalog straight
 // into SQLite, so publication_date arrives holding whatever the cataloguer
-// typed. The script cannot normalise it -- normalizePublicationDate() is C++,
+// typed. The import cannot normalise it -- normalizePublicationDate() is C++,
 // and porting it to Python would fork rules that tst_date_text pins down --
 // so it writes the raw text into both columns, stamps the database at version
 // 2, and leaves this upgrade to do the transform on first open.

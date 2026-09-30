@@ -100,7 +100,7 @@ if ($hasDb) {
 
   if ($null -ne $expected -and $actual -ne $expected) {
     $message = "Bundled database is at schema $actual but this build ships schema $expected. " +
-      "Refresh database/vlms.db (open it once with this build, or re-run scripts/import_catalog.py) " +
+      "Refresh database/vlms.db (open it once with this build) " +
       "and rebuild."
     if ($RequireInstallerData) { throw $message }
     Write-Warning $message
