@@ -33,3 +33,6 @@
 
 # Python bytecode from the manual and import scripts
 __pycache__/
+
+# Per-developer editor settings
+/.vscode/
