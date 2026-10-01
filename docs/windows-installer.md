@@ -124,20 +124,16 @@ becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 Dispatches `.github/workflows/windows-installer.yml`, watches the run, and
 downloads the `.exe` into `dist/`.
 
-CI has no access to `database/vlms.db` or `resources/books/` — both are
-gitignored, and the database holds real member records. It gets them from the
-`VLMS_installer_data.zip` asset on the latest GitHub release. Refresh that
-asset whenever the catalogue or the schema changes:
-
-```bash
-./scripts/package_installer_data.sh
-```
-
-then upload `dist/VLMS_installer_data.zip` to the release.
+The installer ships the sample catalogue tracked in the repository:
+`database/vlms.db`, `resources/books/` and `resources/members/`. CI builds from
+the checkout, so changing the catalogue is an ordinary commit.
+`scripts/fetch_installer_data.ps1` still runs and only confirms that the data is
+present; its download path (`VLMS_installer_data.zip`, or
+`VLMS_INSTALLER_DATA_URL`) is for a checkout without that data.
 
 ## The staleness guard
 
-Three checks exist because one thing went wrong quietly and would again:
+These checks exist because one thing went wrong quietly and would again:
 the July 0.1.0 data zip held a database at `user_version` 0, and nothing in the
 pipeline noticed.
 
@@ -147,8 +143,6 @@ pipeline noticed.
    `user_version` straight out of the SQLite header (offset 60) and compares it
    to the staged `schema.sql`. A mismatch is fatal under `-RequireInstallerData`,
    which is what CI passes.
-3. The CI cache key for the installer data is keyed on the hash of
-   `schema.sql`, so a schema change cannot be served an old cached catalogue.
 
 A bundled database at the wrong schema is not fatal to the *user* — the app
 would migrate it on first launch — but it means every fresh install starts by
@@ -174,6 +168,3 @@ attaches the `.exe`. The version the build uses comes from that tag
 (`cmake/GitVersion.cmake`); a build past the latest tag reports
 `X.Y.Z+N.gSHA`. Each CI run on `Beta` shows the level a merge would release
 under **Next release** in its summary.
-
-The catalogue data zip stays on release `v0.1.0`; the build fetches it from
-there, not from the latest release.
