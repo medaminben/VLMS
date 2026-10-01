@@ -3,8 +3,8 @@
 # sandbox. Never opens the live database for writing and never touches the desktop.
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
-build="$repo/build-manual"
-sandbox="$repo/build-manual-sandbox"
+build="$repo/build/manual"
+sandbox="$repo/build/manual-sandbox"
 
 cmake -S "$repo" -B "$build" -DCMAKE_BUILD_TYPE=Release \
       -DVLMS_MANUAL_CAPTURE=ON -DVLMS_BUILD_TESTS=OFF >/dev/null
