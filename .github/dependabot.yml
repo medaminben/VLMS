@@ -1,0 +1,17 @@
+# Keeps the GitHub Actions used by the workflows up to date. Qt, SQLite and
+# Tesseract come in through CMake and the installer scripts, which Dependabot
+# cannot read, so they are still updated by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    # Work lands on Beta first, like every other change; main only takes
+    # releases.
+    target-branch: Beta
+    schedule:
+      interval: monthly
+    # One pull request a month for all actions, not one per action.
+    groups:
+      actions:
+        patterns:
+          - "*"
