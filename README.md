@@ -46,6 +46,28 @@ cmake --build build
 ./build/bin/vlms
 ```
 
+On Windows, install [MSYS2](https://www.msys2.org/) and run these commands in its **MSYS2 MINGW64** shell, from the repository folder:
+
+```bash
+pacman -S --needed \
+  mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja \
+  mingw-w64-x86_64-qt6-base mingw-w64-x86_64-sqlite3
+
+# Optional, for cover OCR:
+# pacman -S --needed mingw-w64-x86_64-tesseract-ocr mingw-w64-x86_64-leptonica \
+#   mingw-w64-x86_64-tesseract-data-ara mingw-w64-x86_64-tesseract-data-fra \
+#   mingw-w64-x86_64-tesseract-data-eng
+# powershell -File scripts/fetch_windows_ocr.ps1 -Toolchain MinGW
+
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+./build/bin/vlms.exe
+```
+
+Use `Debug` here, not `Release`. On Windows, a `Release` build looks for `database\` and `schema.sql` beside `vlms.exe`, in the layout the installer creates. A `Debug` build uses the sample catalogue in the source tree. Start the program from the same shell, which is where it finds the Qt and SQLite DLLs.
+
+To build the Windows installer instead, see [`docs/windows-installer.md`](docs/windows-installer.md).
+
 ## Tests
 
 ```bash
