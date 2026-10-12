@@ -20,6 +20,34 @@ namespace VLMS::Repositories {
 
 namespace {
 
+/// Copies `source` over `target` without ever leaving `target` missing: the
+/// copy goes to a sibling first and only a finished copy is renamed into place.
+/// Removing the old file up front lost it whenever the copy then failed.
+bool replaceWithCopy(const std::filesystem::path& source, const std::filesystem::path& target)
+{
+    std::filesystem::path partial = target;
+    partial += ".part";
+    std::error_code error;
+    std::filesystem::remove(partial, error);
+    if (!std::filesystem::copy_file(source, partial, error)) {
+        std::filesystem::remove(partial, error);
+        return false;
+    }
+    std::filesystem::rename(partial, target, error);
+    if (error) {
+        // A rename that will not replace an existing file. The new image is
+        // complete beside it by now, so the swap itself is all that is at risk.
+        std::filesystem::remove(target, error);
+        std::filesystem::rename(partial, target, error);
+    }
+    if (error) {
+        std::filesystem::remove(partial, error);
+        return false;
+    }
+    return true;
+}
+
+
 std::string blankIsbnSentinel(const std::string& isbn)
 {
     const std::string trimmed = Core::trim(isbn);
@@ -457,10 +485,11 @@ Core::Status CatalogRepository::deleteBook(const std::int64_t id)
 
     const std::filesystem::path bookDir =
         std::filesystem::path(m_resourcesDirectory) / "books" / std::to_string(id);
-    if (std::filesystem::exists(bookDir)) {
-        std::error_code error;
-        std::filesystem::remove_all(bookDir, error);
-    }
+    // No exists() first: that overload throws on "permission denied", and the
+    // row is already gone. remove_all with an error_code skips a missing folder
+    // and leaves an unreadable one behind without taking the application down.
+    std::error_code error;
+    std::filesystem::remove_all(bookDir, error);
     return Core::Status::ok();
 }
 
@@ -653,10 +682,11 @@ Core::Status CatalogRepository::purgeBook(const std::int64_t id)
     // it waits until the row is certainly gone.
     const std::filesystem::path bookDir =
         std::filesystem::path(m_resourcesDirectory) / "books" / std::to_string(id);
-    if (std::filesystem::exists(bookDir)) {
-        std::error_code error;
-        std::filesystem::remove_all(bookDir, error);
-    }
+    // No exists() first: that overload throws on "permission denied", and the
+    // row is already gone. remove_all with an error_code skips a missing folder
+    // and leaves an unreadable one behind without taking the application down.
+    std::error_code error;
+    std::filesystem::remove_all(bookDir, error);
     return Core::Status::ok();
 }
 
@@ -755,10 +785,7 @@ Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
     const std::filesystem::path targetPath =
         std::filesystem::path(m_resourcesDirectory) / relativePath;
 
-    if (std::filesystem::exists(targetPath, error)) {
-        std::filesystem::remove(targetPath, error);
-    }
-    if (!std::filesystem::copy_file(source, targetPath, error)) {
+    if (!replaceWithCopy(source, targetPath)) {
         return RepoSql::validation("error.cover.copyFailed");
     }
 

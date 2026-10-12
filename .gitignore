@@ -36,3 +36,6 @@ __pycache__/
 
 # CTest scratch output from running ctest in the source tree
 /Testing/
+
+# Per-developer editor settings
+/.vscode/

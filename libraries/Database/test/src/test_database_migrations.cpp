@@ -341,6 +341,52 @@ TEST_F(test_core_DatabaseMigrations, AMigrationThatFailsStillLeavesTheCopy)
     EXPECT_EQ(readText(backups.front(), "SELECT count(*) FROM books"), "2");
 }
 
+TEST_F(test_core_DatabaseMigrations, ACopySetAsideCanBeRestoredAndOpened)
+{
+    const auto db = openFixture("legacy_book_language_check.sql");
+    ASSERT_TRUE(db != nullptr && db->isValid()) << (db ? db->lastError() : "");
+    const auto backups = backupsIn(db->dataDirectory());
+    ASSERT_EQ(backups.size(), 1u);
+
+    // Restoring is putting the copy back under the database's own name, which
+    // is what the librarian would do by hand. A copy that only exists proves
+    // nothing; this one has to open, upgrade again, and still hold every row.
+    const std::filesystem::path restored = m_scratch / "restored";
+    std::filesystem::create_directories(restored);
+    std::filesystem::copy_file(backups.front(), restored / "vlms.db");
+
+    Database::Connection reopened(restored.string());
+    ASSERT_TRUE(reopened.open()) << reopened.lastError();
+    EXPECT_EQ(readText(restored / "vlms.db", "PRAGMA integrity_check"), "ok");
+    EXPECT_EQ(readText(restored / "vlms.db", "PRAGMA user_version"),
+              std::to_string(db->userVersion()));
+    EXPECT_EQ(readText(restored / "vlms.db", "SELECT count(*) FROM books"), "2");
+}
+
+TEST_F(test_core_DatabaseMigrations, TheCopyLeftByAFailedMigrationIsTheDatabaseAsItWas)
+{
+    const std::string fixture = fixtureWith("legacy_book_language_check.sql",
+                                            "CREATE VIEW book_titles AS SELECT title FROM books;");
+    ASSERT_FALSE(fixture.empty());
+    const TestDatabase db(TestDatabase::Mode::FromSqlFile, fixture);
+    ASSERT_FALSE(db.isValid());
+    const auto backups = backupsIn(db.dataDirectory());
+    ASSERT_EQ(backups.size(), 1u);
+
+    // The case the copy exists for: the upgrade stopped, and the way back is
+    // this file. It must be whole, unmigrated, and still carry what made the
+    // upgrade stop, so the previous build reads it exactly as before.
+    const std::filesystem::path restored = m_scratch / "restored-after-failure" / "vlms.db";
+    std::filesystem::create_directories(restored.parent_path());
+    std::filesystem::copy_file(backups.front(), restored);
+
+    EXPECT_EQ(readText(restored, "PRAGMA integrity_check"), "ok");
+    EXPECT_EQ(readText(restored, "PRAGMA user_version"), "0");
+    EXPECT_EQ(readText(restored, "SELECT count(*) FROM books"), "2");
+    EXPECT_EQ(readText(restored, "SELECT count(*) FROM sqlite_master WHERE name = 'book_titles'"),
+              "1");
+}
+
 TEST_F(test_core_DatabaseMigrations, ADatabaseThatStaysOnItsVersionIsCopiedOnce)
 {
     // Rows that break the date constraints stop the upgrade short of a

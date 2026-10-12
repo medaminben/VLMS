@@ -40,12 +40,9 @@ StringTable arabicStrings()
         // the body, only in the contact block.
         {"licence.title", "الرخصة"},
         {"licence.intro",
-         "برنامج VLMS هدية مُهداة إلى المكتبة التي تستعمله. "
-         "لم يُطلب عنه أي مقابل، ولا شيء مستحق عليه، والهبة لا رجعة فيها."},
-        {"licence.clause.ownership.head", "الحلّ ملك للمكتبة"},
-        {"licence.clause.ownership.body",
-         "التطبيق، كما هو مُثبَّت هنا، ملك للمكتبة التي تستعمله. وللمكتبة أن تستعمله "
-         "وتحتفظ به وتنسخه وتنقله كما تشاء."},
+         "برنامج VLMS برنامج حرّ صادر بموجب رخصة MIT. ويحقّ لأيّ كان، والمكتبة منهم، أن "
+         "يستعمله وينسخه ويعدّله وينقله إلى غيره مجّانًا، شرط أن يرافق كلَّ نسخة منه "
+         "إشعارُ حقوق المؤلف ونصُّ الرخصة الوارد أدناه."},
         {"licence.clause.data.head", "بيانات المكتبة ملك لها"},
         {"licence.clause.data.body",
          "الفهرس وبطاقات المنخرطين والمسوحات والصور التي تنشئها المكتبة بهذا التطبيق ملك "
@@ -62,7 +59,17 @@ StringTable arabicStrings()
         {"licence.clause.support.head", "لا التزام بالدعم"},
         {"licence.clause.support.body",
          "لا يلتزم المؤلف بتقديم دعم أو تدريب أو تحديثات أو إصلاحات. وكلّ عون يُقدَّم هو "
-         "امتداد للهبة، لا واجب مستحقّ."},
+         "تطوّع، لا واجب مستحقّ."},
+        {"licence.thirdParty.head", "برمجيات من أطراف أخرى"},
+        {"licence.thirdParty.body",
+         "بُني VLMS على برمجيات كتبها آخرون، لكلٍّ منها رخصته: Qt (LGPL v3)، وTesseract OCR "
+         "وبيانات لغاته (Apache 2.0)، وLeptonica (BSD 2-Clause)، وSQLite (ملكية عامة)، وخطّ "
+         "Cairo (SIL OFL 1.1). والمكوّنات التي تعتمد عليها مذكورة في الملف "
+         "THIRD_PARTY_NOTICES.txt، والنصوص الكاملة للرخص في المجلد licenses، وكلاهما بجانب "
+         "البرنامج. والشيفرة المصدرية لـ Qt متاحة على https://download.qt.io/"},
+        {"licence.fullText.head", "نصّ الرخصة"},
+        {"licence.fullText.note",
+         "النصّ الإنجليزي التالي هو وحده المعتمد، ولا تحلّ الشروح أعلاه محلّه."},
         {"licence.contact.head", "جهة الاتصال"},
         {"licence.contact.author", "المؤلف: محمد الأمين بن حسين"},
         {"licence.tooltip", "عرض رخصة الاستعمال"},
@@ -541,13 +548,10 @@ StringTable frenchStrings()
         {"footer.copyright", "© {year} VLMS"},
         {"licence.title", "Licence"},
         {"licence.intro",
-         "VLMS est offert en don à la Bibliothèque qui l'utilise. Rien n'a été facturé, "
-         "rien n'est dû, et ce don est irrévocable."},
-        {"licence.clause.ownership.head", "La solution appartient à la Bibliothèque"},
-        {"licence.clause.ownership.body",
-         "L'application, telle qu'elle est installée ici, appartient à la Bibliothèque "
-         "qui l'utilise. La Bibliothèque peut l'utiliser, la conserver, la copier "
-         "et la transmettre comme elle l'entend."},
+         "VLMS est un logiciel libre, publié sous la licence MIT. Chacun, la Bibliothèque "
+         "comprise, peut l'utiliser, le copier, le modifier et le transmettre gratuitement, "
+         "à condition que l'avis de copyright et le texte de la licence ci-dessous "
+         "accompagnent chaque copie."},
         {"licence.clause.data.head", "Les données de la Bibliothèque lui appartiennent"},
         {"licence.clause.data.body",
          "Le catalogue, les fiches des adhérents, les numérisations et les photographies que "
@@ -567,7 +571,19 @@ StringTable frenchStrings()
         {"licence.clause.support.head", "Aucune obligation d'assistance"},
         {"licence.clause.support.body",
          "L'auteur n'est tenu à aucune assistance, formation, mise à jour ni réparation. "
-         "Toute aide apportée prolonge le don ; elle n'est pas une obligation."},
+         "Toute aide apportée est bénévole ; elle n'est pas une obligation."},
+        {"licence.thirdParty.head", "Logiciels de tiers"},
+        {"licence.thirdParty.body",
+         "VLMS repose sur des logiciels écrits par d'autres, chacun sous sa propre licence : "
+         "Qt (LGPL v3), Tesseract OCR et ses données de langue (Apache 2.0), Leptonica "
+         "(BSD 2-Clause), SQLite (domaine public) et la police Cairo (SIL OFL 1.1). Les "
+         "composants dont ils dépendent sont listés dans THIRD_PARTY_NOTICES.txt, et les "
+         "textes complets des licences se trouvent dans le dossier licenses, tous deux à côté "
+         "du programme. Le code source de Qt est disponible sur https://download.qt.io/"},
+        {"licence.fullText.head", "Le texte de la licence"},
+        {"licence.fullText.note",
+         "Seul le texte anglais ci-dessous fait foi. Les explications ci-dessus ne le "
+         "remplacent pas."},
         {"licence.contact.head", "Contact"},
         {"licence.contact.author", "L'auteur : Mohamed Lamine Ben Hassine"},
         {"licence.tooltip", "Afficher la licence"},
@@ -1066,12 +1082,9 @@ StringTable englishStrings()
         {"footer.copyright", "© {year} VLMS"},
         {"licence.title", "Licence"},
         {"licence.intro",
-         "VLMS is given as a gift to the Library that uses it. Nothing was charged for it, "
-         "nothing is owed for it, and the gift cannot be taken back."},
-        {"licence.clause.ownership.head", "The solution is the Library's"},
-        {"licence.clause.ownership.body",
-         "The application, as it is installed here, belongs to the Library that uses it. "
-         "The Library may use it, keep it, copy it and pass it on as it sees fit."},
+         "VLMS is free software, released under the MIT Licence. Anyone, the Library "
+         "included, may use it, copy it, change it and pass it on at no cost, provided the "
+         "copyright notice and the licence text below go with every copy."},
         {"licence.clause.data.head", "The Library's records are its own"},
         {"licence.clause.data.body",
          "The catalogue, the member records, the scans and the photographs the Library "
@@ -1090,7 +1103,18 @@ StringTable englishStrings()
         {"licence.clause.support.head", "No duty to support"},
         {"licence.clause.support.body",
          "The author is under no obligation to provide support, training, updates or "
-         "repairs. Any help given is a continuation of the gift, not a duty owed."},
+         "repairs. Any help given is given freely, not a duty owed."},
+        {"licence.thirdParty.head", "Software by others"},
+        {"licence.thirdParty.body",
+         "VLMS is built with software written by others, each under its own licence: Qt "
+         "(LGPL v3), Tesseract OCR and its language data (Apache 2.0), Leptonica "
+         "(BSD 2-Clause), SQLite (public domain) and the Cairo font (SIL OFL 1.1). The "
+         "components they rely on are listed in THIRD_PARTY_NOTICES.txt, and the full licence "
+         "texts are in the licenses folder, both beside the program. The source code of Qt "
+         "is available from https://download.qt.io/"},
+        {"licence.fullText.head", "The licence text"},
+        {"licence.fullText.note",
+         "The text below is the one that applies. The explanations above do not replace it."},
         {"licence.contact.head", "Contact"},
         {"licence.contact.author", "The author: Mohamed Lamine Ben Hassine"},
         {"licence.tooltip", "Show the licence"},

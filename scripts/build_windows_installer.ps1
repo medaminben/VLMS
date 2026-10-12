@@ -506,6 +506,9 @@ if ($Toolchain -eq "MinGW") {
   & (Join-Path $RepoRoot "scripts\verify_no_msvc_runtime.ps1") -StageDir $StageDir
 }
 
+Write-Host "`n--- Record bundled licences ---"
+& (Join-Path $RepoRoot "scripts\write_bundled_licenses.ps1") -StageDir $StageDir -QtRoot $QtRoot
+
 $Schema = Join-Path $StageDir "schema.sql"
 if (-not (Test-Path $Schema)) {
   throw "schema.sql missing from staged folder: $Schema"
