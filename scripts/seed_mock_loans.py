@@ -2,7 +2,7 @@
 """Rebuild the demo loans for a VLMS database.
 
 Importing the catalog replaces every book_copies row, so any loans that were
-there before point at copies that no longer exist -- import_catalog
+there before point at copies that no longer exist -- the import
 deletes them for exactly that reason. This puts a comparable set back.
 
 Copies are drawn from books that have a cover image, so the circulation list

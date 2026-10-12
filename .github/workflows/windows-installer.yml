@@ -69,43 +69,6 @@ jobs:
           restore-keys: |
             vlms-ocr-mingw-v3-
 
-      # What the cache holds is the release asset, so the key has to follow the
-      # release asset. Keying on the schema alone was not enough: correcting a
-      # few catalogue rows leaves schema.sql untouched, the key stays put, and
-      # fetch_installer_data.ps1 -- which skips the download whenever a database
-      # is already on disk -- hands the build a catalogue that was superseded
-      # hours earlier. The run goes green either way, which is what makes it
-      # worth guarding. The schema hash stays in the key as well, so a migration
-      # still invalidates the cache even if nobody re-uploads the zip.
-      - name: Resolve installer data asset
-        id: installer-data-asset
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # The data zip lives on v0.1.0 for good; releases cut by release.yml
-          # carry only the installer and CHANGELOG.md.
-          stamp="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/v0.1.0" \
-            --jq '.assets[] | select(.name == "VLMS_installer_data.zip") | "\(.id)-\(.updated_at)"' \
-            2>/dev/null || true)"
-          # No release, no asset, or an override URL that the cache cannot
-          # describe: fall back to a key that never hits, so the fetch step
-          # runs and decides for itself.
-          if [ -z "$stamp" ] || [ -n "${VLMS_INSTALLER_DATA_URL:-}" ]; then
-            stamp="uncacheable-${GITHUB_RUN_ID}"
-          fi
-          echo "stamp=$(printf '%s' "$stamp" | tr -c '[:alnum:]-' '-')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache installer runtime data
-        uses: actions/cache@v4
-        id: installer-data-cache
-        with:
-          path: |
-            database/vlms.db
-            resources/books
-            resources/members
-          key: vlms-installer-data-schema${{ hashFiles('database/schema.sql') }}-asset${{ steps.installer-data-asset.outputs.stamp }}
-
       - name: Remove stale MSVC Qt cache tree
         shell: pwsh
         run: |

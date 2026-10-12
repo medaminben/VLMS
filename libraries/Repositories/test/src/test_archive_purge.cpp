@@ -11,9 +11,39 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <system_error>
 
 using namespace VLMS;
 using namespace Test;
+
+/// Takes every permission off `folder` for as long as it lives, so looking up
+/// anything inside it fails with "permission denied" rather than "not found".
+/// That is the folder a virus scanner or another program holds open.
+class LockedFolder {
+public:
+    explicit LockedFolder(std::filesystem::path folder)
+        : m_folder(std::move(folder))
+    {
+        std::filesystem::permissions(m_folder, std::filesystem::perms::none);
+        std::error_code error;
+        static_cast<void>(std::filesystem::status(m_folder / "probe", error));
+        m_effective = error && error != std::errc::no_such_file_or_directory;
+    }
+    ~LockedFolder()
+    {
+        std::error_code ignored;
+        std::filesystem::permissions(m_folder, std::filesystem::perms::owner_all, ignored);
+    }
+    LockedFolder(const LockedFolder&) = delete;
+    LockedFolder& operator=(const LockedFolder&) = delete;
+
+    /// False as root, and on Windows, where permissions() only toggles read-only.
+    [[nodiscard]] bool effective() const { return m_effective; }
+
+private:
+    std::filesystem::path m_folder;
+    bool m_effective = false;
+};
 
 /// One fixture for the whole funnel: a purge is always a question about the
 /// rows beneath a record, so every test needs all three repositories.
@@ -416,4 +446,48 @@ TEST_F(test_core_ArchivePurge, CopyLoanCountCountsArchivedLoansSoTheColumnMatche
     }
     EXPECT_EQ(borrowed, 1);
     EXPECT_EQ(untouched, 0);
+}
+
+TEST_F(test_core_ArchivePurge, PurgeBookStillSucceedsWhenTheCoverFolderCannotBeRead)
+{
+    const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(40));
+    ASSERT_TRUE(m_catalog->archiveBook(bookId));
+    ASSERT_TRUE(m_catalog->purgeCopy(copyIdsOf(*m_db, bookId).front()));
+
+    // The row is deleted and committed before the folder is looked at, so a
+    // throw there crashed the application after the purge had happened.
+    const LockedFolder locked(std::filesystem::path(m_db->resourcesDirectory()) / "books");
+    if (!locked.effective()) {
+        GTEST_SKIP() << "folder permissions are not enforced for this user";
+    }
+    EXPECT_TRUE(m_catalog->purgeBook(bookId));
+    EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM books WHERE id = " + std::to_string(bookId))
+                  .toInt(),
+              0);
+}
+
+TEST_F(test_core_ArchivePurge, DeleteBookStillSucceedsWhenTheCoverFolderCannotBeRead)
+{
+    const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(41));
+
+    const LockedFolder locked(std::filesystem::path(m_db->resourcesDirectory()) / "books");
+    if (!locked.effective()) {
+        GTEST_SKIP() << "folder permissions are not enforced for this user";
+    }
+    EXPECT_TRUE(m_catalog->deleteBook(bookId));
+}
+
+TEST_F(test_core_ArchivePurge, PurgeMemberStillSucceedsWhenThePhotoFolderCannotBeRead)
+{
+    const std::int64_t memberId = seedMember(*m_db, uniqueMemberSeed(42));
+    ASSERT_TRUE(m_members->archiveMember(memberId));
+
+    const LockedFolder locked(std::filesystem::path(m_db->resourcesDirectory()) / "members");
+    if (!locked.effective()) {
+        GTEST_SKIP() << "folder permissions are not enforced for this user";
+    }
+    EXPECT_TRUE(m_members->purgeMember(memberId));
+    EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM members WHERE id = " + std::to_string(memberId))
+                  .toInt(),
+              0);
 }
