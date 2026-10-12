@@ -23,7 +23,7 @@ Ouvrez VLMS. La fenêtre s'ouvre sur le Catalogue, dans la langue et le thème c
 
 ## Le pied de page et la licence
 
-La ligne du pied de page ouvre la licence. Elle dit que l'application est un don à cette bibliothèque, que la bibliothèque possède l'application telle qu'elle est installée ici, et que le catalogue, les fiches d'adhérents et les photographies appartiennent à la bibliothèque. Il n'y a pas de garantie.
+La ligne du pied de page ouvre la licence. VLMS est un logiciel libre sous licence MIT : la bibliothèque, comme chacun, peut l'utiliser, le copier, le modifier et le transmettre, à condition que la licence l'accompagne. Le catalogue, les fiches d'adhérents et les photographies appartiennent à la bibliothèque. Il n'y a pas de garantie. La licence cite aussi les logiciels sur lesquels VLMS repose, comme Qt et Tesseract, et se termine par le texte complet de la licence MIT.
 
 ![La licence.](shot:gs-licence)
 

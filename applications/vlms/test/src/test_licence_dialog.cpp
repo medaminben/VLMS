@@ -13,6 +13,7 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QRect>
+#include <QScrollBar>
 #include <QTextBrowser>
 #include <Qt>
 
@@ -37,11 +38,12 @@ const std::vector<std::string>& clauseBodyKeys()
 {
     static const std::vector<std::string> keys = {
         "licence.intro",
-        "licence.clause.ownership.body",
         "licence.clause.data.body",
         "licence.clause.warranty.body",
         "licence.clause.liability.body",
         "licence.clause.support.body",
+        "licence.thirdParty.body",
+        "licence.fullText.note",
     };
     return keys;
 }
@@ -170,11 +172,56 @@ TEST_F(test_ui_LicenceDialog, TheLicenceIsNotPaintedAsAnInputField)
         const QColor top = shot.pixelColor(box.center().x(), box.top());
         const QColor bottom = shot.pixelColor(box.center().x(), box.bottom());
 
+        // The licence is longer than the window, so a scroll bar runs down one
+        // side -- the left one in Arabic -- and that edge shows the bar's own
+        // outline, not a frame. Only the edges without it say anything.
+        const QScrollBar* bar = body->verticalScrollBar();
+        const bool barShown = bar->isVisibleTo(body);
+        const bool barOnLeft = barShown && bar->geometry().center().x() < body->width() / 2;
+
         const QColor border(QLatin1String(c.borderColour));
-        EXPECT_NE(left, border);
-        EXPECT_NE(right, border);
+        if (!barOnLeft) {
+            EXPECT_NE(left, border);
+        }
+        if (!barShown || barOnLeft) {
+            EXPECT_NE(right, border);
+        }
         EXPECT_NE(top, border);
         EXPECT_NE(bottom, border);
     }
     Theme::setMode(Theme::kDefaultMode);
+}
+
+// MIT asks for the copyright notice and the permission notice in every copy.
+// The binding text is the English one, so it is shown verbatim whatever the
+// language; the clauses above it only explain it.
+TEST_F(test_ui_LicenceDialog, TheMitLicenceIsShownInFullInEveryLanguage)
+{
+    for (const char* locale : {kArabic, kFrench, kEnglish}) {
+        SCOPED_TRACE(locale);
+        Core::Locale::setCode(locale);
+        LicenceDialog dialog;
+        const QString text = dialog.documentText();
+
+        EXPECT_TRUE(text.contains(QStringLiteral("MIT License")));
+        EXPECT_TRUE(text.contains(QStringLiteral("Copyright (c) 2026 Mohamed Lamine Ben Hassine")));
+        EXPECT_TRUE(text.contains(QStringLiteral("Permission is hereby granted, free of charge")));
+        EXPECT_TRUE(text.contains(QStringLiteral("THE SOFTWARE IS PROVIDED \"AS IS\"")));
+    }
+}
+
+TEST_F(test_ui_LicenceDialog, EveryBundledComponentIsNamedWithItsLicence)
+{
+    for (const char* locale : {kArabic, kFrench, kEnglish}) {
+        SCOPED_TRACE(locale);
+        Core::Locale::setCode(locale);
+        LicenceDialog dialog;
+        const QString text = dialog.documentText();
+
+        for (const char* name : {"Qt", "LGPL", "Tesseract", "Apache", "Leptonica", "BSD",
+                                 "SQLite", "Cairo", "OFL", "THIRD_PARTY_NOTICES.txt"}) {
+            SCOPED_TRACE(name);
+            EXPECT_TRUE(text.contains(QString::fromLatin1(name)));
+        }
+    }
 }
