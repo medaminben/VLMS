@@ -40,7 +40,7 @@ jobs:
       # Full history: the version comes from the latest vX.Y.Z tag and the
       # "What's new" box from every tag's message.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
@@ -61,7 +61,7 @@ jobs:
             mingw-w64-x86_64-tesseract-data-ara
 
       - name: Cache OCR bundle
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: ocr-cache
         with:
           path: third_party/tesseract/windows
@@ -149,7 +149,7 @@ jobs:
             -RequireInstallerData
 
       - name: Upload installer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: VLMS_Setup
           path: dist/VLMS_Setup_*.exe
