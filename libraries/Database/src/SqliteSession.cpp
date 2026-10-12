@@ -234,6 +234,7 @@ Core::Result<std::unique_ptr<SqliteSession>> SqliteSession::open(const std::stri
         }
         return Core::Result<std::unique_ptr<SqliteSession>>::fail(Core::ErrorKind::Sql, "error.sql", message);
     }
+    sqlite3_busy_timeout(db, kBusyTimeoutMs);
     return Core::Result<std::unique_ptr<SqliteSession>>::ok(
         std::unique_ptr<SqliteSession>(new SqliteSession(db)));
 }

@@ -22,6 +22,7 @@ constexpr int SQLITE_TRANSIENT = -1;
 
 int sqlite3_open(const char* filename, sqlite3** ppDb);
 int sqlite3_close(sqlite3*);
+int sqlite3_busy_timeout(sqlite3*, int ms);
 int sqlite3_exec(sqlite3*, const char* sql, int (*callback)(void*, int, char**, char**),
                  void*, char** errmsg);
 void sqlite3_free(void*);

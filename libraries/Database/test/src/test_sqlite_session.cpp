@@ -136,3 +136,21 @@ TEST(test_core_SqliteSession, NamedBindsAndNullsRoundTrip)
     ASSERT_TRUE(select->next());
     EXPECT_TRUE(select->isNull(0));
 }
+
+// A second program on the same file (a backup tool, an antivirus scan, a
+// second copy of VLMS) holds the lock for a moment. Without a busy timeout
+// SQLite refuses at once with "database is locked" and the librarian's save
+// fails; with one it waits its turn.
+TEST(test_core_SqliteSession, WaitsForABusyDatabaseInsteadOfFailingAtOnce)
+{
+    ScopedTempDir dir;
+    ASSERT_TRUE(dir.isValid());
+    auto opened = Database::SqliteSession::open(dir.dbPath());
+    ASSERT_TRUE(opened);
+
+    auto query = opened.value()->prepare("PRAGMA busy_timeout");
+    ASSERT_TRUE(query);
+    ASSERT_TRUE(query.value().next());
+    EXPECT_EQ(query.value().integer(0), Database::SqliteSession::kBusyTimeoutMs);
+    EXPECT_GT(Database::SqliteSession::kBusyTimeoutMs, 0);
+}
