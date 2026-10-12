@@ -23,7 +23,7 @@ Open VLMS. The window comes up on the Catalogue, in the language and the light o
 
 ## The footer and the licence
 
-The line in the footer opens the licence. It says the application is a gift to this library, that the library owns the application as it is installed here, and that the catalogue, the member records, and the photographs belong to the library. There is no warranty.
+The line in the footer opens the licence. VLMS is free software under the MIT Licence: the library, like anyone, may use, copy, change and pass it on, as long as the licence goes with it. The catalogue, the member records and the photographs belong to the library. There is no warranty. The licence also names the software VLMS is built with, such as Qt and Tesseract, and ends with the full MIT text.
 
 ![The licence.](shot:gs-licence)
 

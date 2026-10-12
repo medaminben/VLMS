@@ -130,6 +130,7 @@ create_application(
     RESOURCES
         resources/fonts.qrc
         resources/images.qrc
+        resources/licence.qrc
         ${VLMS_QT_CATALOGUE_QRC}
     DEPENDENCIES
         vlms_ui
@@ -146,6 +147,12 @@ if(WIN32)
     set(VLMS_WIN_APP_DIR ".")
     install(TARGETS vlms RUNTIME DESTINATION ${VLMS_WIN_APP_DIR})
     install(FILES ${CMAKE_SOURCE_DIR}/database/schema.sql DESTINATION ${VLMS_WIN_APP_DIR})
+    # MIT asks for its notice in every copy, and the LGPL, Apache and BSD parts
+    # bundled beside vlms.exe ask for theirs. scripts/write_bundled_licenses.ps1
+    # adds the licences of the DLLs the installer pulls in on top of these.
+    install(FILES ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/THIRD_PARTY_NOTICES.txt
+            DESTINATION ${VLMS_WIN_APP_DIR})
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/licenses/ DESTINATION ${VLMS_WIN_APP_DIR}/licenses)
     # The user manual, opened by the ? beside the theme toggle. Only the generated pages and
     # their assets: the Markdown sources and the template stay in the repository.
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/docs/manual/
@@ -158,6 +165,9 @@ if(WIN32)
 else()
     install(TARGETS vlms RUNTIME DESTINATION bin)
     install(FILES ${CMAKE_SOURCE_DIR}/database/schema.sql DESTINATION share/vlms)
+    install(FILES ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/THIRD_PARTY_NOTICES.txt
+            DESTINATION share/doc/vlms)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/licenses/ DESTINATION share/doc/vlms/licenses)
 
     # QApplication::setWindowIcon is enough for X11 and Windows, but a Wayland
     # compositor never sees a per-window icon: it matches the surface's app id
