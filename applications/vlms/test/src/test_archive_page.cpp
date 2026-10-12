@@ -1,13 +1,21 @@
+#include "ui/presentation/ReadSources.h"
 #include "ModalTest.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
-#include "UiTest.h"
 
-#include "ui/MainWindow.h"
-#include "ui/Theme.h"
-#include "ui/archive/ArchivePage.h"
-#include "ui/archive/ReuseNumberFlow.h"
+#include "QtBridge.h"
+#include "ui/services/Theme.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/ReuseNumberFlow.h"
+#include "ui/views/BookFacetFilters.h"
+#include "ui/views/MemberFacetFilters.h"
+#include "ui/presentation/ArchivedBookSpec.h"
+#include "ui/presentation/ArchivedCopySpec.h"
+#include "ui/presentation/ArchivedLoanSpec.h"
+#include "ui/presentation/ArchivedMemberSpec.h"
+#include "WorkflowTestSupport.h"
 
+#include <VLMS/Repositories/ArchiveTypes.h>
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
@@ -15,26 +23,72 @@
 #include <VLMS/Core/Strings.h>
 
 #include <QAbstractButton>
+#include <QAbstractItemView>
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEvent>
+#include <QHash>
 #include <QHeaderView>
+#include <QItemSelectionModel>
 #include <QLabel>
 #include <QLayout>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSignalSpy>
-#include <QStackedWidget>
-#include <QTableWidget>
+#include <QTableView>
+#include <QTest>
 #include <QTimer>
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <memory>
 
 using namespace VLMS;
 using namespace Test;
 
 namespace {
+
+struct ArchiveTypeEntry {
+    ArchiveType type;
+    const char* code;
+    const char* labelKey;
+};
+
+constexpr ArchiveTypeEntry kArchiveTypes[] = {
+    {ArchiveType::Members, "members", "archive.type.members"},
+    {ArchiveType::Books, "books", "archive.type.books"},
+    {ArchiveType::Copies, "copies", "archive.type.copies"},
+    {ArchiveType::Loans, "loans", "archive.type.loans"},
+};
+
+ListPage::Config archiveConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.archive.title");
+    cfg.bodyKey = QStringLiteral("page.archive.body");
+    cfg.searchPlaceholderKey = QStringLiteral("archive.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("archiveImage");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    cfg.secondImageObjectName = QStringLiteral("archiveMemberPhoto");
+    cfg.secondImageBounds = bookCoverPreviewBounds();
+    return cfg;
+}
+
+QStringList coverFacetTokens(Repositories::CoverFilter filter)
+{
+    switch (filter) {
+    case Repositories::CoverFilter::WithCover:
+        return {QStringLiteral("with")};
+    case Repositories::CoverFilter::WithoutCover:
+        return {QStringLiteral("without")};
+    case Repositories::CoverFilter::All:
+        break;
+    }
+    return {QStringLiteral("all")};
+}
 
 bool selectType(QListWidget* list, const QString& code)
 {
@@ -44,24 +98,19 @@ bool selectType(QListWidget* list, const QString& code)
             list->setCurrentItem(item);
             item->setSelected(true);
             QApplication::processEvents();
+            // Flush deleteLater from ListPage::rebuildActions after setSpec.
+            QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
             return true;
         }
     }
     return false;
 }
 
-QPushButton* buttonWithText(QWidget* root, const QString& text)
+QPushButton* actionButton(QWidget* root, const QString& id)
 {
-    for (QPushButton* button : root->findChildren<QPushButton*>()) {
-        if (button->text() == text) {
-            return button;
-        }
-    }
-    return nullptr;
+    return root->findChild<QPushButton*>(QStringLiteral("listAction_%1").arg(id));
 }
 
-/// Presses Yes on the next message box; polled because the box becomes the
-/// active modal only once exec() has shown it.
 void answerNextBoxYes()
 {
     auto* poll = new QTimer;
@@ -82,9 +131,267 @@ void answerNextBoxYes()
     poll->start();
 }
 
+struct ArchiveListHarness {
+    ArchiveWorkflowHarness workflows;
+    Repositories::CirculationRepository& circulation;
+    std::unique_ptr<ArchivedMemberSpec> members;
+    std::unique_ptr<ArchivedBookSpec> books;
+    std::unique_ptr<ArchivedCopySpec> copies;
+    std::unique_ptr<ArchivedLoanSpec> loans;
+    std::unique_ptr<ListPage> page;
+    QListWidget* typeList = nullptr;
+    std::unique_ptr<RepositoryMemberFacets> memberFacets;
+    MemberFacetFilters* memberFilters = nullptr;
+    std::unique_ptr<RepositoryBookFacets> bookFacets;
+    BookFacetFilters* bookFilters = nullptr;
+    ArchiveType type = ArchiveType::Members;
+
+    ArchiveListHarness(Repositories::MemberRepository& memberRepo,
+                       Repositories::CatalogRepository& catalog,
+                       Repositories::CirculationRepository& circulationRepo)
+        : workflows(memberRepo, catalog, circulationRepo),
+          circulation(circulationRepo)
+    {
+        members = std::make_unique<ArchivedMemberSpec>(memberRepo, *workflows.archive);
+        books = std::make_unique<ArchivedBookSpec>(catalog, circulationRepo, *workflows.archive);
+        copies = std::make_unique<ArchivedCopySpec>(catalog, *workflows.archive);
+        loans = std::make_unique<ArchivedLoanSpec>(circulationRepo, catalog, memberRepo,
+                                                   *workflows.archive);
+        page = std::make_unique<ListPage>(members.get(), workflows.events, archiveConfig());
+
+        typeList = new QListWidget(page->filterColumn());
+        typeList->setObjectName(QStringLiteral("archiveType"));
+        typeList->setSelectionMode(QAbstractItemView::SingleSelection);
+        typeList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        for (const ArchiveTypeEntry& entry : kArchiveTypes) {
+            auto* item = new QListWidgetItem(typeList);
+            item->setData(Qt::UserRole, QString::fromLatin1(entry.code));
+            item->setText(T(entry.labelKey));
+        }
+        typeList->item(0)->setSelected(true);
+        page->addFilterWidget(typeList, 0);
+        sizeTypeList();
+
+        memberFacets = std::make_unique<RepositoryMemberFacets>(memberRepo);
+        memberFilters = new MemberFacetFilters(*memberFacets, Repositories::ArchiveScope::Archived,
+                                               page->filterColumn());
+        page->addFilterWidget(memberFilters, 1);
+        bookFacets = std::make_unique<RepositoryBookFacets>(catalog);
+        bookFilters = new BookFacetFilters(*bookFacets, Repositories::ArchiveScope::Archived,
+                                           page->filterColumn());
+        page->addFilterWidget(bookFilters, 1);
+
+        QObject::connect(typeList, &QListWidget::itemSelectionChanged, page.get(), [this]() {
+            onTypeChanged();
+        });
+        QObject::connect(memberFilters, &MemberFacetFilters::changed, page.get(), [this]() {
+            applyFacets();
+        });
+        QObject::connect(bookFilters, &BookFacetFilters::changed, page.get(), [this]() {
+            applyFacets();
+        });
+
+        applyFilterVisibility();
+        applyFacets();
+    }
+
+    void sizeTypeList()
+    {
+        typeList->ensurePolished();
+        int rows = 0;
+        for (int row = 0; row < typeList->count(); ++row) {
+            rows += std::max(typeList->sizeHintForRow(row), 20);
+        }
+        const QMargins margins = typeList->contentsMargins();
+        typeList->setFixedHeight(rows + 2 * typeList->frameWidth() + margins.top()
+                                 + margins.bottom());
+    }
+
+    void applyLabels()
+    {
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(page.get(), &languageChange);
+        for (int row = 0; row < typeList->count(); ++row) {
+            typeList->item(row)->setText(T(kArchiveTypes[row].labelKey));
+        }
+        sizeTypeList();
+        applyFilterVisibility();
+    }
+
+    ListSpec* specFor(ArchiveType t) const
+    {
+        switch (t) {
+        case ArchiveType::Members:
+            return members.get();
+        case ArchiveType::Books:
+            return books.get();
+        case ArchiveType::Copies:
+            return copies.get();
+        case ArchiveType::Loans:
+            return loans.get();
+        }
+        return members.get();
+    }
+
+    void applyFilterVisibility()
+    {
+        const bool memberType = type == ArchiveType::Members || type == ArchiveType::Loans;
+        memberFilters->setVisible(memberType);
+        bookFilters->setVisible(!memberType);
+        memberFilters->setValueScope(type == ArchiveType::Loans ? Repositories::ArchiveScope::Any
+                                                                : Repositories::ArchiveScope::Archived);
+        if (type == ArchiveType::Loans) {
+            memberFilters->useLoanYears([this]() {
+                return circulation.listLoanYears(Repositories::ArchiveScope::Archived);
+            });
+        } else {
+            memberFilters->useLoanYears({});
+        }
+        bookFilters->setScope(type == ArchiveType::Copies ? Repositories::ArchiveScope::Any
+                                                          : Repositories::ArchiveScope::Archived);
+        if (memberType) {
+            memberFilters->refresh();
+        } else {
+            bookFilters->refresh();
+        }
+    }
+
+    void applyFacets()
+    {
+        QHash<QString, QStringList> mapped;
+        const bool memberType = type == ArchiveType::Members || type == ArchiveType::Loans;
+        if (memberType) {
+            const Repositories::MemberFacets facets = memberFilters->facets();
+            mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+            mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+            mapped.insert(QStringLiteral("year"),
+                          type == ArchiveType::Loans ? memberFilters->loanYears()
+                                                     : qsl(facets.inscriptionYears));
+            mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+            mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+        } else {
+            mapped.insert(QStringLiteral("language"), bookFilters->languages());
+            mapped.insert(QStringLiteral("category"), bookFilters->categoryCodes());
+            mapped.insert(QStringLiteral("cover"), coverFacetTokens(bookFilters->coverFilter()));
+        }
+        page->setFacets(mapped);
+    }
+
+    void onTypeChanged()
+    {
+        const auto selected = typeList->selectedItems();
+        if (selected.isEmpty()) {
+            const QSignalBlocker blocker(typeList);
+            for (int row = 0; row < typeList->count(); ++row) {
+                if (kArchiveTypes[row].type == type) {
+                    typeList->item(row)->setSelected(true);
+                    break;
+                }
+            }
+            return;
+        }
+        type = kArchiveTypes[typeList->row(selected.first())].type;
+        memberFilters->reset();
+        bookFilters->reset();
+        applyFilterVisibility();
+        page->setSpec(specFor(type));
+        applyFacets();
+    }
+
+    void setType(ArchiveType t)
+    {
+        for (int row = 0; row < typeList->count(); ++row) {
+            if (kArchiveTypes[row].type == t) {
+                const QSignalBlocker blocker(typeList);
+                typeList->clearSelection();
+                typeList->item(row)->setSelected(true);
+                break;
+            }
+        }
+        type = t;
+        memberFilters->reset();
+        bookFilters->reset();
+        applyFilterVisibility();
+        page->setSpec(specFor(t));
+        applyFacets();
+        QApplication::processEvents();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+
+    void refresh()
+    {
+        applyFilterVisibility();
+        if (page->model() != nullptr) {
+            page->model()->reload();
+        }
+    }
+
+    QTableView* table() const { return page->table(); }
+
+    int rowCount() const
+    {
+        return table() != nullptr && table()->model() != nullptr ? table()->model()->rowCount() : 0;
+    }
+
+    int columnCount() const
+    {
+        return table() != nullptr && table()->model() != nullptr ? table()->model()->columnCount()
+                                                                : 0;
+    }
+
+    QString headerText(int column) const
+    {
+        return table()->model()->headerData(column, Qt::Horizontal, Qt::DisplayRole).toString();
+    }
+
+    qint64 idAt(int row) const
+    {
+        return table()->model()->index(row, 0).data(Qt::UserRole).toLongLong();
+    }
+
+    QString cellText(int row, int column) const
+    {
+        return table()->model()->index(row, column).data(Qt::DisplayRole).toString();
+    }
+
+    int rowOf(qint64 id) const
+    {
+        for (int row = 0; row < rowCount(); ++row) {
+            if (idAt(row) == id) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    void selectRow(int row)
+    {
+        table()->selectRow(row);
+        QApplication::processEvents();
+    }
+
+    void clearSelection()
+    {
+        if (QItemSelectionModel* selection = table()->selectionModel()) {
+            selection->clear();
+        }
+        table()->setCurrentIndex(QModelIndex());
+        QApplication::processEvents();
+    }
+
+    void tickId(qint64 id)
+    {
+        const int row = rowOf(id);
+        ASSERT_GE(row, 0) << "row " << id << " is not on the archive page";
+        ASSERT_TRUE(table()->model()->setData(table()->model()->index(row, 0), Qt::Checked,
+                                              Qt::CheckStateRole));
+        QApplication::processEvents();
+    }
+};
+
 }  // namespace
 
-class test_ui_ArchivePage : public ::testing::Test {
+class test_ui_ArchiveList : public ::testing::Test {
 protected:
     static void SetUpTestSuite() { Core::Locale::setCode("en"); }
     static void TearDownTestSuite() { Core::Locale::setCode(Core::Locale::kDefaultCode); }
@@ -116,45 +423,39 @@ protected:
                                  "2026-09-01", "2026-09-15", "2026-09-10");
         ASSERT_TRUE(m_circulation->archiveLoan(m_loanId));
 
-        m_page = std::make_unique<ArchivePage>(*m_members, *m_catalog, *m_circulation);
-        m_typeList = m_page->findChild<QListWidget*>(QStringLiteral("archiveType"));
-        m_table = m_page->findChild<QTableWidget*>();
-        m_restore = buttonWithText(m_page.get(), QStringLiteral("Restore"));
-        m_reuse = buttonWithText(m_page.get(), QStringLiteral("Reuse local number"));
-        m_purge = buttonWithText(m_page.get(), QStringLiteral("Permanently remove"));
+        m_harness = std::make_unique<ArchiveListHarness>(*m_members, *m_catalog, *m_circulation);
+        m_typeList = m_harness->typeList;
+        m_harness->selectRow(0);
+        refreshActionButtons();
         ASSERT_NE(m_typeList, nullptr);
-        ASSERT_NE(m_table, nullptr);
+        ASSERT_NE(m_harness->table(), nullptr);
         ASSERT_NE(m_restore, nullptr);
-        ASSERT_NE(m_reuse, nullptr);
         ASSERT_NE(m_purge, nullptr);
     }
 
     void TearDown() override
     {
-        m_page.reset();
+        m_harness.reset();
         m_circulation.reset();
         m_catalog.reset();
         m_members.reset();
         m_db.reset();
     }
 
-    int rowOf(qint64 id) const
+    void refreshActionButtons()
     {
-        for (int row = 0; row < m_table->rowCount(); ++row) {
-            if (m_table->item(row, 0)->data(Qt::UserRole).toLongLong() == id) {
-                return row;
-            }
-        }
-        return -1;
+        QApplication::processEvents();
+        m_restore = actionButton(m_harness->page.get(), QStringLiteral("restore"));
+        m_reuse = actionButton(m_harness->page.get(), QStringLiteral("reuse"));
+        m_purge = actionButton(m_harness->page.get(), QStringLiteral("purge"));
     }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<ArchivePage> m_page;
+    std::unique_ptr<ArchiveListHarness> m_harness;
     QListWidget* m_typeList = nullptr;
-    QTableWidget* m_table = nullptr;
     QPushButton* m_restore = nullptr;
     QPushButton* m_reuse = nullptr;
     QPushButton* m_purge = nullptr;
@@ -165,78 +466,93 @@ protected:
     std::int64_t m_loanId = 0;
 };
 
-TEST_F(test_ui_ArchivePage, TypeFilterOffersFourTypesAndStartsOnMembers)
+TEST_F(test_ui_ArchiveList, TypeFilterOffersFourTypesAndStartsOnMembers)
 {
     ASSERT_EQ(m_typeList->count(), 4);
     EXPECT_EQ(m_typeList->item(0)->data(Qt::UserRole).toString(), QStringLiteral("members"));
     EXPECT_EQ(m_typeList->item(3)->data(Qt::UserRole).toString(), QStringLiteral("loans"));
-    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Members);
-    EXPECT_EQ(m_table->columnCount(), 6);
-    EXPECT_EQ(m_table->horizontalHeaderItem(4)->text(), QStringLiteral("Loans"));
-    EXPECT_EQ(m_table->horizontalHeaderItem(5)->text(), QStringLiteral("Archived"));
-    ASSERT_EQ(m_table->rowCount(), 1);
-    EXPECT_EQ(rowOf(m_memberId), 0);
+    EXPECT_EQ(m_harness->type, ArchiveType::Members);
+    EXPECT_EQ(m_harness->columnCount(), 6);
+    EXPECT_EQ(m_harness->headerText(4), QStringLiteral("Loans"));
+    EXPECT_EQ(m_harness->headerText(5), QStringLiteral("Archived"));
+    ASSERT_EQ(m_harness->rowCount(), 1);
+    EXPECT_EQ(m_harness->rowOf(m_memberId), 0);
 }
 
-TEST_F(test_ui_ArchivePage, EachTypeListsOnlyItsArchivedRowsWithItsOwnColumns)
+TEST_F(test_ui_ArchiveList, EachTypeListsOnlyItsArchivedRowsWithItsOwnColumns)
 {
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("books")));
-    EXPECT_EQ(m_page->currentType(), ArchivePage::Type::Books);
-    EXPECT_EQ(m_table->columnCount(), 4);
-    EXPECT_EQ(m_table->horizontalHeaderItem(0)->text(), QStringLiteral("Title"));
-    ASSERT_EQ(m_table->rowCount(), 1);
-    EXPECT_EQ(rowOf(m_bookId), 0);
-    EXPECT_EQ(m_table->item(0, 2)->text(), QStringLiteral("2"));
+    refreshActionButtons();
+    EXPECT_EQ(m_harness->type, ArchiveType::Books);
+    EXPECT_EQ(m_harness->columnCount(), 4);
+    EXPECT_EQ(m_harness->headerText(0), QStringLiteral("Title"));
+    ASSERT_EQ(m_harness->rowCount(), 1);
+    EXPECT_EQ(m_harness->rowOf(m_bookId), 0);
+    EXPECT_EQ(m_harness->cellText(0, 2), QStringLiteral("2"));
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    EXPECT_EQ(m_table->rowCount(), 2);
-    EXPECT_GE(rowOf(m_numberedCopyId), 0);
-    EXPECT_GE(rowOf(m_numberlessCopyId), 0);
+    EXPECT_EQ(m_harness->rowCount(), 2);
+    EXPECT_GE(m_harness->rowOf(m_numberedCopyId), 0);
+    EXPECT_GE(m_harness->rowOf(m_numberlessCopyId), 0);
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("loans")));
-    ASSERT_EQ(m_table->rowCount(), 1);
-    EXPECT_EQ(rowOf(m_loanId), 0);
+    ASSERT_EQ(m_harness->rowCount(), 1);
+    EXPECT_EQ(m_harness->rowOf(m_loanId), 0);
 }
 
-TEST_F(test_ui_ArchivePage, RestoreIsEnabledOnlyWithASelection)
+TEST_F(test_ui_ArchiveList, RestoreIsEnabledOnlyWithASelection)
 {
-    EXPECT_TRUE(m_restore->isEnabled());  // first row selected on load
-    m_table->clearSelection();
-    QApplication::processEvents();
+    EXPECT_TRUE(m_restore->isEnabled());  // first row selected in SetUp
+    m_harness->table()->clearSelection();
+    m_harness->table()->setCurrentIndex(QModelIndex());
+    if (m_harness->page->model() != nullptr) {
+        m_harness->page->model()->clearTicks();
+    }
+    QTest::qWait(0);
     EXPECT_FALSE(m_restore->isEnabled());
-    m_table->selectRow(0);
+    m_harness->selectRow(0);
     EXPECT_TRUE(m_restore->isEnabled());
 }
 
-TEST_F(test_ui_ArchivePage, ReuseShowsOnlyOnCopiesAndNeedsANumber)
+TEST_F(test_ui_ArchiveList, ReuseShowsOnlyOnCopiesAndNeedsANumber)
 {
-    EXPECT_TRUE(m_reuse->isHidden());
+    EXPECT_EQ(actionButton(m_harness->page.get(), QStringLiteral("reuse")), nullptr);
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
+    refreshActionButtons();
+    ASSERT_NE(m_reuse, nullptr);
     EXPECT_FALSE(m_reuse->isHidden());
-    m_table->selectRow(rowOf(m_numberedCopyId));
+    m_harness->selectRow(m_harness->rowOf(m_numberedCopyId));
     EXPECT_TRUE(m_reuse->isEnabled());
-    m_table->selectRow(rowOf(m_numberlessCopyId));
+    m_harness->selectRow(m_harness->rowOf(m_numberlessCopyId));
     EXPECT_FALSE(m_reuse->isEnabled());
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("loans")));
-    EXPECT_TRUE(m_reuse->isHidden());
+    refreshActionButtons();
+    EXPECT_EQ(m_reuse, nullptr);
 }
 
-TEST_F(test_ui_ArchivePage, ReuseHidesOnLoansWhenTheSelectedRowIndexStaysTheSame)
+TEST_F(test_ui_ArchiveList, ReuseHidesOnLoansWhenTheSelectedRowIndexStaysTheSame)
 {
-    // Copies opens on row 0 and so does Loans: the table is rebuilt but the
-    // selection signal never fires, which left Reuse showing on Loans.
+    // Copies opens on row 0 and so does Loans: setSpec rebuilds actions so Reuse
+    // must leave the pad even when the selection row index is unchanged.
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    m_table->selectRow(0);
-    ASSERT_FALSE(m_reuse->isHidden());
+    m_harness->selectRow(0);
+    refreshActionButtons();
+    ASSERT_NE(m_reuse, nullptr);
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("loans")));
-    EXPECT_TRUE(m_reuse->isHidden());
+    refreshActionButtons();
+    EXPECT_EQ(m_reuse, nullptr);
 }
 
-TEST_F(test_ui_ArchivePage, ReuseComesBeforeRestoreOnTheButtonPad)
+TEST_F(test_ui_ArchiveList, ReuseComesBeforeRestoreOnTheButtonPad)
 {
+    ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
+    refreshActionButtons();
+    ASSERT_NE(m_reuse, nullptr);
+    ASSERT_NE(m_restore, nullptr);
+    ASSERT_NE(m_purge, nullptr);
     auto* pad = m_reuse->parentWidget();
     ASSERT_EQ(pad, m_restore->parentWidget());
     const int reuseAt = pad->layout()->indexOf(m_reuse);
@@ -246,28 +562,27 @@ TEST_F(test_ui_ArchivePage, ReuseComesBeforeRestoreOnTheButtonPad)
     EXPECT_LT(restoreAt, purgeAt);
 }
 
-TEST_F(test_ui_ArchivePage, RestoreSendsTheMemberBackToTheLiveList)
+TEST_F(test_ui_ArchiveList, RestoreSendsTheMemberBackToTheLiveList)
 {
-    QSignalSpy restored(m_page.get(), &ArchivePage::recordRestored);
+    QSignalSpy restored(&m_harness->workflows.events, &VLMS::DataEvents::changed);
     answerNextBoxYes();
     m_restore->click();
 
-    EXPECT_EQ(m_table->rowCount(), 0);
+    EXPECT_EQ(m_harness->rowCount(), 0);
     EXPECT_TRUE(m_members->getMember(m_memberId)->archivedAt.empty());
     EXPECT_EQ(restored.count(), 1);
 }
 
-TEST_F(test_ui_ArchivePage, ReuseOpensTheChooserAndCancelKeepsTheNumber)
+TEST_F(test_ui_ArchiveList, ReuseOpensTheChooserAndCancelKeepsTheNumber)
 {
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    m_table->selectRow(rowOf(m_numberedCopyId));
+    refreshActionButtons();
+    ASSERT_NE(m_reuse, nullptr);
+    m_harness->selectRow(m_harness->rowOf(m_numberedCopyId));
     const std::string number =
         m_db->scalar("SELECT local_id FROM book_copies WHERE id = " + std::to_string(m_numberedCopyId))
             .toString();
-    QSignalSpy requested(m_page.get(), &ArchivePage::reuseNumberRequested);
 
-    // On the stack, so a dialog that never opens cannot leave the poll running
-    // into the next test.
     bool chooserOpened = false;
     QTimer poll;
     poll.setInterval(10);
@@ -285,55 +600,33 @@ TEST_F(test_ui_ArchivePage, ReuseOpensTheChooserAndCancelKeepsTheNumber)
     poll.stop();
 
     EXPECT_TRUE(chooserOpened);
-    ASSERT_EQ(requested.count(), 1);
-    EXPECT_EQ(requested.at(0).at(0).toLongLong(), m_numberedCopyId);
     EXPECT_EQ(m_db->scalar("SELECT local_id FROM book_copies WHERE id = "
                            + std::to_string(m_numberedCopyId))
                   .toString(),
               number);
-    EXPECT_GE(rowOf(m_numberedCopyId), 0);  // still archived, still listed
+    EXPECT_GE(m_harness->rowOf(m_numberedCopyId), 0);
 }
 
-TEST(test_ui_ArchiveNavigation, TheHeaderHasAnArchiveButtonThatOpensTheArchive)
+TEST_F(test_ui_ArchiveList, SetTypeSwitchesTheListedKind)
 {
-    // Without an Application instance MainWindow builds placeholder pages,
-    // which is enough to check the button and the page it opens.
-    Core::Locale::setCode("en");
-    MainWindow window;
-    QPushButton* nav = nullptr;
-    for (QPushButton* button : window.findChildren<QPushButton*>()) {
-        if (button->property("navKey").toString() == QStringLiteral("archive")) {
-            nav = button;
-        }
-    }
-    ASSERT_NE(nav, nullptr);
-    EXPECT_EQ(nav->text(), QStringLiteral("Archive"));
-
-    nav->click();
-    auto* stack = window.findChild<QStackedWidget*>();
-    ASSERT_NE(stack, nullptr);
-    bool showsArchive = false;
-    for (const QLabel* label : stack->currentWidget()->findChildren<QLabel*>()) {
-        if (label->property("i18nKey").toString() == QStringLiteral("page.archive.title")) {
-            showsArchive = true;
-        }
-    }
-    EXPECT_TRUE(showsArchive);
-    Core::Locale::setCode(Core::Locale::kDefaultCode);
+    EXPECT_EQ(m_harness->type, ArchiveType::Members);
+    m_harness->setType(ArchiveType::Books);
+    EXPECT_EQ(m_harness->type, ArchiveType::Books);
+    m_harness->setType(ArchiveType::Copies);
+    EXPECT_EQ(m_harness->type, ArchiveType::Copies);
+    m_harness->setType(ArchiveType::Loans);
+    EXPECT_EQ(m_harness->type, ArchiveType::Loans);
 }
 
-TEST_F(test_ui_ArchivePage, EveryTypeStaysVisibleWhateverTypeIsPicked)
+TEST_F(test_ui_ArchiveList, EveryTypeStaysVisibleWhateverTypeIsPicked)
 {
-    // The list has no scrollbar, so a row that does not fit is simply gone:
-    // picking Loans used to scroll Members off the top. It showed with the
-    // theme's frame and a desktop-sized font (31px rows), so use both here.
     qApp->setStyleSheet(VLMS::applicationStylesheet());
     QFont big = m_typeList->font();
     big.setPixelSize(22);
     m_typeList->setFont(big);
-    m_page->retranslateUi();
-    m_page->resize(1200, 800);
-    m_page->show();
+    m_harness->applyLabels();
+    m_harness->page->resize(1200, 800);
+    m_harness->page->show();
     QApplication::processEvents();
 
     for (int picked = 0; picked < m_typeList->count(); ++picked) {
@@ -347,39 +640,37 @@ TEST_F(test_ui_ArchivePage, EveryTypeStaysVisibleWhateverTypeIsPicked)
     qApp->setStyleSheet({});
 }
 
-
-TEST_F(test_ui_ArchivePage, TypeFilterSitsAtTheTopOfItsColumn)
+TEST_F(test_ui_ArchiveList, TypeFilterSitsAtTheTopOfItsColumn)
 {
-    m_page->resize(1200, 800);
-    m_page->show();
+    m_harness->page->resize(1200, 800);
+    m_harness->page->show();
     QApplication::processEvents();
 
     EXPECT_EQ(m_typeList->y(), 0);
 }
 
-TEST_F(test_ui_ArchivePage, PermanentRemovalIsOfferedOnlyWhenTheRowsGateIsOpen)
+TEST_F(test_ui_ArchiveList, PermanentRemovalIsOfferedOnlyWhenTheRowsGateIsOpen)
 {
-    // Members: the seeded archived member never borrowed, so nothing holds them.
-    m_table->selectRow(rowOf(m_memberId));
+    m_harness->selectRow(m_harness->rowOf(m_memberId));
     EXPECT_TRUE(m_purge->isEnabled());
 
-    // Books: the title still has its two archived copies.
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("books")));
-    m_table->selectRow(rowOf(m_bookId));
+    refreshActionButtons();
+    m_harness->selectRow(m_harness->rowOf(m_bookId));
     EXPECT_FALSE(m_purge->isEnabled());
 
-    // Copies: neither seeded copy was ever borrowed.
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    m_table->selectRow(rowOf(m_numberedCopyId));
+    refreshActionButtons();
+    m_harness->selectRow(m_harness->rowOf(m_numberedCopyId));
     EXPECT_TRUE(m_purge->isEnabled());
 
-    // Loans: nothing sits beneath a loan.
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("loans")));
-    m_table->selectRow(rowOf(m_loanId));
+    refreshActionButtons();
+    m_harness->selectRow(m_harness->rowOf(m_loanId));
     EXPECT_TRUE(m_purge->isEnabled());
 }
 
-TEST_F(test_ui_ArchivePage, TheLoansColumnSaysWhyAMemberCannotGo)
+TEST_F(test_ui_ArchiveList, TheLoansColumnSaysWhyAMemberCannotGo)
 {
     const std::int64_t borrower = seedMember(*m_db, uniqueMemberSeed(9));
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(9));
@@ -388,64 +679,48 @@ TEST_F(test_ui_ArchivePage, TheLoansColumnSaysWhyAMemberCannotGo)
     ASSERT_GT(loanId, 0);
     ASSERT_TRUE(m_circulation->archiveLoan(loanId));
     ASSERT_TRUE(m_members->archiveMember(borrower));
-    m_page->refresh();
+    m_harness->refresh();
 
-    const int row = rowOf(borrower);
+    const int row = m_harness->rowOf(borrower);
     ASSERT_GE(row, 0);
-    // The column counts the archived loan, because the archived loan blocks.
-    EXPECT_EQ(m_table->item(row, 4)->text(), QStringLiteral("1"));
-    m_table->selectRow(row);
+    EXPECT_EQ(m_harness->cellText(row, 4), QStringLiteral("1"));
+    m_harness->selectRow(row);
     EXPECT_FALSE(m_purge->isEnabled());
 
-    // And the one who never borrowed still reads 0 and still goes.
-    m_table->selectRow(rowOf(m_memberId));
-    EXPECT_EQ(m_table->item(rowOf(m_memberId), 4)->text(), QStringLiteral("0"));
+    m_harness->selectRow(m_harness->rowOf(m_memberId));
+    EXPECT_EQ(m_harness->cellText(m_harness->rowOf(m_memberId), 4), QStringLiteral("0"));
     EXPECT_TRUE(m_purge->isEnabled());
 }
 
-TEST_F(test_ui_ArchivePage, PermanentlyRemovingACopyTakesItOffTheListAndLeavesTheOther)
+TEST_F(test_ui_ArchiveList, PermanentlyRemovingACopyTakesItOffTheListAndLeavesTheOther)
 {
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    ASSERT_EQ(m_table->rowCount(), 2);
-    m_table->selectRow(rowOf(m_numberedCopyId));
+    refreshActionButtons();
+    ASSERT_EQ(m_harness->rowCount(), 2);
+    m_harness->selectRow(m_harness->rowOf(m_numberedCopyId));
 
     answerNextBoxYes();
     m_purge->click();
     QApplication::processEvents();
 
-    EXPECT_EQ(m_table->rowCount(), 1);
-    EXPECT_EQ(rowOf(m_numberedCopyId), -1);
-    EXPECT_GE(rowOf(m_numberlessCopyId), 0);
+    EXPECT_EQ(m_harness->rowCount(), 1);
+    EXPECT_EQ(m_harness->rowOf(m_numberedCopyId), -1);
+    EXPECT_GE(m_harness->rowOf(m_numberlessCopyId), 0);
 }
 
-namespace {
-
-void tickId(QTableWidget* table, qint64 id)
-{
-    for (int row = 0; row < table->rowCount(); ++row) {
-        QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == id) {
-            item->setCheckState(Qt::Checked);
-            return;
-        }
-    }
-    FAIL() << "row " << id << " is not on the archive page";
-}
-
-}  // namespace
-
-TEST_F(test_ui_ArchivePage, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
+TEST_F(test_ui_ArchiveList, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
 {
     const std::int64_t second = seedMember(*m_db, uniqueMemberSeed(9));
     ASSERT_TRUE(m_members->archiveMember(second));
-    m_page->refresh();
+    m_harness->refresh();
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("members")));
-    ASSERT_GE(rowOf(m_memberId), 0);
-    ASSERT_GE(rowOf(second), 0);
-    tickId(m_table, m_memberId);
-    tickId(m_table, second);
+    refreshActionButtons();
+    ASSERT_GE(m_harness->rowOf(m_memberId), 0);
+    ASSERT_GE(m_harness->rowOf(second), 0);
+    m_harness->tickId(m_memberId);
+    m_harness->tickId(second);
 
-    QSignalSpy spy(m_page.get(), &ArchivePage::recordRestored);
+    QSignalSpy spy(&m_harness->workflows.events, &VLMS::DataEvents::changed);
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
 
@@ -458,13 +733,14 @@ TEST_F(test_ui_ArchivePage, TwoTickedMembersAreRestoredAndTheSignalFiresOnce)
                     .isNull());
 }
 
-TEST_F(test_ui_ArchivePage, NothingTickedRestoresOnlyTheHighlightedMember)
+TEST_F(test_ui_ArchiveList, NothingTickedRestoresOnlyTheHighlightedMember)
 {
     const std::int64_t second = seedMember(*m_db, uniqueMemberSeed(8));
     ASSERT_TRUE(m_members->archiveMember(second));
-    m_page->refresh();
+    m_harness->refresh();
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("members")));
-    m_table->selectRow(rowOf(m_memberId));
+    refreshActionButtons();
+    m_harness->selectRow(m_harness->rowOf(m_memberId));
 
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { m_restore->click(); }, qs(Core::Strings::t("common.yes")));
@@ -477,7 +753,7 @@ TEST_F(test_ui_ArchivePage, NothingTickedRestoresOnlyTheHighlightedMember)
                      .isNull());
 }
 
-TEST_F(test_ui_ArchivePage, TwoTickedLoansArePurgedAndTheThirdStays)
+TEST_F(test_ui_ArchiveList, TwoTickedLoansArePurgedAndTheThirdStays)
 {
     const std::int64_t book = seedBook(*m_db, uniqueBookSeed(8));
     const std::int64_t member = seedMember(*m_db, uniqueMemberSeed(7));
@@ -490,11 +766,12 @@ TEST_F(test_ui_ArchivePage, TwoTickedLoansArePurgedAndTheThirdStays)
         rawInsertLoan(*m_db, member, copyIdsOf(*m_db, book3).front(), "2026-07-01", "2026-07-15",
                       "2026-07-10");
     ASSERT_TRUE(m_circulation->archiveLoan(third));
-    m_page->refresh();
+    m_harness->refresh();
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("loans")));
-    tickId(m_table, m_loanId);
-    tickId(m_table, second);
-    m_table->selectRow(rowOf(third));
+    refreshActionButtons();
+    m_harness->tickId(m_loanId);
+    m_harness->tickId(second);
+    m_harness->selectRow(m_harness->rowOf(third));
 
     const ModalOutcome outcome =
         runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.yes")));
@@ -506,10 +783,11 @@ TEST_F(test_ui_ArchivePage, TwoTickedLoansArePurgedAndTheThirdStays)
     EXPECT_EQ(m_db->scalar("SELECT COUNT(*) FROM loans WHERE id = " + std::to_string(third)).toInt(), 1);
 }
 
-TEST_F(test_ui_ArchivePage, ATickedBookWithCopiesIsRefusedAndALoanFreeCopyIsPurged)
+TEST_F(test_ui_ArchiveList, ATickedBookWithCopiesIsRefusedAndALoanFreeCopyIsPurged)
 {
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("books")));
-    tickId(m_table, m_bookId);
+    refreshActionButtons();
+    m_harness->tickId(m_bookId);
 
     const ModalOutcome blocked =
         runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.ok")));
@@ -518,7 +796,8 @@ TEST_F(test_ui_ArchivePage, ATickedBookWithCopiesIsRefusedAndALoanFreeCopyIsPurg
               1);
 
     ASSERT_TRUE(selectType(m_typeList, QStringLiteral("copies")));
-    tickId(m_table, m_numberedCopyId);
+    refreshActionButtons();
+    m_harness->tickId(m_numberedCopyId);
     const ModalOutcome purged =
         runAndAnswerModal([this]() { m_purge->click(); }, qs(Core::Strings::t("common.yes")));
     ASSERT_TRUE(purged.appeared);

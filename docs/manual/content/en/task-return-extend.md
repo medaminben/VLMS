@@ -28,11 +28,11 @@ The dialog suggests a due day after the current one. The new day has to be later
 ![Extend.](shot:ext-dialog)
 :::
 
-## From a loans dialog
+## From the loan history dialog
 
-The `Loans` button on a title or on a member lists that history. Highlight the loan that is still out. `Extend` and `Return` follow that row, and they are grey on a returned loan.
+The `Loans` button on a title or on a member opens the same loan history dialog. Highlight the loan that is still out. `Extend` and `Return` follow that row, and they are grey on a returned loan.
 
-![A loans dialog with an open loan highlighted, so Extend and Return are available.](shot:ret-from-history)
+![A loan history dialog with an open loan highlighted, so Extend and Return are available.](shot:ret-from-history)
 
 ### What if…
 

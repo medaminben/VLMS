@@ -45,4 +45,4 @@ Search matches the book's title, the membership number, or the member's full nam
 
 ## The buttons
 
-`Checkout` lends a copy. `Extend` and `Return` follow the highlighted loan and are available only while that loan is still out. `Delete` archives a returned loan. The steps are [Lend a book](task-lend-book), [Return or extend](task-return-extend), and [Remove](task-remove-book).
+`Checkout` lends a copy. `Extend` and `Return` follow the highlighted loan and are available only while that loan is still out. `Delete` archives a returned loan. History for a title or a member is the same loan history dialog opened from [Catalogue](catalogue) or [Members](members). The steps are [Lend a book](task-lend-book), [Return or extend](task-return-extend), and [Remove](task-remove-book).

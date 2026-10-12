@@ -1,4 +1,4 @@
-#include "ui/ManualLocation.h"
+#include "ui/shell/ManualLocation.h"
 
 #include <QDir>
 #include <QFile>

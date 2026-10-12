@@ -38,7 +38,7 @@ Un numéro vert est sur le rayon. Un numéro rouge et en italique est sorti. L'i
 
 ## Prêts
 
-`Prêts` suit le titre surligné. Il s'ouvre même quand le titre n'a jamais été emprunté, et il propose `Prêter` depuis là. La liste est chaque prêt de chaque exemplaire que le titre a eu, y compris les exemplaires et les prêts qui ont depuis été archivés.
+`Prêts` ouvre la fenêtre d'historique des prêts pour le titre surligné. La fenêtre reprend le même chrome de liste que la Circulation, épinglée à ce titre : chaque prêt de chaque exemplaire que le titre a eu, y compris les exemplaires et les prêts qui ont depuis été archivés. Elle s'ouvre même quand le titre n'a jamais été emprunté. `Prêter`, `Prolonger` et `Retourner` sont disponibles quand la sélection le permet.
 
 ![Les prêts d'un titre.](shot:cat-loans-dialog)
 

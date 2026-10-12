@@ -1,4 +1,4 @@
-#include "ui/FlagIcons.h"
+#include "ui/views/FlagIcons.h"
 
 #include <QColor>
 #include <QIcon>

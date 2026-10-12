@@ -23,7 +23,7 @@ Open VLMS. The window comes up on the Catalogue, in the language and the light o
 
 ## The footer and the licence
 
-The line in the footer opens the licence. It says the application is a gift to this library, that the library owns the application as it is installed here, and that the catalogue, the member records, and the photographs belong to the library. There is no warranty.
+The line in the footer opens the licence. VLMS is free software under the MIT Licence: the library, like anyone, may use, copy, change and pass it on, as long as the licence goes with it. The catalogue, the member records and the photographs belong to the library. There is no warranty. The licence also names the software VLMS is built with, such as Qt and Tesseract, and ends with the full MIT text.
 
 ![The licence.](shot:gs-licence)
 
@@ -38,7 +38,7 @@ Catalogue, Members, Circulation, and Archive are the same shape.
 - The table is the list. Click a row to highlight it. The details panel then shows that row.
 - The pager sits under the table. It opens on `ALL`, so the whole filtered list is loaded. You can choose 20, 50, or 100 instead. `First` and `Last` jump to the ends, and the page box jumps to a page. When the filtered list has fewer than 20 rows, the pager hides.
 - The details panel is the highlighted row, including its picture when it has one.
-- The button pad is the work for this screen: add, edit, lend, delete, and so on. A button follows the highlighted row. It stays grey when that row cannot take the action.
+- The button pad is the work for this screen: add, edit, lend, delete, and so on. A button follows the highlighted row. It stays grey when that row cannot take the action. The context menu and the keyboard shortcuts are the same actions, in the same order; see [Menus and shortcuts](reference#menus-shortcuts).
 
 ## Sorting {#sort}
 

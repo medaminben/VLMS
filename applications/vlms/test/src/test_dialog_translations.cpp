@@ -2,10 +2,11 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/Theme.h"
-#include "ui/UiHelpers.h"
-#include "ui/members/BirthDateEdit.h"
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/services/Theme.h"
+#include "ui/views/UiHelpers.h"
+#include "ui/views/BirthDateEdit.h"
+#include "ui/views/MemberEditorDialog.h"
+#include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
@@ -70,23 +71,26 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository =
             std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtMemberLookups>(*m_repository);
     }
 
     void TearDown() override
     {
         Core::Locale::setCode(Core::Locale::kDefaultCode);
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
 
     [[nodiscard]] MemberEditorDialog::ValidationFailure failureFor(const Repositories::MemberRecord& member) const
     {
-        MemberEditorDialog dialog(*m_repository, member);
+        MemberEditorDialog dialog(*m_lookups, member);
         return dialog.firstValidationFailure();
     }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::MemberRepository> m_repository;
+    std::unique_ptr<QtMemberLookups> m_lookups;
 };
 
 TEST_F(test_ui_DialogTranslations, ButtonBoxUsesTheApplicationTableInEveryLocale)
@@ -94,7 +98,7 @@ TEST_F(test_ui_DialogTranslations, ButtonBoxUsesTheApplicationTableInEveryLocale
     for (const char* locale : {kArabic, kFrench, kEnglish}) {
         SCOPED_TRACE(locale);
         Core::Locale::setCode(locale);
-        MemberEditorDialog dialog(*m_repository);
+        MemberEditorDialog dialog(*m_lookups);
         auto* box = dialog.findChild<QDialogButtonBox*>();
         ASSERT_NE(box, nullptr);
         EXPECT_EQ(box->button(QDialogButtonBox::Ok)->text(), ::qs(Core::Strings::rawValue(locale, "common.ok")));
@@ -199,7 +203,7 @@ TEST_F(test_ui_DialogTranslations, StandardButtonLabelsSurviveALanguageChange)
          }},
         {"member editor",
          [this] {
-             MemberEditorDialog dialog(*m_repository);
+             MemberEditorDialog dialog(*m_lookups);
              dialog.exec();
          }},
         {"input dialog",
@@ -251,7 +255,7 @@ TEST_F(test_ui_DialogTranslations, AValidMemberProducesNoFailure)
 
 TEST_F(test_ui_DialogTranslations, ANewMemberDateOfBirthIsUnsetAndRequired)
 {
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     const QList<QLineEdit*> edits = dialog.findChildren<QLineEdit*>();
     ASSERT_GE(edits.size(), 2);
     edits.at(0)->setText(QStringLiteral("Amina"));
@@ -271,7 +275,7 @@ TEST_F(test_ui_DialogTranslations, ANewMemberDateOfBirthIsUnsetAndRequired)
 
 TEST_F(test_ui_DialogTranslations, ThirtyFirstOfFebruaryFocusesTheDay)
 {
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     const QList<QLineEdit*> edits = dialog.findChildren<QLineEdit*>();
     ASSERT_GE(edits.size(), 2);
     edits.at(0)->setText(QStringLiteral("Amina"));
@@ -290,7 +294,7 @@ TEST_F(test_ui_DialogTranslations, AChosenBirthDateIsReturnedAsIso)
 {
     Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1990-05-12";
-    MemberEditorDialog dialog(*m_repository, member);
+    MemberEditorDialog dialog(*m_lookups, member);
     EXPECT_TRUE(dialog.firstValidationFailure().messageKey.isEmpty());
     EXPECT_EQ(dialog.memberInput().dateOfBirth, "1990-05-12");
 }
@@ -299,7 +303,7 @@ TEST_F(test_ui_DialogTranslations, AnOutOfRangeStoredYearStaysSelected)
 {
     Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "1890-05-12";
-    MemberEditorDialog dialog(*m_repository, member);
+    MemberEditorDialog dialog(*m_lookups, member);
     auto* birth = birthDate(dialog);
     ASSERT_NE(birth, nullptr);
     EXPECT_EQ(birth->yearCombo()->currentText(), QStringLiteral("1890"));
@@ -336,7 +340,7 @@ TEST_F(test_ui_DialogTranslations, AnEmptyDateOfBirthIsRefused)
 {
     Repositories::MemberRecord member = validMember();
     member.dateOfBirth.clear();
-    MemberEditorDialog dialog(*m_repository, member);
+    MemberEditorDialog dialog(*m_lookups, member);
     auto* birth = birthDate(dialog);
     ASSERT_NE(birth, nullptr);
     const auto failure = dialog.firstValidationFailure();
@@ -346,7 +350,7 @@ TEST_F(test_ui_DialogTranslations, AnEmptyDateOfBirthIsRefused)
 
 TEST_F(test_ui_DialogTranslations, EditorHasNoAgeGroupCombo)
 {
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     for (const QComboBox* combo : dialog.findChildren<QComboBox*>()) {
         EXPECT_EQ(combo->findData(QStringLiteral("youth")), -1)
             << combo->objectName().toStdString();
@@ -360,7 +364,7 @@ TEST_F(test_ui_DialogTranslations, ARefusedDateOfBirthPointsAtItsOwnField)
 {
     Repositories::MemberRecord member = validMember();
     member.dateOfBirth = "not a date";
-    MemberEditorDialog dialog(*m_repository, member);
+    MemberEditorDialog dialog(*m_lookups, member);
     auto* birth = birthDate(dialog);
     ASSERT_NE(birth, nullptr);
     EXPECT_EQ(birth->dayCombo()->currentIndex(), -1);
@@ -410,7 +414,7 @@ TEST_F(test_ui_DialogTranslations, BirthDateBoxesFitBesideTheirLabelsInEveryLoca
         Core::Locale::setCode(locale);
         qApp->setLayoutDirection(QString::fromLatin1(locale) == QLatin1String(kArabic) ? Qt::RightToLeft
                                                                                         : Qt::LeftToRight);
-        MemberEditorDialog dialog(*m_repository, validMember());
+        MemberEditorDialog dialog(*m_lookups, validMember());
         dialog.show();
         QApplication::processEvents();
 

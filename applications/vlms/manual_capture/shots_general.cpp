@@ -1,23 +1,24 @@
 #include "Capture.h"
 #include "Shots.h"
 
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "QtBridge.h"
-#include "ui/MainWindow.h"
-#include "ui/ClickableLabel.h"
-#include "ui/LanguageSelector.h"
-#include "ui/ListPageFrame.h"
-#include "ui/TablePager.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/ClickableLabel.h"
+#include "ui/shell/LanguageSelector.h"
+#include "ui/views/ListPagePager.h"
 
 #include <QAbstractButton>
+#include <QAbstractItemModel>
 #include <QApplication>
 #include <QDialog>
 #include <QHeaderView>
+#include <QItemSelectionModel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QStyle>
 #include <QStyleOptionViewItem>
-#include <QTableWidget>
+#include <QTableView>
 #include <QTest>
 #include <QWidget>
 
@@ -34,7 +35,7 @@ QRect windowRect(QWidget* widget, QWidget* window)
     return QRect(widget->mapTo(window, QPoint(0, 0)), widget->size());
 }
 
-QRect checkIndicatorInWindow(const QTableWidget* table, int row, QWidget* window)
+QRect checkIndicatorInWindow(const QTableView* table, int row, QWidget* window)
 {
     QStyleOptionViewItem option;
     option.initFrom(table);
@@ -63,12 +64,12 @@ QRect headerIndicatorInWindow(const QHeaderView* header, QWidget* window)
     return QRect(origin, box.size());
 }
 
-QPixmap topOfTable(Capture& capture, QTableWidget* table, int rows)
+QPixmap topOfTable(Capture& capture, QTableView* table, int rows)
 {
     const QRect tableInWindow = windowRect(table, &capture.window());
     QRect crop = tableInWindow.adjusted(-12, -12, 12, 12).intersected(capture.window().rect());
     QPixmap image = capture.grab(&capture.window()).copy(crop);
-    const int rowHeight = table->rowCount() > 0 ? table->rowHeight(0) : 28;
+    const int rowHeight = table->model()->rowCount() > 0 ? table->rowHeight(0) : 28;
     const int keep = (tableInWindow.top() - crop.top()) + table->horizontalHeader()->height()
         + rows * rowHeight + 12;
     return image.copy(0, 0, image.width(), std::min(keep, image.height()));
@@ -79,16 +80,16 @@ QRect intoCrop(const QRect& inWindow, const QRect& crop)
     return inWindow.translated(-crop.topLeft());
 }
 
-QRect tableCrop(QTableWidget* table, QWidget* window)
+QRect tableCrop(QTableView* table, QWidget* window)
 {
     return windowRect(table, window).adjusted(-12, -12, 12, 12).intersected(window->rect());
 }
 
-int columnByHeader(const QTableWidget* table, const QString& label)
+int columnByHeader(const QTableView* table, const QString& label)
 {
-    for (int column = 0; column < table->columnCount(); ++column) {
-        const QTableWidgetItem* item = table->horizontalHeaderItem(column);
-        if (item != nullptr && item->text() == label) {
+    const QAbstractItemModel* model = table->model();
+    for (int column = 0; column < model->columnCount(); ++column) {
+        if (model->headerData(column, Qt::Horizontal).toString() == label) {
             return column;
         }
     }
@@ -97,15 +98,23 @@ int columnByHeader(const QTableWidget* table, const QString& label)
 
 void shotWindow(Capture& capture)
 {
-    QTableWidget* books = capture.table();
-    if (books->rowCount() > 0) {
-        books->selectRow(0);
+    QTableView* books = capture.table();
+    if (books->model() != nullptr && books->model()->rowCount() > 0) {
+        const QModelIndex index = books->model()->index(0, 0);
+        books->selectionModel()->setCurrentIndex(
+            index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         capture.settle();
     }
 
-    auto* frame = capture.page()->findChild<VLMS::ListPageFrame*>();
-    if (frame == nullptr) {
-        throw std::runtime_error("catalogue frame is missing");
+    auto* search = capture.named<QLineEdit>(QStringLiteral("listSearch"));
+    auto* filterColumn = capture.named<QWidget>(QStringLiteral("filterColumn"));
+    auto* listTable = capture.named<QTableView>(QStringLiteral("listTable"));
+    auto* pager = capture.page()->findChild<VLMS::ListPagePager*>();
+    auto* details = capture.named<QWidget>(QStringLiteral("listDetailsScroll"));
+    auto* buttonPad = capture.named<QWidget>(QStringLiteral("buttonPad"));
+    if (search == nullptr || filterColumn == nullptr || listTable == nullptr
+        || pager == nullptr || details == nullptr || buttonPad == nullptr) {
+        throw std::runtime_error("catalogue chrome is missing");
     }
     QPushButton* catalogNav = nullptr;
     const auto navs = capture.window().findChildren<QPushButton*>(QStringLiteral("navLink"));
@@ -126,12 +135,12 @@ void shotWindow(Capture& capture)
         static_cast<QWidget*>(catalogNav),
         static_cast<QWidget*>(languages),
         static_cast<QWidget*>(theme),
-        frame->filterColumn(),
-        static_cast<QWidget*>(frame->searchEdit()),
-        static_cast<QWidget*>(frame->table()),
-        static_cast<QWidget*>(frame->pager()),
-        frame->detailsPanel(),
-        frame->buttonPad(),
+        filterColumn,
+        static_cast<QWidget*>(search),
+        static_cast<QWidget*>(listTable),
+        static_cast<QWidget*>(pager),
+        details,
+        buttonPad,
         footer,
     };
     QPixmap image = capture.grab();
@@ -152,16 +161,15 @@ void shotDark(Capture& capture)
 
 void shotTicks(Capture& capture)
 {
-    QTableWidget* books = capture.table();
-    if (books->rowCount() < 3) {
+    QTableView* books = capture.table();
+    auto* model = books->model();
+    if (model == nullptr || model->rowCount() < 3) {
         throw std::runtime_error("catalogue has fewer than three rows");
     }
     for (int row = 0; row < 3; ++row) {
-        QTableWidgetItem* item = books->item(row, 0);
-        if (item == nullptr) {
-            throw std::runtime_error("catalogue row has no title cell");
+        if (!model->setData(model->index(row, 0), Qt::Checked, Qt::CheckStateRole)) {
+            throw std::runtime_error("could not tick a catalogue row");
         }
-        item->setCheckState(Qt::Checked);
     }
     capture.settle();
 
@@ -176,7 +184,7 @@ void shotTicks(Capture& capture)
 
 void shotSort(Capture& capture)
 {
-    QTableWidget* books = capture.table();
+    QTableView* books = capture.table();
     const int titleColumn = columnByHeader(books, T("catalog.col.title"));
     if (titleColumn < 0) {
         throw std::runtime_error("title column is missing");

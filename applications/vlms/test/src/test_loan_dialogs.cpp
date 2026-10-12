@@ -1,9 +1,10 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/circulation/LoanCheckoutDialog.h"
-#include "ui/circulation/LoanExtendDialog.h"
-#include "ui/circulation/LoanReturnDialog.h"
+#include "ui/views/LoanCheckoutDialog.h"
+#include "ui/presentation/QtCirculationLookups.h"
+#include "ui/views/LoanExtendDialog.h"
+#include "ui/views/LoanReturnDialog.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
@@ -11,6 +12,7 @@
 
 #include <QDate>
 #include <QDateEdit>
+#include <QLabel>
 
 #include <gtest/gtest.h>
 
@@ -24,11 +26,13 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_lookups = std::make_unique<QtCirculationLookups>(*m_repository);
     }
 
     void TearDown() override
     {
         EXPECT_FALSE(Core::Clock::isOverridden()) << "a test leaked a clock override";
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
@@ -50,11 +54,12 @@ protected:
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CirculationRepository> m_repository;
+    std::unique_ptr<QtCirculationLookups> m_lookups;
 };
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultsToTodayAndFourteenDays)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     EXPECT_EQ(edits.at(0)->date(), QDate::currentDate());
@@ -63,7 +68,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultsToTodayAndFourteenDays)
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDueFollowsAChangedBorrowDate)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     const QDate backdated = QDate::currentDate().addDays(-5);
@@ -83,7 +88,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForAB
     ASSERT_GT(bookId, 0);
     const auto copies = copyIdsOf(*m_db, bookId);
 
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
 
@@ -101,7 +106,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForAB
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogRefusesAFutureBorrowDate)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     EXPECT_EQ(edits.at(0)->maximumDate(), QDate::currentDate());
@@ -213,4 +218,42 @@ TEST_F(test_ui_LoanDialogs, ExtendDialogMinimumIsAcceptedByCore)
     EXPECT_TRUE(m_repository->extendLoan(loanId, earliest))
         << "core rejected the dialog's earliest date " << earliest;
     EXPECT_EQ(m_repository->getLoan(loanId)->dueAt, earliest);
+}
+
+// A title or name that looks like HTML must read as typed, not render.
+TEST_F(test_ui_LoanDialogs, ReturnSummaryShowsMarkupAsTyped)
+{
+    Repositories::LoanRecord loan = loanDueOn(QDate::currentDate().toString(Qt::ISODate));
+    loan.bookTitle = "<b>Bold</b> title";
+    LoanReturnDialog dialog(loan);
+    auto* summary = dialog.findChild<QLabel*>(QStringLiteral("loanReturnSummary"));
+    ASSERT_NE(summary, nullptr);
+    EXPECT_EQ(summary->textFormat(), Qt::PlainText);
+    EXPECT_TRUE(summary->text().contains(QStringLiteral("<b>Bold</b> title")));
+}
+
+TEST_F(test_ui_LoanDialogs, ExtendSummaryShowsMarkupAsTyped)
+{
+    Repositories::LoanRecord loan = loanDueOn(QDate::currentDate().addDays(3).toString(Qt::ISODate));
+    loan.memberName = "<i>Amina</i>";
+    LoanExtendDialog dialog(loan);
+    auto* summary = dialog.findChild<QLabel*>(QStringLiteral("loanExtendSummary"));
+    ASSERT_NE(summary, nullptr);
+    EXPECT_EQ(summary->textFormat(), Qt::PlainText);
+}
+
+TEST_F(test_ui_LoanDialogs, CheckoutShowsAFixedMemberNameAsTyped)
+{
+    LoanScope scope;
+    scope.memberId = 1;
+    scope.label = QStringLiteral("<h1>Amina</h1>");
+    LoanCheckoutDialog dialog(*m_lookups, scope);
+    bool found = false;
+    for (QLabel* label : dialog.findChildren<QLabel*>()) {
+        if (label->text() == scope.label) {
+            found = true;
+            EXPECT_EQ(label->textFormat(), Qt::PlainText);
+        }
+    }
+    EXPECT_TRUE(found) << "the fixed member label was not found";
 }

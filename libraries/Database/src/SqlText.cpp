@@ -169,4 +169,24 @@ std::vector<std::string> splitStatements(std::string_view script)
     return statements;
 }
 
+bool isQuoted(std::string_view search)
+{
+    const std::string term = Core::trim(search);
+    return term.size() >= 2 && term.front() == '"' && term.back() == '"';
+}
+
+std::string unquoted(std::string_view search)
+{
+    const std::string term = Core::trim(search);
+    return isQuoted(term) ? Core::trim(std::string_view(term).substr(1, term.size() - 2)) : term;
+}
+
+std::string likePattern(std::string_view search)
+{
+    if (isQuoted(search)) {
+        return escapeLike(unquoted(search));
+    }
+    return "%" + escapeLike(Core::trim(search)) + "%";
+}
+
 }  // namespace VLMS::Database::SqlText

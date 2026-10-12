@@ -46,6 +46,10 @@ jobs:
             # -fno-omit-frame-pointer a cmake argument rather than a compiler
             # flag, and cmake exits with "Unknown argument".
             cmake_args: '-DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"'
+          # Line coverage, reported but not gating: the job summary shows the
+          # totals and the HTML report is uploaded as an artifact.
+          - name: coverage
+            cmake_args: "-DVLMS_COVERAGE=ON"
 
     steps:
       # Full history and tags: the version comes from the latest vX.Y.Z tag,
@@ -62,7 +66,8 @@ jobs:
             qt6-base-dev-tools \
             libsqlite3-dev \
             libgl1-mesa-dev \
-            ninja-build
+            ninja-build \
+            gcovr
         # libsqlite3-dev so find_package(SQLite3) succeeds for Database.
         # libgl1-mesa-dev is needed to link Qt6::Gui for the application and
         # UI tests, even for offscreen runs. Core itself no longer links Qt.
@@ -73,6 +78,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DVLMS_BUILD_TESTS=ON
           ${{ matrix.cmake_args }}
+          ${{ matrix.name == 'default' && format('-DVLMS_TEST_REAL_DB={0}/database/vlms.db', github.workspace) || '' }}
 
       - name: Build
         run: cmake --build build --parallel
@@ -84,7 +90,42 @@ jobs:
         # Job env already sets QT_QPA_PLATFORM=offscreen for discovery and ctest.
         # build_gtest_executable() also sets it per-test (and via TEST_LAUNCHER)
         # so a local `ctest` without that env still starts QApplication.
-        run: ctest --output-on-failure --no-tests=error -LE realdb
+        # Sanitizers: skip the Catalog Show-All bench (label `bench`) — ASan
+        # inflates timings past the 300 ms budget. test_vlms_bench also
+        # GTEST_SKIPs when VLMS_SKIP_BENCH is set.
+        run: |
+          if [ "${{ matrix.name }}" = "sanitizers" ] || [ "${{ matrix.name }}" = "coverage" ]; then
+            export VLMS_SKIP_BENCH=1
+          fi
+          ctest --output-on-failure --no-tests=error -LE realdb
+
+      # The realdb checks (integrity, foreign keys, row counts, constraints,
+      # source untouched) against the sample catalogue in the repository. The
+      # library's own catalogue, which they were written for, holds real member
+      # records and never leaves the maintainer's machine.
+      - name: Sample catalogue
+        if: matrix.name == 'default'
+        working-directory: build
+        run: ctest --output-on-failure --no-tests=error -L realdb
+
+      - name: Coverage report
+        if: matrix.name == 'coverage'
+        run: |
+          scripts/coverage.sh build --report-only
+          {
+            echo '### Line coverage'
+            echo '```'
+            cat build/coverage/summary.txt | tail -n 20
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: matrix.name == 'coverage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage/
+          if-no-files-found: error
 
       - name: Release tool tests
         if: matrix.name == 'default'

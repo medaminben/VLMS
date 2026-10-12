@@ -23,7 +23,7 @@ Ouvrez VLMS. La fenêtre s'ouvre sur le Catalogue, dans la langue et le thème c
 
 ## Le pied de page et la licence
 
-La ligne du pied de page ouvre la licence. Elle dit que l'application est un don à cette bibliothèque, que la bibliothèque possède l'application telle qu'elle est installée ici, et que le catalogue, les fiches d'adhérents et les photographies appartiennent à la bibliothèque. Il n'y a pas de garantie.
+La ligne du pied de page ouvre la licence. VLMS est un logiciel libre sous licence MIT : la bibliothèque, comme chacun, peut l'utiliser, le copier, le modifier et le transmettre, à condition que la licence l'accompagne. Le catalogue, les fiches d'adhérents et les photographies appartiennent à la bibliothèque. Il n'y a pas de garantie. La licence cite aussi les logiciels sur lesquels VLMS repose, comme Qt et Tesseract, et se termine par le texte complet de la licence MIT.
 
 ![La licence.](shot:gs-licence)
 
@@ -38,7 +38,7 @@ Le Catalogue, les Adhérents, la Circulation et les Archives ont la même forme.
 - Le tableau est la liste. Un clic sur une ligne la surligne. Le panneau de détail montre alors cette ligne.
 - La pagination est sous le tableau. Elle s'ouvre sur `Tous`, donc toute la liste filtrée est chargée. On peut choisir 20, 50 ou 100 à la place. `Premier` et `Dernier` vont aux extrémités, et la case de page va à une page. Quand la liste filtrée a moins de 20 lignes, la pagination se cache.
 - Le panneau de détail est la ligne surlignée, avec son image quand elle en a une.
-- Les boutons sont le travail de cet écran : ajouter, modifier, prêter, supprimer, et le reste. Un bouton suit la ligne surlignée. Il reste gris quand cette ligne ne peut pas recevoir l'action.
+- Les boutons sont le travail de cet écran : ajouter, modifier, prêter, supprimer, et le reste. Un bouton suit la ligne surlignée. Il reste gris quand cette ligne ne peut pas recevoir l'action. Le menu contextuel et les raccourcis clavier sont les mêmes actions, dans le même ordre ; voir [Menus et raccourcis](reference#menus-shortcuts).
 
 ## Tri {#sort}
 

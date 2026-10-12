@@ -9,6 +9,7 @@
 #include "CategoryStore.h"
 #include "NamedEntityStore.h"
 #include "RepoSql.h"
+#include "StagedFiles.h"
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
@@ -19,6 +20,7 @@
 namespace VLMS::Repositories {
 
 namespace {
+
 
 std::string blankIsbnSentinel(const std::string& isbn)
 {
@@ -457,10 +459,11 @@ Core::Status CatalogRepository::deleteBook(const std::int64_t id)
 
     const std::filesystem::path bookDir =
         std::filesystem::path(m_resourcesDirectory) / "books" / std::to_string(id);
-    if (std::filesystem::exists(bookDir)) {
-        std::error_code error;
-        std::filesystem::remove_all(bookDir, error);
-    }
+    // No exists() first: that overload throws on "permission denied", and the
+    // row is already gone. remove_all with an error_code skips a missing folder
+    // and leaves an unreadable one behind without taking the application down.
+    std::error_code error;
+    std::filesystem::remove_all(bookDir, error);
     return Core::Status::ok();
 }
 
@@ -653,10 +656,11 @@ Core::Status CatalogRepository::purgeBook(const std::int64_t id)
     // it waits until the row is certainly gone.
     const std::filesystem::path bookDir =
         std::filesystem::path(m_resourcesDirectory) / "books" / std::to_string(id);
-    if (std::filesystem::exists(bookDir)) {
-        std::error_code error;
-        std::filesystem::remove_all(bookDir, error);
-    }
+    // No exists() first: that overload throws on "permission denied", and the
+    // row is already gone. remove_all with an error_code skips a missing folder
+    // and leaves an unreadable one behind without taking the application down.
+    std::error_code error;
+    std::filesystem::remove_all(bookDir, error);
     return Core::Status::ok();
 }
 
@@ -725,7 +729,8 @@ std::string CatalogRepository::resolveCoverPath(const std::string& storedPath) c
 }
 
 Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
-                                                const std::string& sourceFilePath)
+                                                const std::string& sourceFilePath,
+                                                StagedFiles& staged)
 {
     if (sourceFilePath.empty()) {
         return RepoSql::validation("error.cover.emptyPath");
@@ -755,10 +760,7 @@ Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
     const std::filesystem::path targetPath =
         std::filesystem::path(m_resourcesDirectory) / relativePath;
 
-    if (std::filesystem::exists(targetPath, error)) {
-        std::filesystem::remove(targetPath, error);
-    }
-    if (!std::filesystem::copy_file(source, targetPath, error)) {
+    if (!staged.stage(source, targetPath)) {
         return RepoSql::validation("error.cover.copyFailed");
     }
 
@@ -776,12 +778,27 @@ Core::Status CatalogRepository::applyCoverImage(const std::int64_t bookId,
 
 Core::Status CatalogRepository::setCoverImage(const std::int64_t bookId, const std::string& sourceFilePath)
 {
-    return applyCoverImage(bookId, sourceFilePath);
+    StagedFiles staged;
+    const Core::Status work = m_session.transaction([&] {
+        if (const auto cover = applyCoverImage(bookId, sourceFilePath, staged); !cover) {
+            return cover;
+        }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old cover back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.cover.copyFailed");
+        }
+        return Core::Status::ok();
+    });
+    if (work) {
+        staged.finish();
+    }
+    return work;
 }
 
 Core::Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write)
 {
     std::int64_t bookId = 0;
+    StagedFiles staged;
     const Core::Status work = m_session.transaction([&] {
         BookInput input = write.book;
         if (write.copies.empty() && input.initialCopyCount < 1) {
@@ -815,21 +832,27 @@ Core::Result<std::int64_t> CatalogRepository::saveNewBook(const BookWrite& write
         }
 
         if (!write.coverSourcePath.empty()) {
-            if (const auto cover = applyCoverImage(bookId, write.coverSourcePath); !cover) {
+            if (const auto cover = applyCoverImage(bookId, write.coverSourcePath, staged); !cover) {
                 return cover;
             }
+        }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old files back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.cover.copyFailed");
         }
         return Core::Status::ok();
     });
     if (!work) {
         return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
+    staged.finish();
     return Core::Result<std::int64_t>::ok(bookId);
 }
 
 Core::Status CatalogRepository::saveExistingBook(const std::int64_t id, const BookWrite& write)
 {
-    return m_session.transaction([&] {
+    StagedFiles staged;
+    const Core::Status saved = m_session.transaction([&] {
         if (write.releaseFromCopyId > 0) {
             if (const auto released = m_copies->releaseArchivedNumber(
                     write.releaseFromCopyId, write.copies, Core::trim(write.book.language));
@@ -844,12 +867,20 @@ Core::Status CatalogRepository::saveExistingBook(const std::int64_t id, const Bo
             return copies;
         }
         if (!write.coverSourcePath.empty()) {
-            if (const auto cover = applyCoverImage(id, write.coverSourcePath); !cover) {
+            if (const auto cover = applyCoverImage(id, write.coverSourcePath, staged); !cover) {
                 return cover;
             }
         }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old files back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.cover.copyFailed");
+        }
         return Core::Status::ok();
     });
+    if (saved) {
+        staged.finish();
+    }
+    return saved;
 }
 
 Core::Result<std::vector<BookCopyRecord>> CatalogRepository::listCopies(const std::int64_t bookId) const

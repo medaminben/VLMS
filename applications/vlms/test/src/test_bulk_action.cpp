@@ -1,7 +1,7 @@
 #include "ModalTest.h"
 #include "QtBridge.h"
 
-#include "ui/BulkAction.h"
+#include "ui/views/BulkAction.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Result.h>

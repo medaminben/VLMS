@@ -1,8 +1,9 @@
 #include "ModalTest.h"
 #include "TestDatabase.h"
 
-#include "ui/ImageViewerDialog.h"
-#include "ui/members/MemberEditorDialog.h"
+#include "ui/views/ImageViewerDialog.h"
+#include "ui/views/MemberEditorDialog.h"
+#include "ui/presentation/QtMemberLookups.h"
 
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Repositories/MemberRepository.h>
@@ -79,6 +80,7 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtMemberLookups>(*m_repository);
         m_pickerCalls = 0;
         m_pickerAnswer.clear();
         MemberEditorDialog::setImageFilePickerForTesting(
@@ -91,6 +93,7 @@ protected:
     void TearDown() override
     {
         MemberEditorDialog::setImageFilePickerForTesting({});
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
@@ -136,13 +139,14 @@ protected:
     QTemporaryDir m_dir;
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::MemberRepository> m_repository;
+    std::unique_ptr<QtMemberLookups> m_lookups;
     int m_pickerCalls = 0;
     QString m_pickerAnswer;
 };
 
 TEST_F(test_ui_MemberImageViewer, AnEmptyBoxOpensThePicker)
 {
-    MemberEditorDialog dialog(*m_repository);
+    MemberEditorDialog dialog(*m_lookups);
     showDialog(dialog);
     closeAnyViewerSoon();
 
@@ -160,7 +164,7 @@ TEST_F(test_ui_MemberImageViewer, ABoxWhoseFileIsNoImageOpensThePicker)
         ASSERT_TRUE(file.open(QIODevice::WriteOnly));
         file.write("not a picture");
     }
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(notAnImage));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(notAnImage));
     showDialog(dialog);
     closeAnyViewerSoon();
 
@@ -171,7 +175,7 @@ TEST_F(test_ui_MemberImageViewer, ABoxWhoseFileIsNoImageOpensThePicker)
 
 TEST_F(test_ui_MemberImageViewer, ABoxShowingAnImageOpensTheViewer)
 {
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(writeImage("photo.png")));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(writeImage("photo.png")));
     EXPECT_EQ(box(dialog, "memberPhoto")->toolTip(), QStringLiteral("View photo"));
     showDialog(dialog);
 
@@ -192,7 +196,7 @@ TEST_F(test_ui_MemberImageViewer, ABoxShowingAnImageOpensTheViewer)
 
 TEST_F(test_ui_MemberImageViewer, TheIdImageBoxOpensItsOwnViewer)
 {
-    MemberEditorDialog dialog(*m_repository,
+    MemberEditorDialog dialog(*m_lookups,
                               memberWithPhoto({}, writeImage("id.png", {400, 250})));
     EXPECT_EQ(box(dialog, "memberIdImage")->toolTip(), QStringLiteral("View ID image"));
     showDialog(dialog);
@@ -212,7 +216,7 @@ TEST_F(test_ui_MemberImageViewer, TheIdImageBoxOpensItsOwnViewer)
 
 TEST_F(test_ui_MemberImageViewer, ChangeInTheViewerIsKeptAfterClose)
 {
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(writeImage("old.png")));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(writeImage("old.png")));
     showDialog(dialog);
     m_pickerAnswer = writeImage("new.png", {300, 300});
 
@@ -235,7 +239,7 @@ TEST_F(test_ui_MemberImageViewer, ChangeInTheViewerIsKeptAfterClose)
 
 TEST_F(test_ui_MemberImageViewer, CancelledChangeChangesNothing)
 {
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(writeImage("old.png")));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(writeImage("old.png")));
     showDialog(dialog);
     m_pickerAnswer.clear();
 
@@ -254,7 +258,7 @@ TEST_F(test_ui_MemberImageViewer, CancelledChangeChangesNothing)
 
 TEST_F(test_ui_MemberImageViewer, RemoveEmptiesTheBox)
 {
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(writeImage("old.png")));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(writeImage("old.png")));
     showDialog(dialog);
 
     onViewer([](ImageViewerDialog* viewer) {
@@ -277,7 +281,7 @@ TEST_F(test_ui_MemberImageViewer, RemoveEmptiesTheBox)
 
 TEST_F(test_ui_MemberImageViewer, APickAfterRemoveWins)
 {
-    MemberEditorDialog dialog(*m_repository, memberWithPhoto(writeImage("old.png")));
+    MemberEditorDialog dialog(*m_lookups, memberWithPhoto(writeImage("old.png")));
     showDialog(dialog);
     onViewer([](ImageViewerDialog* viewer) {
         ASSERT_NE(viewer, nullptr);

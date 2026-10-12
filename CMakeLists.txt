@@ -24,6 +24,18 @@ set(BUILD_TESTING ${VLMS_BUILD_TESTS})
 
 include(Common)
 
+# Line coverage (gcov). Instruments every target in the tree; `gcovr` or
+# lcov read the .gcda files the tests leave in the build directory.
+# scripts/coverage.sh builds, tests and reports in one go.
+option(VLMS_COVERAGE "Instrument the build for line coverage (GCC/Clang)" OFF)
+if(VLMS_COVERAGE)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "VLMS_COVERAGE needs GCC or Clang")
+    endif()
+    add_compile_options(--coverage -O0)
+    add_link_options(--coverage)
+endif()
+
 # enable_testing() must be called from the top-level list file so that
 # `ctest --test-dir build` finds the suite. Deliberately not include(CTest),
 # which would pull in CDash/Dart targets we have no use for.

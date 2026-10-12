@@ -9,6 +9,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <set>
 #include <string>
@@ -1567,4 +1570,58 @@ TEST_F(test_core_CatalogRepository, NoCopyIsReportedAsMatchedForANonNumericSearc
     const auto books = VLMS_UNWRAP(m_repository->listBooks(query));
     ASSERT_EQ(books.size(), 1U);
     EXPECT_TRUE(books.front().matchedLocalId.empty());
+}
+
+TEST_F(test_core_CatalogRepository, AFailedCoverReplacementKeepsTheOldCover)
+{
+    const std::int64_t id = seedBook(*m_db, uniqueBookSeed(95));
+    ASSERT_GT(id, 0);
+    const std::filesystem::path root(m_db->rootDirectory());
+    std::ofstream(root / "old.png", std::ios::binary) << "old cover";
+    ASSERT_TRUE(m_repository->setCoverImage(id, (root / "old.png").string()));
+    const auto before = m_repository->getBook(id);
+    ASSERT_TRUE(before.has_value());
+    const std::filesystem::path stored = m_repository->resolveCoverPath(before->coverImagePath);
+
+    // Exists and is a regular file, so it passes the up-front checks, but the
+    // copy cannot open it. Same extension: it would land on the cover in use.
+    const std::filesystem::path replacement = root / "new.png";
+    std::ofstream(replacement, std::ios::binary) << "new cover";
+    std::filesystem::permissions(replacement, std::filesystem::perms::none);
+    if (std::ifstream(replacement).is_open()) {
+        GTEST_SKIP() << "file permissions are not enforced for this user";
+    }
+
+    EXPECT_FALSE(m_repository->setCoverImage(id, replacement.string()));
+
+    const auto after = m_repository->getBook(id);
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->coverImagePath, before->coverImagePath);
+    std::ifstream in(stored, std::ios::binary);
+    EXPECT_EQ(std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()),
+              "old cover")
+        << "the cover on record must still be there";
+    std::filesystem::permissions(replacement, std::filesystem::perms::owner_all);
+}
+
+TEST_F(test_core_CatalogRepository, ACommittedBookSaveSwapsInTheCoverAndLeavesNoCopy)
+{
+    const std::filesystem::path root(m_db->rootDirectory());
+    std::ofstream(root / "cover.png", std::ios::binary) << "cover";
+
+    Repositories::BookWrite write;
+    write.book = uniqueBookSeed(96).toInput();
+    write.coverSourcePath = (root / "cover.png").string();
+    const auto created = m_repository->saveNewBook(write);
+    ASSERT_TRUE(created) << created.error().key;
+
+    const auto book = m_repository->getBook(created.value());
+    ASSERT_TRUE(book.has_value());
+    const std::filesystem::path stored = m_repository->resolveCoverPath(book->coverImagePath);
+    std::ifstream in(stored, std::ios::binary);
+    EXPECT_EQ(std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()),
+              "cover");
+    std::filesystem::path part = stored;
+    part += ".part";
+    EXPECT_FALSE(std::filesystem::exists(part));
 }

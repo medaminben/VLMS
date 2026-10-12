@@ -1,6 +1,6 @@
-#include "Application.h"
-#include "ui/MainWindow.h"
-#include "ui/UiHelpers.h"
+#include "ui/shell/Application.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/UiHelpers.h"
 #include "QtBridge.h"
 
 #include <VLMS/Core/Strings.h>
@@ -15,6 +15,10 @@ using VLMS::svl;
 
 int main(int argc, char* argv[]) {
     Application app(argc, argv);
+    if (app.isAlreadyRunning()) {
+        VLMS::showWarning(nullptr, QStringLiteral("VLMS"), VLMS::T("app.alreadyRunning"));
+        return 0;
+    }
 
     if (!app.isDatabaseReady()) {
         // Nothing in the window works without a database, and every page would
@@ -26,7 +30,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    MainWindow window;
+    MainWindow window(app);
     window.showMaximized();
 
     return app.exec();

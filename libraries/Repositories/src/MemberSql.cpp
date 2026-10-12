@@ -118,7 +118,7 @@ void bindFilters(Database::SqliteStatement& query, const MemberQuery& queryData)
 {
     const std::string search = Core::trim(queryData.search);
     if (!search.empty()) {
-        query.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%");
+        query.bind(":search", Database::SqlText::likePattern(search));
     }
     bindFacets(query, facetsOf(queryData));
 }

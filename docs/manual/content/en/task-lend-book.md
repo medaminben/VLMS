@@ -24,12 +24,12 @@ The dialog asks for a member and a copy. Search either list if it is long.
 `Cancel` leaves Circulation unchanged.
 :::
 
-## From a book's loans
+## From a title's loan history
 
-On the Catalogue, highlight the title and click `Loans`. `Checkout` is there even when the title has never been borrowed. The copy list is only that title's copies, and there is no copy search.
+On the Catalogue, highlight the title and click `Loans`. The loan history dialog opens with `Checkout` even when the title has never been borrowed. The copy list is only that title's copies, and there is no copy search.
 
 ::: step
-**Click `Checkout` in the loans dialog.**
+**Click `Checkout` in the loan history dialog.**
 
 ![Checkout from a title. The copy list is that title alone.](shot:lend-from-book)
 :::
@@ -38,9 +38,9 @@ On the Catalogue, highlight the title and click `Loans`. `Checkout` is there eve
 
 Choose the member, confirm the copy, and click `OK`. `Close` leaves the history.
 
-## From a member's loans
+## From a member's loan history
 
-On Members, highlight the member and click `Loans`, then `Checkout`. The member is shown as a name, not a search. You choose the copy.
+On Members, highlight the member and click `Loans`, then `Checkout` in the loan history dialog. The member is shown as a name, not a search. You choose the copy.
 
 ![Checkout from a member. The member is already chosen.](shot:lend-from-member)
 

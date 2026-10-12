@@ -1,6 +1,6 @@
 #include "ModalTest.h"
 
-#include "ui/ImageViewerDialog.h"
+#include "ui/views/ImageViewerDialog.h"
 
 #include <VLMS/Core/Locale.h>
 
@@ -10,6 +10,7 @@
 #include <QImage>
 #include <QScreen>
 #include <QTemporaryDir>
+#include <QElapsedTimer>
 #include <QTest>
 
 #include <gtest/gtest.h>
@@ -81,7 +82,13 @@ TEST_F(test_ui_ImageViewerDialog, ResizingTheWindowRescalesTheImage)
 
     viewer.resize(viewer.width() / 2, viewer.height() / 2);
 
-    QTRY_VERIFY(viewer.shownImageSize().height() < before.height());
+    // QTRY_* does not report to GoogleTest; wait, then assert.
+    QElapsedTimer waited;
+    waited.start();
+    while (viewer.shownImageSize().height() >= before.height() && waited.elapsed() < 2000) {
+        QTest::qWait(20);
+    }
+    EXPECT_LT(viewer.shownImageSize().height(), before.height());
 }
 
 TEST_F(test_ui_ImageViewerDialog, ChangeShowsThePickedImageAndStaysOpen)

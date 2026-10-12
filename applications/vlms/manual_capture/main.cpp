@@ -1,8 +1,8 @@
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "Capture.h"
 #include "Shots.h"
-#include "ui/FlagIcons.h"
-#include "ui/MainWindow.h"
+#include "ui/views/FlagIcons.h"
+#include "ui/shell/MainWindow.h"
 
 #include <VLMS/Core/Paths.h>
 
@@ -124,9 +124,10 @@ int main(int argc, char** argv)
     app.setUiLocale(lang);
     app.setDarkTheme(false);
 
-    MainWindow window;
+    MainWindow window(app);
     window.resize(1440, 900);
-    window.show();
+    // MainWindow::show(PageId) shadows QWidget::show(); expose the shell explicitly.
+    window.QWidget::show();
     if (!QTest::qWaitForWindowExposed(&window)) {
         std::fprintf(stderr, "manual_capture: the window was not exposed\n");
         return 3;

@@ -59,7 +59,7 @@ A member can be permanently removed only when this column is zero.
 
 ## Loan history
 
-`Loans` sits after the search on the `Members`, `Books`, and `Copies` lists. It opens every loan of the highlighted member, title, or copy, archived loans included: the member, the membership number, the copy, the dates, the status, and when the loan was archived. The history is only for reading; nothing can be lent or returned from it. The button is grey when the row has never been lent.
+`Loans` sits after the search on the `Members`, `Books`, and `Copies` lists. It opens the same loan history dialog as on the live screens, pinned to the highlighted member, title, or copy, with archived loans included: the member, the membership number, the copy, the dates, the status, and when the loan was archived. From the Archive the dialog is for reading only — `Checkout`, `Extend`, and `Return` are not offered. The button is grey when the row has never been lent.
 
 ## Restore
 

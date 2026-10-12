@@ -1,6 +1,6 @@
-#include "ui/members/BirthDateEdit.h"
+#include "ui/views/BirthDateEdit.h"
 
-#include "ui/Theme.h"
+#include "ui/services/Theme.h"
 
 #include <QAbstractItemView>
 #include <QApplication>

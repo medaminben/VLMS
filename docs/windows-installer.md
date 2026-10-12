@@ -16,10 +16,18 @@ libsqlite3-0.dll
 libtesseract-*.dll  liblept-*.dll  (+ their MinGW dependencies)
 tessdata\{ara,fra,eng}.traineddata
 schema.sql
+LICENSE  THIRD_PARTY_NOTICES.txt
+licenses\                      licence texts, BUNDLED_FILES.txt, msys2\<package>\
 database\vlms.db          the catalogue this release ships with
 resources\books\               cover images
 resources\members\             member photos
 ```
+
+`licenses\BUNDLED_FILES.txt` is written by `scripts\write_bundled_licenses.ps1`
+once the stage is complete. It lists every DLL with where it came from (Qt, an
+MSYS2 package, or the GCC runtime) and copies each MSYS2 package's licence
+files beside it. A DLL it cannot place is listed as UNKNOWN with a warning in
+the build log; find its licence before releasing.
 
 The application resolves all of this from `QCoreApplication::applicationDirPath()`
 (`Paths::projectRoot()`), which is why the layout is flat and the install
@@ -58,9 +66,10 @@ The next page, **What's new**, lists the release entries between the
 installed version and this one; it is skipped when there are none.
 
 Either way, the checkbox on that page copies the existing `vlms.db` (plus
-any `-wal`/`-journal` beside it) to `Documents\VLMS Backups\` first. It is
-on by default and applies to both choices — a kept database is about to be
-migrated in place, which is also worth a copy.
+any `-wal`/`-journal` beside it) and the installation's `resources` folder to
+`Documents\VLMS Backups\` first. It is on by default and applies to both
+choices — a kept database is about to be migrated in place, which is also worth
+a copy.
 
 Two cases the page adapts to:
 
@@ -96,6 +105,57 @@ patch, minor or reinstall, remove for a major.
 The uninstaller asks whether to delete the database and cover images, and
 keeps them if you say no. A silent uninstall deletes them unless `/KEEPDATA`
 is passed — that is the path setup itself uses when clearing an old version.
+
+## Testing an update by hand
+
+None of the paths above run in CI: they need Windows, an older installer and a
+database with someone's work in it. Before a release that changes the
+installer or the schema, run this on a throwaway Windows machine or VM. Use
+the sample catalogue, never a library's real one.
+
+**Prepare**
+
+1. Install the previous release from its GitHub release page.
+2. Start it once. Add a member with a photograph and an identity-card image,
+   give a book a cover, and lend a copy. Close VLMS.
+3. Write down the member count, the open loan, and the three image files under
+   `resources\`.
+
+**Keep its database and cover images**
+
+4. Run the new `VLMS_Setup_X.Y.Z.exe`. The page shows the installed version,
+   the update level and the recorded schema. Leave the backup box ticked and
+   choose *Keep*.
+5. Check `Documents\VLMS Backups\` now holds a `vlms-*.db` and a
+   `vlms-*-resources` folder with the three images from step 3.
+6. Start VLMS. The member, their two images, the cover and the open loan are
+   all there. If the schema changed, `database\` also holds a
+   `vlms.db.bak-v<version>-<time>`.
+
+**Restore the copy**
+
+7. Close VLMS. Rename `database\vlms.db` aside. The copy in
+   `Documents\VLMS Backups\` is named `vlms-<version>-<stamp>.db`: put it in
+   `database\` and rename it to `vlms.db`. Then put the contents of the matching
+   `vlms-…-resources` folder back into the installation's `resources\` folder.
+8. Start VLMS. It opens, migrates again if it has to, and shows the data from
+   step 2.
+
+**Delete it, including its database and cover images**
+
+9. Run the installer again and choose *Delete*. Setup finishes without an
+   error, `database\` holds the shipped catalogue, and the member from step 2
+   is gone — along with their photograph and identity-card image. Their copies
+   are in the `vlms-*-resources` folder in `Documents\VLMS Backups\` from
+   step 4.
+
+**Uninstall**
+
+10. Uninstall from *Settings → Apps* and answer *No* to deleting the data:
+    `database\` and `resources\` stay. Reinstall, then uninstall again
+    answering *Yes*: the folder is gone.
+
+Anything that does not match is a release blocker.
 
 ## Building it
 

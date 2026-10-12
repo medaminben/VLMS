@@ -3,14 +3,17 @@
 #include "TestSeed.h"
 #include "UiTest.h"
 
-#include "ui/catalog/BookCopiesTable.h"
-#include "ui/catalog/FreeLocalNumberDelegate.h"
+#include "ui/views/BookCopiesTable.h"
+#include "ui/views/FreeLocalNumberDelegate.h"
+#include "ui/presentation/QtCatalogLookups.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Strings.h>
 
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QEvent>
 #include <QImage>
 #include <QStyle>
 #include <QStyleOptionViewItem>
@@ -45,11 +48,13 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtCatalogLookups>(*m_catalog);
     }
 
     void TearDown() override
     {
         m_copies.reset();
+        m_lookups.reset();
         m_catalog.reset();
         m_db.reset();
     }
@@ -61,12 +66,14 @@ protected:
 
     void clickRemove()
     {
-        m_copies->retranslateUi();
+        QEvent languageChange(QEvent::LanguageChange);
+        QCoreApplication::sendEvent(m_copies.get(), &languageChange);
         clickButtonWithText(m_copies.get(), qs(Core::Strings::t("book.copy.remove")));
     }
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
+    std::unique_ptr<QtCatalogLookups> m_lookups;
     std::unique_ptr<BookCopiesTable> m_copies;
 };
 
@@ -76,7 +83,7 @@ TEST_F(test_ui_BulkCopies, TwoTickedRowsAreRemovedAndTheHighlightedThirdStays)
     seed.initialCopyCount = 3;
     const std::int64_t bookId = seedBook(*m_db, seed);
     const auto ids = copyIdsOf(*m_db, bookId);
-    m_copies = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_copies = std::make_unique<BookCopiesTable>(*m_lookups);
     m_copies->loadCopies(bookId);
     QTableWidget* table = grid();
     ASSERT_NE(table, nullptr);
@@ -99,7 +106,7 @@ TEST_F(test_ui_BulkCopies, NothingTickedRemovesOnlyTheHighlightedRow)
     BookSeed seed = uniqueBookSeed(2);
     seed.initialCopyCount = 2;
     const std::int64_t bookId = seedBook(*m_db, seed);
-    m_copies = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_copies = std::make_unique<BookCopiesTable>(*m_lookups);
     m_copies->loadCopies(bookId);
     QTableWidget* table = grid();
     table->selectRow(0);
@@ -118,7 +125,7 @@ TEST_F(test_ui_BulkCopies, ATickedOnLoanRowAndAReservedRowStay)
     const std::int64_t member = seedMember(*m_db, uniqueMemberSeed(3));
     ASSERT_GT(rawInsertLoan(*m_db, member, ids.at(0), "2026-09-01", "2026-09-15"), 0);
 
-    m_copies = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_copies = std::make_unique<BookCopiesTable>(*m_lookups);
     m_copies->loadCopies(bookId);
     m_copies->addReservedRow(QStringLiteral("arabic"), QStringLiteral("9001"),
                              QStringLiteral("AR-9001"));
@@ -140,7 +147,7 @@ TEST_F(test_ui_BulkCopies, ATickedOnLoanRowAndAReservedRowStay)
 TEST_F(test_ui_BulkCopies, DoubleClickOnTheNumberStillOpensTheEditor)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(4));
-    m_copies = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_copies = std::make_unique<BookCopiesTable>(*m_lookups);
     m_copies->resize(800, 320);
     m_copies->show();
     ASSERT_TRUE(QTest::qWaitForWindowExposed(m_copies.get()));
@@ -186,7 +193,7 @@ TEST_F(test_ui_BulkCopies, DoubleClickOnTheNumberStillOpensTheEditor)
 
 TEST_F(test_ui_BulkCopies, TheCheckIndicatorIsPaintedInTheNumberCell)
 {
-    m_copies = std::make_unique<BookCopiesTable>(*m_catalog);
+    m_copies = std::make_unique<BookCopiesTable>(*m_lookups);
     m_copies->resize(640, 240);
     m_copies->show();
     ASSERT_TRUE(QTest::qWaitForWindowExposed(m_copies.get()));

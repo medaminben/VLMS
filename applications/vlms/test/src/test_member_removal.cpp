@@ -1,12 +1,16 @@
 #include "ModalTest.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
-#include "UiTest.h"
 
-#include "ui/members/MembersPage.h"
+#include "QtBridge.h"
+#include "ui/views/ListPage.h"
+#include "ui/presentation/MemberListSpec.h"
+#include "ui/shell/Navigator.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
 #include <VLMS/Core/Strings.h>
@@ -19,7 +23,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalSpy>
-#include <QTableWidget>
+#include <QTableView>
 #include <QTest>
 #include <QTimer>
 
@@ -34,17 +38,50 @@ using namespace Test;
 
 namespace {
 
-void clickDelete(MembersPage* page)
+ListPage::Config membersConfig()
 {
-    clickButtonWithText(page, qs(Core::Strings::t("members.delete")));
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.members.title");
+    cfg.bodyKey = QStringLiteral("page.members.body");
+    cfg.searchPlaceholderKey = QStringLiteral("members.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("memberPhoto");
+    cfg.imageBounds = memberPhotoPreviewBounds();
+    return cfg;
 }
 
-void selectFirstMember(MembersPage* page)
+void clickDelete(ListPage* page)
 {
-    auto* table = page->findChild<QTableWidget*>();
+    auto* button = page->findChild<QPushButton*>(QStringLiteral("listAction_archive"));
+    ASSERT_NE(button, nullptr);
+    button->click();
+}
+
+void selectFirstMember(ListPage* page)
+{
+    QTableView* table = page->table();
     ASSERT_NE(table, nullptr);
-    ASSERT_GT(table->rowCount(), 0);
+    ASSERT_GT(table->model()->rowCount(), 0);
     table->selectRow(0);
+}
+
+void tickMember(ListPage* page, qint64 memberId)
+{
+    QTableView* table = page->table();
+    ASSERT_NE(table, nullptr);
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        if (table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == memberId) {
+            ASSERT_TRUE(table->model()->setData(table->model()->index(row, 0),
+                                                Qt::Checked, Qt::CheckStateRole));
+            return;
+        }
+    }
+    FAIL() << "member " << memberId << " is not on the page";
+}
+
+bool memberArchived(TestDatabase& db, qint64 memberId)
+{
+    return !db.scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId))
+                .isNull();
 }
 
 }  // namespace
@@ -59,14 +96,25 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_memberWorkflows.reset();
         m_circulation.reset();
+        m_catalog.reset();
         m_members.reset();
         m_db.reset();
+    }
+
+    void openPage()
+    {
+        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
+        m_spec = std::make_unique<MemberListSpec>(*m_members, *m_memberWorkflows->members);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_memberWorkflows->events, membersConfig());
     }
 
     void seedMemberWithLoan(const QString& returnedAt)
@@ -87,14 +135,18 @@ protected:
                                 returnedAt.toStdString()),
                   0);
 
-        m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+        openPage();
         selectFirstMember(m_page.get());
     }
 
     std::unique_ptr<TestDatabase> m_db;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<MembersPage> m_page;
+    VLMS::FakeNavigator m_navigator;
+    std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
+    std::unique_ptr<MemberListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
     qint64 m_memberId = 0;
 };
 
@@ -102,21 +154,22 @@ TEST_F(test_ui_MemberRemoval, OpenLoansOfferGoToLoansAndEmitTheMembershipNumber)
 {
     seedMemberWithLoan({});
 
-    QSignalSpy spy(m_page.get(), &MembersPage::memberLoansRequested);
+    // Navigator records the jump; no page signal anymore.
+    const int before = m_memberWorkflows->navigator.showMemberLoansCount;
     const QString screenshot = qEnvironmentVariable("VLMS_TEST_SHOT_DIR").isEmpty()
         ? QString()
         : QDir(qEnvironmentVariable("VLMS_TEST_SHOT_DIR")).filePath(QStringLiteral("blocked-by-loans.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("members.goToLoans")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, T("members.goToLoans"), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteBlockedByLoans")));
+    EXPECT_EQ(outcome.text, T("members.deleteBlockedByLoans"));
     EXPECT_FALSE(outcome.hasCheckBox);
-    EXPECT_EQ(outcome.buttonLabels.filter(qs(Core::Strings::t("members.goToLoans"))).size(), 1);
-    EXPECT_EQ(spy.count(), 1);
-    EXPECT_EQ(spy.front().front().toString(),
+    EXPECT_EQ(outcome.buttonLabels.filter(T("members.goToLoans")).size(), 1);
+    EXPECT_EQ(m_memberWorkflows->navigator.showMemberLoansCount, before + 1);
+    EXPECT_EQ(m_memberWorkflows->navigator.lastMembershipNumber,
               QString::fromStdString(m_members->getMember(m_memberId)->membershipNumber));
     EXPECT_EQ(m_db->count("members"), 1);
 }
@@ -132,11 +185,11 @@ TEST_F(test_ui_MemberRemoval, ConfirmationIsAPlainYesOrNo)
               .filePath(QStringLiteral("confirm-delete.png"));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.no")), std::nullopt,
+        [this]() { clickDelete(m_page.get()); }, T("common.no"), std::nullopt,
         screenshot);
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_EQ(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
+    EXPECT_EQ(outcome.text, T("members.deleteConfirm"));
     // Delete archives. Destroying a record is the Archive's business now, so
     // there is nothing here to opt out of.
     EXPECT_FALSE(outcome.hasCheckBox);
@@ -151,7 +204,7 @@ TEST_F(test_ui_MemberRemoval, ArchivingRemovesTheMemberFromTheList)
     seedMemberWithLoan(today.addDays(-20).toString(Qt::ISODate));
 
     const ModalOutcome outcome = runAndAnswerModal(
-        [this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")), std::nullopt);
+        [this]() { clickDelete(m_page.get()); }, T("common.yes"), std::nullopt);
     EXPECT_TRUE(outcome.appeared);
     EXPECT_EQ(m_db->count("members"), 1);
     EXPECT_EQ(m_db->count("loans"), 1);
@@ -159,9 +212,9 @@ TEST_F(test_ui_MemberRemoval, ArchivingRemovesTheMemberFromTheList)
         m_db->scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(m_memberId))
             .isNull());
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    QTableView* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    EXPECT_EQ(table->rowCount(), 0);
+    EXPECT_EQ(table->model()->rowCount(), 0);
 }
 
 TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecondQuestion)
@@ -173,8 +226,8 @@ TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecon
     // Delete no longer offers to destroy anything.
     const QList<ModalOutcome> outcomes = runAndAnswerModals(
         [this]() { clickDelete(m_page.get()); },
-        {ModalAnswer{qs(Core::Strings::t("common.yes")), std::nullopt, {}},
-         ModalAnswer{qs(Core::Strings::t("common.ok")), std::nullopt, {}}});
+        {ModalAnswer{T("common.yes"), std::nullopt, {}},
+         ModalAnswer{T("common.ok"), std::nullopt, {}}});
 
     ASSERT_TRUE(outcomes.at(0).appeared);
     EXPECT_FALSE(outcomes.at(1).appeared);
@@ -185,46 +238,24 @@ TEST_F(test_ui_MemberRemoval, AMemberWithBorrowingHistoryIsArchivedWithoutASecon
             .isNull());
 }
 
-namespace {
-
-void tickMember(QTableWidget* table, qint64 memberId)
-{
-    for (int row = 0; row < table->rowCount(); ++row) {
-        QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == memberId) {
-            item->setCheckState(Qt::Checked);
-            return;
-        }
-    }
-    FAIL() << "member " << memberId << " is not on the page";
-}
-
-bool memberArchived(TestDatabase& db, qint64 memberId)
-{
-    return !db.scalar("SELECT archived_at FROM members WHERE id = " + std::to_string(memberId))
-                .isNull();
-}
-
-}  // namespace
-
 TEST_F(test_ui_MemberRemoval, TwoTickedMembersAreArchivedAndTheHighlightedThirdStays)
 {
     const qint64 first = seedMember(*m_db, uniqueMemberSeed(10));
     const qint64 second = seedMember(*m_db, uniqueMemberSeed(11));
     const qint64 highlighted = seedMember(*m_db, uniqueMemberSeed(12));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
-    auto* table = m_page->findChild<QTableWidget*>();
+    openPage();
+    QTableView* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    for (int row = 0; row < table->rowCount(); ++row) {
-        if (table->item(row, 0)->data(Qt::UserRole).toLongLong() == highlighted) {
+    for (int row = 0; row < table->model()->rowCount(); ++row) {
+        if (table->model()->index(row, 0).data(Qt::UserRole).toLongLong() == highlighted) {
             table->selectRow(row);
         }
     }
-    tickMember(table, first);
-    tickMember(table, second);
+    tickMember(m_page.get(), first);
+    tickMember(m_page.get(), second);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
     EXPECT_EQ(outcome.text, QStringLiteral("Archive 2 members?"));
@@ -241,17 +272,15 @@ TEST_F(test_ui_MemberRemoval, ATickedMemberWithABookOutStaysWhileTheOtherIsArchi
     ASSERT_GT(rawInsertLoan(*m_db, blocked, copyIdsOf(*m_db, bookId).front(), "2026-09-01",
                             "2026-09-15"),
               0);
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
-    auto* table = m_page->findChild<QTableWidget*>();
-    ASSERT_NE(table, nullptr);
-    tickMember(table, blocked);
-    tickMember(table, free);
+    openPage();
+    tickMember(m_page.get(), blocked);
+    tickMember(m_page.get(), free);
 
     const ModalOutcome outcome =
-        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, qs(Core::Strings::t("common.yes")));
+        runAndAnswerModal([this]() { clickDelete(m_page.get()); }, T("common.yes"));
 
     ASSERT_TRUE(outcome.appeared);
-    EXPECT_NE(outcome.text, qs(Core::Strings::t("members.deleteConfirm")));
+    EXPECT_NE(outcome.text, T("members.deleteConfirm"));
     EXPECT_FALSE(memberArchived(*m_db, blocked));
     EXPECT_TRUE(memberArchived(*m_db, free));
 }

@@ -28,11 +28,11 @@ La fenêtre propose un jour dû après le jour actuel. Le nouveau jour doit êtr
 ![Prolonger.](shot:ext-dialog)
 :::
 
-## Depuis une fenêtre de prêts
+## Depuis la fenêtre d'historique des prêts
 
-Le bouton `Prêts` d'un titre ou d'un adhérent liste cet historique. Surlignez le prêt qui est encore sorti. `Prolonger` et `Retourner` suivent cette ligne, et ils sont gris sur un prêt retourné.
+Le bouton `Prêts` d'un titre ou d'un adhérent ouvre la même fenêtre d'historique des prêts. Surlignez le prêt qui est encore sorti. `Prolonger` et `Retourner` suivent cette ligne, et ils sont gris sur un prêt retourné.
 
-![Une fenêtre de prêts avec un prêt encore sorti surligné, donc Prolonger et Retourner sont disponibles.](shot:ret-from-history)
+![Une fenêtre d'historique des prêts avec un prêt encore sorti surligné, donc Prolonger et Retourner sont disponibles.](shot:ret-from-history)
 
 ### Et si…
 
