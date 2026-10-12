@@ -165,6 +165,7 @@ var
   ChkBackup: TNewCheckBox;
   BackupPath: String;            { set once the copy has been made, for the final message }
   ResourcesBackupPath: String;   { the images' copy, beside BackupPath }
+  BackupFailure: String;         { the part of the backup that failed: 'folder', 'database' or 'images' }
 
 function CompareVersionStrings(const A, B: String): Integer;
 var
@@ -262,6 +263,43 @@ begin
     Result := PrevDir + '\database\vlms.db'
   else
     Result := '';
+end;
+
+{ True when the installed copy has a database or images worth copying. }
+function PrevHasData: Boolean;
+begin
+  Result := (PrevDatabasePath <> '') or DirExists(PrevDir + '\resources');
+end;
+
+{ VLMS holds database\vlms.lock open for as long as it runs, and Windows does
+  not let anyone delete a file held open that way. So a lock that cannot be
+  deleted belongs to a running copy. One that can was left by a copy that
+  stopped abruptly, and VLMS would take it over anyway. A stale lock in a
+  folder this Setup cannot write to (an all-users install run without
+  administrator rights) also looks running; Cancel is the way out there. }
+function CopyIsRunning(const AppDir: String): Boolean;
+var
+  Lock: String;
+begin
+  Lock := AppDir + '\database\vlms.lock';
+  Result := FileExists(Lock) and (not DeleteFile(Lock));
+end;
+
+{ Asks the librarian to close VLMS until it is closed. False when they cancel,
+  and always in a run with /SUPPRESSMSGBOXES, which cannot ask. A copy that is
+  still open would keep writing to the database while it is copied or deleted. }
+function WaitUntilClosed(const AppDir: String): Boolean;
+begin
+  Result := True;
+  while CopyIsRunning(AppDir) do
+    if SuppressibleMsgBox(
+         'VLMS is still open.' + #13#10#13#10 +
+         'Close every VLMS window, then click Retry.',
+         mbConfirmation, MB_RETRYCANCEL, IDCANCEL) = IDCANCEL then
+    begin
+      Result := False;
+      Exit;
+    end;
 end;
 
 procedure DetectPreviousInstall;
@@ -483,7 +521,7 @@ begin
   { Nothing to back up once the choice is to keep everything in place and no
     file will be touched -- but a kept database is about to be migrated in
     place by the new build, so the copy is worth having either way. }
-  ChkBackup.Enabled := PrevDatabasePath <> '';
+  ChkBackup.Enabled := PrevHasData;
   if not ChkBackup.Enabled then
     ChkBackup.Checked := False;
 end;
@@ -701,13 +739,21 @@ var
   Source, DestDir, Stamp, Tag: String;
 begin
   Result := True;
-  Source := PrevDatabasePath;
-  if Source = '' then
+  BackupFailure := '';
+  { A retry after going back starts again: the paths name only this attempt's
+    copies, for the failure message and the finished page. }
+  BackupPath := '';
+  ResourcesBackupPath := '';
+  { The images are copied even when the database is missing: deleting the old
+    installation would remove them all the same. }
+  if not PrevHasData then
     Exit;
+  Source := PrevDatabasePath;
 
   DestDir := ExpandConstant('{userdocs}\VLMS Backups');
   if not ForceDirectories(DestDir) then
   begin
+    BackupFailure := 'folder';
     Result := False;
     Exit;
   end;
@@ -717,22 +763,26 @@ begin
   else
     Tag := 'unknown';
   Stamp := GetDateTimeString('yyyymmdd-hhnnss', #0, #0);
-  BackupPath := DestDir + '\vlms-' + Tag + '-' + Stamp + '.db';
 
-  Result := FileCopy(Source, BackupPath, False);
-  if not Result then
+  if Source <> '' then
   begin
-    BackupPath := '';
-    Exit;
-  end;
+    BackupPath := DestDir + '\vlms-' + Tag + '-' + Stamp + '.db';
+    if not FileCopy(Source, BackupPath, False) then
+    begin
+      BackupPath := '';
+      BackupFailure := 'database';
+      Result := False;
+      Exit;
+    end;
 
-  { A database closed mid-transaction leaves these behind, and the .db alone
-    is not a restorable copy without them. Best effort: their absence is the
-    normal case, not a failure. }
-  if FileExists(Source + '-wal') then
-    FileCopy(Source + '-wal', BackupPath + '-wal', False);
-  if FileExists(Source + '-journal') then
-    FileCopy(Source + '-journal', BackupPath + '-journal', False);
+    { A database closed mid-transaction leaves these behind, and the .db alone
+      is not a restorable copy without them. Best effort: their absence is the
+      normal case, not a failure. }
+    if FileExists(Source + '-wal') then
+      FileCopy(Source + '-wal', BackupPath + '-wal', False);
+    if FileExists(Source + '-journal') then
+      FileCopy(Source + '-journal', BackupPath + '-journal', False);
+  end;
 
   { The photographs, identity-card images and covers are the library's records
     too, and deleting the old installation removes them with it. }
@@ -742,10 +792,32 @@ begin
     if not CopyTree(PrevDir + '\resources', ResourcesBackupPath) then
     begin
       ResourcesBackupPath := '';
+      BackupFailure := 'images';
       Result := False;
       Exit;
     end;
   end;
+end;
+
+{ What to tell the librarian when BackupExistingData failed, naming the part
+  that failed so they know whether the database copy is there. }
+function BackupFailureMessage: String;
+var
+  DestDir: String;
+begin
+  DestDir := ExpandConstant('{userdocs}\VLMS Backups');
+  if BackupFailure = 'folder' then
+    Result := 'Setup could not create the backup folder' + #13#10 + DestDir
+  else if BackupFailure = 'database' then
+    Result := 'Setup could not copy the existing database to' + #13#10 + DestDir
+  else if BackupPath <> '' then
+    Result :=
+      'Setup copied the existing database to' + #13#10 + BackupPath + #13#10#13#10 +
+      'but could not copy the images to' + #13#10 + DestDir
+  else
+    Result := 'Setup could not copy the existing images to' + #13#10 + DestDir;
+  Result := Result + #13#10#13#10 +
+    'Check that the folder can be written to, or go back and clear the backup option.';
 end;
 
 { Inno's uninstaller relaunches itself from a temporary copy, so Exec can
@@ -809,13 +881,20 @@ begin
   if not PrevFound then
     Exit;
 
+  { Before anything is copied or deleted: the Restart Manager closes a running
+    VLMS only later, when the program files are replaced. }
+  if not WaitUntilClosed(PrevDir) then
+  begin
+    Result :=
+      'VLMS is still open, so Setup has not touched its data.' + #13#10#13#10 +
+      'Close VLMS and run this installer again.';
+    Exit;
+  end;
+
   if ShouldBackupDatabase then
     if not BackupExistingData then
     begin
-      Result :=
-        'Setup could not copy the existing database and images to' + #13#10 +
-        ExpandConstant('{userdocs}\VLMS Backups') + #13#10#13#10 +
-        'Close VLMS if it is running, or go back and clear the backup option.';
+      Result := BackupFailureMessage;
       Exit;
     end;
 
@@ -828,16 +907,16 @@ begin
   { A backup nobody knows about is not a backup. The finished page is where
     the path belongs -- it stays on screen, unlike a message box in the middle
     of the copy that gets clicked away. }
-  if (CurPageID = wpFinished) and (BackupPath <> '') then
-  begin
+  if CurPageID <> wpFinished then
+    Exit;
+  if BackupPath <> '' then
     WizardForm.FinishedLabel.Caption :=
       WizardForm.FinishedLabel.Caption + #13#10#13#10 +
       'The previous database was copied to:' + #13#10 + BackupPath;
-    if ResourcesBackupPath <> '' then
-      WizardForm.FinishedLabel.Caption :=
-        WizardForm.FinishedLabel.Caption + #13#10#13#10 +
-        'Its images were copied to:' + #13#10 + ResourcesBackupPath;
-  end;
+  if ResourcesBackupPath <> '' then
+    WizardForm.FinishedLabel.Caption :=
+      WizardForm.FinishedLabel.Caption + #13#10#13#10 +
+      'The previous images were copied to:' + #13#10 + ResourcesBackupPath;
 end;
 
 function UpdateReadyMemo(const Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
@@ -863,6 +942,14 @@ begin
     Result := Result + NewLine + NewLine + MemoGroupInfo;
   if MemoTasksInfo <> '' then
     Result := Result + NewLine + NewLine + MemoTasksInfo;
+end;
+
+{ Removing a running copy would leave its open files behind and pull the rest
+  out from under it. Setup has already waited before it runs the uninstaller,
+  so this is the check for an uninstall started from Settings > Apps. }
+function InitializeUninstall: Boolean;
+begin
+  Result := WaitUntilClosed(ExpandConstant('{app}'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
