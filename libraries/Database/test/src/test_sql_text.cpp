@@ -69,7 +69,7 @@ TEST(test_core_SqlText, NullableTextTrims)
         {"Sfax  ", "Sfax"},
         {"\t Sfax ", "Sfax"},
         // internal spaces are kept
-        {"  Ksour Essef  ", "Ksour Essef"},
+        {"  La Marsa  ", "La Marsa"},
     };
     for (const auto& [input, expected] : cases) {
         SCOPED_TRACE(input);

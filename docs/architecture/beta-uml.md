@@ -581,7 +581,7 @@ classDiagram
 ```
 
 `Core::Clock` is the only allowed "now". C++ guards and SQL `:today` binds
-must agree. Time is **local** (Ksour Essef / Africa/Tunis), not UTC
+must agree. Time is **local** (Africa/Tunis), not UTC
 `date('now')`.
 
 `Repositories::LoanPolicy` (14-day default) validates checkout, return, and

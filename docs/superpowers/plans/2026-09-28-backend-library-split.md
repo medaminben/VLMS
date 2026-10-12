@@ -71,7 +71,7 @@ Task 4 (serial, main checkout): closing
 ### Worktree setup for Tasks 2 and 3 (controller runs this after Task 1 is committed)
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 git worktree add ../VLMS-wt/database-tests -b split/database-tests
 git worktree add ../VLMS-wt/repositories-tests -b split/repositories-tests
 ```
@@ -81,14 +81,14 @@ and no copy of the gitignored real-DB backup, so the configure command is:
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
-  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/home/amin/Dokumente/dev/VLMS/build/_deps/googletest-src \
-  -DVLMS_TEST_REAL_DB=/home/amin/Dokumente/dev/VLMS/database/vlms.db.bak-20260814-232925
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<repo>/build/_deps/googletest-src \
+  -DVLMS_TEST_REAL_DB=<repo>/database/vlms.db.bak-20260814-232925
 ```
 
 ### Merge step (controller, after Tasks 2 and 3 are both approved)
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 git merge --no-ff split/database-tests -m "Merge the Database test split.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -150,7 +150,7 @@ gtest cases), and it must stay green.
 
 Run:
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 build/bin/test_vlms_core --gtest_list_tests | grep -c '^  '
 ```
 Expected: `574`
@@ -158,7 +158,7 @@ Expected: `574`
 - [ ] **Step 2: Move the files**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 mkdir -p libraries/Database/include/VLMS/Database libraries/Database/src \
          libraries/Database/test/support \
          libraries/Repositories/include/VLMS/Repositories libraries/Repositories/src \
@@ -209,7 +209,7 @@ Expected:
 - [ ] **Step 3: Rewrite the include lines**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 FILES=$(grep -rlE '<VLMS/Core/(ArchiveTypes|CatalogRepository|CatalogTypes|CirculationRepository|LoanPolicy|LoanTypes|MemberRepository|MemberTypes|MetricsRepository|MetricsTypes|Database|SqlText)\.h>|"SqliteSession\.h"|"Text\.h"' \
         libraries applications --include='*.h' --include='*.cpp')
 sed -i -E \
@@ -652,7 +652,7 @@ and in the same file change `"SQLite 3 is required for Core. Install` to
 - [ ] **Step 8: Configure, build, run the tests**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 cmake -S . -B build 2>&1 | tail -3
 cmake --build build -j8 2>&1 | grep -E "error|warning: .*#include|Error " ; echo "build exit: ${PIPESTATUS[0]}"
 ctest --test-dir build -j8 2>&1 | grep -E "tests passed|tests failed"
@@ -669,7 +669,7 @@ path. Fix the include line, never the CMake visibility.
 - [ ] **Step 9: Check the boundaries**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 grep -n "target_link_libraries\|sqlite" libraries/Core/CMakeLists.txt
 grep -rn "Core/src" --include=CMakeLists.txt libraries applications
 grep -rn "VLMS/Repositories\|VLMS/Database" libraries/Core
@@ -681,7 +681,7 @@ it `SQLite`, which the case-sensitive `sqlite` does not match.
 - [ ] **Step 10: Commit**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 git add -A libraries applications cmake
 git status --short | grep -v '^R\|^M\|^A' ; true
 git commit -q -m "Split Core into Core, Database and Repositories libraries.
@@ -726,8 +726,8 @@ root.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
-  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/home/amin/Dokumente/dev/VLMS/build/_deps/googletest-src \
-  -DVLMS_TEST_REAL_DB=/home/amin/Dokumente/dev/VLMS/database/vlms.db.bak-20260814-232925
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<repo>/build/_deps/googletest-src \
+  -DVLMS_TEST_REAL_DB=<repo>/database/vlms.db.bak-20260814-232925
 cmake --build build -j8 --target test_vlms_core
 build/bin/test_vlms_core --gtest_list_tests | grep -c '^  '
 ```
@@ -892,8 +892,8 @@ root.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
-  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/home/amin/Dokumente/dev/VLMS/build/_deps/googletest-src \
-  -DVLMS_TEST_REAL_DB=/home/amin/Dokumente/dev/VLMS/database/vlms.db.bak-20260814-232925
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<repo>/build/_deps/googletest-src \
+  -DVLMS_TEST_REAL_DB=<repo>/database/vlms.db.bak-20260814-232925
 cmake --build build -j8 --target test_vlms_core
 build/bin/test_vlms_core --gtest_list_tests | grep -c '^  '
 ```
@@ -1032,7 +1032,7 @@ git log --oneline -1
 
 ### Task 4: Closing: remove the scaffolding and verify the spec
 
-**Runs in:** the main checkout `/home/amin/Dokumente/dev/VLMS`, after the
+**Runs in:** the main checkout `<repo>`, after the
 merge step above.
 
 **Files:**
@@ -1046,7 +1046,7 @@ merge step above.
 - [ ] **Step 1: Confirm the merge left only core tests in Core**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 ls libraries/Core/test/src
 ls libraries/Core/test
 ```
@@ -1104,7 +1104,7 @@ test to the right library instead of adding a dependency.
 - [ ] **Step 3: Rebuild from a clean configure and run everything**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 cmake -S . -B build > /dev/null
 cmake --build build -j8 2>&1 | grep -E " error |Error " ; echo "build exit: ${PIPESTATUS[0]}"
 ctest --test-dir build -j8 2>&1 | grep -E "tests passed|tests failed"
@@ -1126,7 +1126,7 @@ Expected:
 - [ ] **Step 4: Run the spec's boundary checks**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 grep -rnE "VLMS/Core/(Database|SqliteSession|SqlText|[A-Za-z]*Repository|[A-Za-z]*Types|LoanPolicy)\.h" libraries applications
 grep -rn "libraries/Core/src\|libraries/Core/test/data" --include=CMakeLists.txt --include='*.cmake' --include='*.md' libraries applications cmake
 grep -n "sqlite" build/libraries/Core/CMakeFiles/vlms_core.dir/flags.make
@@ -1137,7 +1137,7 @@ Expected: no output from any of the four.
 - [ ] **Step 5: Smoke-test the app against the development database**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 QT_QPA_PLATFORM=offscreen timeout 5 build/bin/vlms; echo "exit: $?"
 ```
 Expected: `exit: 124`, meaning the app was still running when the timeout
@@ -1149,7 +1149,7 @@ Check `grep -rn "VLMS_SCHEMA_PATH\|VLMS_PROJECT_ROOT" build/libraries/*/CMakeFil
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 git add libraries/Core/test/CMakeLists.txt
 git commit -q -m "Core tests link only Core; drop the split scaffolding.
 

@@ -4834,7 +4834,7 @@ Verified against commits `5f8d9b7` / `f65094b` through `d391cb0` (HEAD `aa5cc03`
 
 **Not re-verified:** interactive running-app check; per-task historical red `ctest` runs (cannot be replayed after the fact).
 
-**Tests run (2026-09-21):** `cmake --build /home/amin/Dokumente/dev/VLMS/build --parallel && QT_QPA_PLATFORM=offscreen timeout 600 ctest --output-on-failure` from `build/` → `100% tests passed, 0 tests failed out of 90` (includes `test_vlms_core` and all `test_ui_Archive*` cases).
+**Tests run (2026-09-21):** `cmake --build <repo>/build --parallel && QT_QPA_PLATFORM=offscreen timeout 600 ctest --output-on-failure` from `build/` → `100% tests passed, 0 tests failed out of 90` (includes `test_vlms_core` and all `test_ui_Archive*` cases).
 
 ---
 

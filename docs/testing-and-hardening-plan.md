@@ -36,7 +36,7 @@
 
 ## Context
 
-VLMS is a Qt6 Widgets desktop library-management app (C++20, SQLite via QtSql) for a single-site library in Ksour Essef, Tunisia (UTC+1). It has **zero tests** — no `tests/` directory, no CTest, no `enable_testing()`. The only CI workflow builds the Windows installer and never compiles a test.
+VLMS is a Qt6 Widgets desktop library-management app (C++20, SQLite via QtSql) for a single-site library in Tunisia (UTC+1). It has **zero tests** — no `tests/` directory, no CTest, no `enable_testing()`. The only CI workflow builds the Windows installer and never compiles a test.
 
 An audit of the data layer produced two conclusions:
 

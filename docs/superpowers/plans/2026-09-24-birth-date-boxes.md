@@ -6,7 +6,7 @@
 
 **Architecture:** `BirthDateEdit` owns three `QComboBox`es and no labels. The row order is day, month, year and follows the parent, so Arabic puts the day on the right. Each combo is left to right, five rows visible, and only as wide as `00` or `0000` plus the popup arrow. `MemberEditorDialog` keeps the same three warning keys. The repository checks are not edited. The line-edit `BirthDateEdit` already in the tree is replaced, not extended.
 
-**Tech Stack:** C++20 / Qt 6 Widgets (`QComboBox`); GoogleTest via `ctest` on `/home/amin/Dokumente/dev/VLMS/build`.
+**Tech Stack:** C++20 / Qt 6 Widgets (`QComboBox`); GoogleTest via `ctest` on `<repo>/build`.
 
 Spec: `docs/superpowers/specs/2026-09-24-birth-date-boxes-design.md`.
 
@@ -21,7 +21,7 @@ Spec: `docs/superpowers/specs/2026-09-24-birth-date-boxes-design.md`.
 - Warning keys stay. Any unset combo → `member.dateOfBirthRequired`, first unset in day, month, year order. All set and not a real date → `member.dateOfBirthInvalid`, day. Real date after today → `member.dateOfBirthInFuture`, year. Repository checks are unchanged.
 - Delete `member.field.dateOfBirthHint` from all three tables. Do not edit the warning sentences.
 - Do not touch loan date edits, manual capture, or screenshots. No custom item delegate.
-- Do not commit. Build only with `cmake --build /home/amin/Dokumente/dev/VLMS/build --target test_vlms_ui`. Judge with `ctest --test-dir /home/amin/Dokumente/dev/VLMS/build`. Do not wipe `build/`. Do not kill `build/bin/vlms`. Do not edit `.vscode/settings.json` or `libraries/Core/test/src/test_circulation_timezone.cpp`.
+- Do not commit. Build only with `cmake --build <repo>/build --target test_vlms_ui`. Judge with `ctest --test-dir <repo>/build`. Do not wipe `build/`. Do not kill `build/bin/vlms`. Do not edit `.vscode/settings.json` or `libraries/Core/test/src/test_circulation_timezone.cpp`.
 - `BirthDateEdit.cpp`, `BirthDateEdit.h`, and `test_birth_date_edit.cpp` already exist as the discarded line-edit widget. Replace their contents. The CMake entries are already present; do not add them again.
 
 ## Decisions
@@ -237,7 +237,7 @@ TEST(test_ui_BirthDateEdit, ThePopupScrollbarStaysOnTheRightAndShowsTheSelection
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cmake --build /home/amin/Dokumente/dev/VLMS/build --target test_vlms_ui -j
+cmake --build <repo>/build --target test_vlms_ui -j
 ```
 
 Expected: compile error. `dayCombo` is not a member of the line-edit widget.
@@ -295,8 +295,8 @@ Use `QSignalBlocker` around `fillCanonical` and `selectOrInsert` so filling the 
 - [ ] **Step 4: Run the tests to verify they pass**
 
 ```bash
-cmake --build /home/amin/Dokumente/dev/VLMS/build --target test_vlms_ui -j
-ctest --test-dir /home/amin/Dokumente/dev/VLMS/build --output-on-failure -R '^test_ui_BirthDateEdit\.'
+cmake --build <repo>/build --target test_vlms_ui -j
+ctest --test-dir <repo>/build --output-on-failure -R '^test_ui_BirthDateEdit\.'
 ```
 
 Expected: every `test_ui_BirthDateEdit` test PASSes.
@@ -409,8 +409,8 @@ Leave `AnImpossibleDateOfBirthIsRefused`, `ABirthDateAfterTodayIsRefused`, and `
 - [ ] **Step 2: Run the tests to verify they fail**
 
 ```bash
-cmake --build /home/amin/Dokumente/dev/VLMS/build --target test_vlms_ui -j
-ctest --test-dir /home/amin/Dokumente/dev/VLMS/build --output-on-failure -R '^test_ui_DialogTranslations\.(ANewMemberDateOfBirthIsUnsetAndRequired|ThirtyFirstOfFebruaryFocusesTheDay|AChosenBirthDateIsReturnedAsIso|AnOutOfRangeStoredYearStaysSelected|AnEmptyDateOfBirthIsRefused)$'
+cmake --build <repo>/build --target test_vlms_ui -j
+ctest --test-dir <repo>/build --output-on-failure -R '^test_ui_DialogTranslations\.(ANewMemberDateOfBirthIsUnsetAndRequired|ThirtyFirstOfFebruaryFocusesTheDay|AChosenBirthDateIsReturnedAsIso|AnOutOfRangeStoredYearStaysSelected|AnEmptyDateOfBirthIsRefused)$'
 ```
 
 Expected: FAIL because the dialog still builds a `QLineEdit` and the hint key still exists. A compile error is the wrong failure; `BirthDateEdit` from Task 1 is already on the include path.
@@ -452,8 +452,8 @@ Delete `member.field.dateOfBirthHint` from the Arabic, French, and English table
 - [ ] **Step 4: Run the tests**
 
 ```bash
-cmake --build /home/amin/Dokumente/dev/VLMS/build --target test_vlms_ui --target test_vlms_core -j
-ctest --test-dir /home/amin/Dokumente/dev/VLMS/build --output-on-failure -R '^test_ui_BirthDateEdit\.|^test_ui_DialogTranslations\.|^test_core_StringsParity\.'
+cmake --build <repo>/build --target test_vlms_ui --target test_vlms_core -j
+ctest --test-dir <repo>/build --output-on-failure -R '^test_ui_BirthDateEdit\.|^test_ui_DialogTranslations\.|^test_core_StringsParity\.'
 ```
 
 Expected: every matched test PASSes.

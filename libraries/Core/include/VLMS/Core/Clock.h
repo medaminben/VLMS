@@ -14,7 +14,7 @@ namespace VLMS::Core {
  *   - C++ guards          -> Clock::today()
  *   - SQL date predicates -> Clock::todayIso(), bound as :today
  *
- * Everything here is *local* calendar time. The library sits in Ksour Essef
+ * Everything here is *local* calendar time. The library is in Tunisia
  * (UTC+1); a loan due today has to stop being "due" at local midnight, not at
  * 01:00 the next morning, which is what SQLite's date('now') -- UTC -- gives.
  *

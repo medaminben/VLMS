@@ -90,7 +90,7 @@ One-time setup, run once in Task 1 Step 1. Both directories are gitignored
 by `/build-*/`:
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 cmake -S . -B build-ns -DCMAKE_BUILD_TYPE=Debug -DVLMS_MANUAL_CAPTURE=ON \
   -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=$PWD/build/_deps/googletest-src \
   -DVLMS_TEST_REAL_DB=$PWD/database/vlms.db.bak-20260814-232925

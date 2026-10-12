@@ -189,7 +189,7 @@ protected:
     // a positive offset and a negative offset break different rules, and
     // arming on the wrong one produces an XPASS, which Qt Test scores as a
     // failure. Naming the direction is also the clearest statement of what
-    // each defect actually does to a librarian in Ksour Essef (UTC+1, so
+    // each defect actually does to a librarian in Tunisia (UTC+1, so
     // always the utcIsBehindLocal case, for one hour every night).
     [[nodiscard]] [[maybe_unused]] static Core::Date localToday() { return Core::Date::todayLocal(); }
     [[nodiscard]] [[maybe_unused]] static Core::Date sqliteToday() { return utcToday(); }
@@ -276,7 +276,7 @@ TEST_F(test_core_Timezone, LoanDueYesterdayIsOverdueAtEveryHour)
               0);
 
     // Used to break when UTC lagged local -- the UTC+14 entry for fourteen
-    // hours a day, and Ksour Essef at UTC+1 for the hour after local midnight.
+    // hours a day, and Tunisia at UTC+1 for the hour after local midnight.
     // The predicate was `due < date('now')`; with date('now') still on
     // yesterday, yesterday < yesterday is false and the book was quietly not
     // yet overdue. C4 binds :today from Clock::todayIso(), so both sides of

@@ -494,7 +494,7 @@ void shotRegFilled(Capture& capture)
                 fail("date of birth is not the three birth-date boxes");
             }
             birth->setIsoDate(QStringLiteral("1990-04-12"));
-            fillLine(capture, modal, "member.field.city", QStringLiteral("قصور الساف"));
+            fillLine(capture, modal, "member.field.city", QStringLiteral("تونس"));
             if (auto* sex = qobject_cast<QComboBox*>(fieldFor(modal, "member.field.sex"))) {
                 const int female = sex->findData(QStringLiteral("female"));
                 if (female >= 0) {

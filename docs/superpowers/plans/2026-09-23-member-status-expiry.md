@@ -30,7 +30,7 @@
 - **Parallel waves run in separate git worktrees**, one per task, under `.worktrees/` (already gitignored). Each has its own build directory, configured once:
   ```bash
   cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DVLMS_BUILD_TESTS=ON -DVLMS_DEV_PATHS=ON \
-        -DVLMS_TEST_REAL_DB=/home/amin/Dokumente/dev/VLMS/database/vlms.db.bak-20260814-232925
+        -DVLMS_TEST_REAL_DB=<repo>/database/vlms.db.bak-20260814-232925
   cmake --build build -j
   ```
   Never build two tasks in the same `build/`. The controller merges each approved task branch back into `member-status-expiry` before the next wave starts.

@@ -340,7 +340,7 @@ TEST_F(test_core_MemberRepository, UpdateMemberWritesHistoryOnlyOnStatusChange)
     EXPECT_EQ(m_db->count("member_status_history"), 1);
 
     // Same status: no new history row.
-    seed.city = "Ksour Essef";
+    seed.city = "Tunis";
     const auto mutated = m_repository->updateMember(id, seed.toInput());
     ASSERT_TRUE(mutated) << mutated.error().key;
     EXPECT_EQ(m_db->count("member_status_history"), 1);
@@ -1191,14 +1191,14 @@ TEST_F(test_core_MemberRepository, UpdateMemberDoesNotChangeMembershipNumber)
 
     Repositories::MemberInput edited = uniqueMemberSeed(202).toInput();
     edited.membershipNumber = "should-not-stick";
-    edited.city = "Ksour Essef";
+    edited.city = "Tunis";
     const auto mutated = m_repository->updateMember(created.value(), edited);
     ASSERT_TRUE(mutated) << mutated.error().key;
 
     const auto after = m_repository->getMember(created.value());
     ASSERT_TRUE(after.has_value());
     EXPECT_EQ(after->membershipNumber, assigned);
-    EXPECT_EQ(after->city, "Ksour Essef");
+    EXPECT_EQ(after->city, "Tunis");
 }
 
 TEST_F(test_core_MemberRepository, OccupationAgeGroupAndFullNameRoundTrip)

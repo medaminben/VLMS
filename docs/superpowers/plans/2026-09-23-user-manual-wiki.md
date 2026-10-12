@@ -184,7 +184,7 @@ def make_db(path):
     conn.execute("INSERT INTO employees VALUES (1,'amin','x','أمين','بن حسين')")
     conn.execute(
         "INSERT INTO members VALUES (1,'12','رنيم','بنت سفيان','رنيم بنت سفيان',"
-        "'female','2001-05-17','22 333 444','نهج 5','a@b.tn','ملاحظة','p.jpg','i.jpg','قصور الساف')")
+        "'female','2001-05-17','22 333 444','نهج 5','a@b.tn','ملاحظة','p.jpg','i.jpg','تونس')")
     conn.execute(
         "INSERT INTO members VALUES (2,'13','Karim','Ben Ali',NULL,"
         "'male','1990-02-03',NULL,NULL,NULL,NULL,NULL,NULL,'المهدية')")
@@ -224,7 +224,7 @@ class ScrubTest(unittest.TestCase):
         ps.scrub(self.conn)
         row = self.conn.execute(
             "SELECT membership_number, sex, city FROM members WHERE id=1").fetchone()
-        self.assertEqual(row, ("12", "female", "قصور الساف"))
+        self.assertEqual(row, ("12", "female", "تونس"))
 
     def test_fake_full_name_is_first_plus_last(self):
         ps.scrub(self.conn)

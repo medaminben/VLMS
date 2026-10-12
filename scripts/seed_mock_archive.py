@@ -46,7 +46,7 @@ ARCHIVE_MEMBERS = [
     ),
     (
         "31", "Kamal", "Daher", "male", "1982-05-19", "+961 71 330 441",
-        "Rue des Ksours 6, Tataouine", "Tataouine", "Engineer",
+        "Rue de la Liberté 6, Tataouine", "Tataouine", "Engineer",
         "2021-02-14 10:00:00", "2022-02-13", "2024-05-20 10:05:00",
     ),
     (

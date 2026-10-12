@@ -80,7 +80,7 @@ Run by the controller directly. No subagent and no review gate: nothing in the r
 - [ ] **Step 1: Back up the uncommitted work**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 stamp=$(date +%Y%m%d-%H%M%S); dir="_backups/$stamp"; mkdir -p "$dir"
 git diff > "$dir/uncommitted.patch"
 git diff --name-only | tar -czf "$dir/uncommitted-files.tar.gz" -T -
@@ -105,7 +105,7 @@ Expected: `97% tests passed, 2 tests failed out of 62`, failing `test_ui_MemberF
 
 ```bash
 P=docs/superpowers/plans/2026-09-15-finish-occupation-filter-removal.md
-S=/home/amin/.cursor/plugins/cache/cursor-public/superpowers/d884ae04edebef577e82ff7c4e143debd0bbec99/skills/subagent-driven-development/scripts
+S=<superpowers-plugin>/skills/subagent-driven-development/scripts
 D=.superpowers/sdd/occupation-filter-removal
 for n in 1 2 3; do "$S/task-brief" "$P" "$n" "$D/task-$n-brief.md"; done
 ```
@@ -130,7 +130,7 @@ Then dispatch Tasks 1, 2, and 3 **in one message** (parallel).
 - [ ] **Step 1: Confirm RED — the two failures are caused by the removal**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 cmake --build build --target test_vlms_ui --parallel 8
 QT_QPA_PLATFORM=offscreen ./build/bin/test_vlms_ui --gtest_filter='test_ui_MemberFilters.*'
 ```
@@ -264,7 +264,7 @@ git commit -m "$(printf 'Drop the occupation facet from the members page; search
 - [ ] **Step 1: Prove the key has no remaining callers outside the in-flight UI change**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 grep -rn 'allOccupations' applications libraries scripts --include=*.cpp --include=*.h --include=*.py
 ```
 
@@ -372,7 +372,7 @@ Run by the controller, then an **opus** final reviewer. This is the last gate: t
 - [ ] **Step 1: Clean tree and full verification on the combined result**
 
 ```bash
-cd /home/amin/Dokumente/dev/VLMS
+cd <repo>
 git status --short          # expected: only untracked dirs (.vscode/, docs/architecture/, docs/data-quality/, docs/superpowers/plans/)
 git log --oneline BASE..HEAD   # expected: exactly 3 commits, in order 1 → 2 → 3
 cmake --build build --parallel 8 2>&1 | grep -E 'error|test_member_filters.cpp.*warning' ; echo "exit ${PIPESTATUS[0]}"
@@ -390,7 +390,7 @@ Following the memory notes `show-running-app-when-finishing` and `vlms-screensho
 - [ ] **Step 3: Final reviewer**
 
 ```bash
-S=/home/amin/.cursor/plugins/cache/cursor-public/superpowers/d884ae04edebef577e82ff7c4e143debd0bbec99/skills/subagent-driven-development/scripts
+S=<superpowers-plugin>/skills/subagent-driven-development/scripts
 "$S/review-package" BASE HEAD .superpowers/sdd/occupation-filter-removal/review-final.diff
 ```
 
