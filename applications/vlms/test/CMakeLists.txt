@@ -140,6 +140,7 @@ build_gtest_executable(
     SRC
         src/test_shell_main.cpp
         src/test_shell.cpp
+        src/test_instance_lock.cpp
     DEPENDS
         vlms_testsupport
         vlms_ui
