@@ -147,3 +147,14 @@ TEST(test_core_DateText, BlankInputIsReturnedAsGiven)
     EXPECT_EQ(Core::DateText::normalizePublicationDate(""), std::string());
     EXPECT_EQ(Core::DateText::normalizePublicationDate("   "), std::string("   "));
 }
+
+TEST(test_core_DateText, ANumberTooLongForADateIsLeftVerbatim)
+{
+    // An ISBN pasted into the wrong field. Each digit run used to go through
+    // std::stoi, which throws past INT_MAX, and nothing above it catches: OK in
+    // the book editor closed the application.
+    for (const char* input : {"9787020002207", "March 99999999999", "12/12/123456789012"}) {
+        SCOPED_TRACE(input);
+        EXPECT_EQ(Core::DateText::normalizePublicationDate(input), input);
+    }
+}

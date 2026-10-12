@@ -880,10 +880,11 @@ Core::Status MemberRepository::purgeMember(const std::int64_t id)
 
     const std::filesystem::path memberDir =
         std::filesystem::path(m_resourcesDirectory) / "members" / std::to_string(id);
-    if (std::filesystem::exists(memberDir)) {
-        std::error_code error;
-        std::filesystem::remove_all(memberDir, error);
-    }
+    // No exists() first: that overload throws on "permission denied", and the
+    // row is already gone. remove_all with an error_code skips a missing folder
+    // and leaves an unreadable one behind without taking the application down.
+    std::error_code error;
+    std::filesystem::remove_all(memberDir, error);
     return Core::Status::ok();
 }
 
