@@ -1,0 +1,71 @@
+VLMS — third-party software
+===========================
+
+VLMS itself is released under the MIT License; see LICENSE.
+
+It is built with the software below, written by others. Each part stays
+under its own licence. The full licence texts are in the "licenses" folder
+beside this file.
+
+The Windows installer also contains DLLs that these components depend on.
+Each of them, the package it came from and that package's licence files are
+listed in licenses\BUNDLED_FILES.txt, which the build writes. On Linux these
+libraries come from the system instead.
+
+
+Qt 6
+----
+Copyright (C) The Qt Company Ltd. and other contributors.
+Licence: GNU Lesser General Public License, version 3
+         (licenses/LGPL-3.0.txt, which builds on licenses/GPL-3.0.txt).
+Source: https://download.qt.io/archive/qt/ — the version bundled is shown
+        in the properties of Qt6Core.dll.
+
+VLMS uses Qt unmodified and links it dynamically. The Qt6*.dll files and the
+platforms, styles and imageformats folders beside vlms.exe may be replaced
+with your own build of the same Qt version. Qt's own translations of its
+standard dialogs are compiled into vlms.exe as resources.
+
+
+Tesseract OCR
+-------------
+Copyright 1988-1995 Hewlett Packard Company, 2006-2024 Google Inc.
+Licence: Apache License 2.0 (licenses/Apache-2.0.txt).
+Source: https://github.com/tesseract-ocr/tesseract
+
+
+Tesseract language data (ara, eng, fra .traineddata)
+----------------------------------------------------
+Copyright 1988-1995 Hewlett Packard Company, 2006-2022 Google Inc.
+Licence: Apache License 2.0 (licenses/Apache-2.0.txt).
+Source: https://github.com/tesseract-ocr (the tessdata repositories)
+
+
+Leptonica
+---------
+Copyright (C) 2001 Leptonica.
+Licence: BSD 2-Clause (licenses/Leptonica.txt).
+Source: https://github.com/DanBloomberg/leptonica
+
+
+SQLite
+------
+SQLite is in the public domain. No licence is required.
+Source: https://www.sqlite.org/
+
+
+Cairo font
+----------
+Copyright 2009 The Cairo Project Authors.
+Licence: SIL Open Font License 1.1 (licenses/OFL-1.1.txt).
+Source: https://github.com/Gue3bara/Cairo
+
+
+MinGW-w64 GCC runtime
+---------------------
+The Windows build is compiled with MinGW-w64 GCC. Its runtime libraries
+(libgcc, libstdc++, winpthreads) are linked into vlms.exe or shipped beside
+it. libgcc and libstdc++ are under the GNU GPL version 3 with the GCC Runtime
+Library Exception, which places no conditions on programs built with them.
+The winpthreads licence is copied with the MSYS2 package licences listed in
+licenses\BUNDLED_FILES.txt.

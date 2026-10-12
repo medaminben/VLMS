@@ -16,10 +16,18 @@ libsqlite3-0.dll
 libtesseract-*.dll  liblept-*.dll  (+ their MinGW dependencies)
 tessdata\{ara,fra,eng}.traineddata
 schema.sql
+LICENSE  THIRD_PARTY_NOTICES.txt
+licenses\                      licence texts, BUNDLED_FILES.txt, msys2\<package>\
 database\vlms.db          the catalogue this release ships with
 resources\books\               cover images
 resources\members\             member photos
 ```
+
+`licenses\BUNDLED_FILES.txt` is written by `scripts\write_bundled_licenses.ps1`
+once the stage is complete. It lists every DLL with where it came from (Qt, an
+MSYS2 package, or the GCC runtime) and copies each MSYS2 package's licence
+files beside it. A DLL it cannot place is listed as UNKNOWN with a warning in
+the build log; find its licence before releasing.
 
 The application resolves all of this from `QCoreApplication::applicationDirPath()`
 (`Paths::projectRoot()`), which is why the layout is flat and the install
