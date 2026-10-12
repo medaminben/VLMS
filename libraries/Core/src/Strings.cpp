@@ -92,6 +92,7 @@ StringTable arabicStrings()
         {"file.fileName", "اسم الملف:"},
         {"file.fileType", "نوع الملف:"},
         {"file.lookIn", "المجلّد:"},
+        {"app.alreadyRunning", "برنامج VLMS مفتوح بالفعل على هذا الحاسوب. استعمل النافذة المفتوحة."},
         {"app.databaseUnavailable",
          "تعذّر فتح قاعدة البيانات. قد تكون أُنشئت بإصدار أحدث من البرنامج. "
                         "يرجى تحديث VLMS أو الاتصال بمسؤول النظام."},
@@ -599,6 +600,7 @@ StringTable frenchStrings()
         {"file.fileName", "Nom du fichier :"},
         {"file.fileType", "Type de fichier :"},
         {"file.lookIn", "Dossier :"},
+        {"app.alreadyRunning", "VLMS est déjà ouvert sur cet ordinateur. Utilisez la fenêtre déjà ouverte."},
         {"app.databaseUnavailable",
          "Impossible d'ouvrir la base de données. Elle a peut-être été créée par "
                         "une version plus récente du logiciel. Mettez VLMS à jour ou "
@@ -1130,6 +1132,7 @@ StringTable englishStrings()
         {"file.fileName", "File name:"},
         {"file.fileType", "File type:"},
         {"file.lookIn", "Look in:"},
+        {"app.alreadyRunning", "VLMS is already open on this computer. Use the window that is already open."},
         {"app.databaseUnavailable",
          "The database could not be opened. It may have been created by a newer "
                         "version of this program. Update VLMS or contact your "

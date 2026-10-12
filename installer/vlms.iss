@@ -164,6 +164,7 @@ var
   RadKeep: TNewRadioButton;
   ChkBackup: TNewCheckBox;
   BackupPath: String;            { set once the copy has been made, for the final message }
+  ResourcesBackupPath: String;   { the images' copy, beside BackupPath }
 
 function CompareVersionStrings(const A, B: String): Integer;
 var
@@ -573,7 +574,7 @@ begin
   ChkBackup.Left := 0;
   ChkBackup.Top := Top;
   ChkBackup.Width := ExistingPage.SurfaceWidth;
-  ChkBackup.Caption := 'Copy the existing database to Documents\VLMS Backups first';
+  ChkBackup.Caption := 'Copy the existing database and images to Documents\VLMS Backups first';
   ChkBackup.Checked := True;
   Top := Top + ChkBackup.Height + ScaleY(12);
 
@@ -669,7 +670,33 @@ begin
   Result := KeepExistingData;
 end;
 
-function BackupExistingDatabase: Boolean;
+{ Copies every file under Source into Dest, keeping the folder layout.
+  False at the first file or folder that cannot be copied. }
+function CopyTree(const Source, Dest: String): Boolean;
+var
+  FindRec: TFindRec;
+begin
+  Result := ForceDirectories(Dest);
+  if not Result then
+    Exit;
+  if not FindFirst(Source + '\*', FindRec) then
+    Exit;
+  try
+    repeat
+      if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
+      begin
+        if FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0 then
+          Result := CopyTree(Source + '\' + FindRec.Name, Dest + '\' + FindRec.Name)
+        else
+          Result := FileCopy(Source + '\' + FindRec.Name, Dest + '\' + FindRec.Name, False);
+      end;
+    until (not Result) or (not FindNext(FindRec));
+  finally
+    FindClose(FindRec);
+  end;
+end;
+
+function BackupExistingData: Boolean;
 var
   Source, DestDir, Stamp, Tag: String;
 begin
@@ -706,6 +733,19 @@ begin
     FileCopy(Source + '-wal', BackupPath + '-wal', False);
   if FileExists(Source + '-journal') then
     FileCopy(Source + '-journal', BackupPath + '-journal', False);
+
+  { The photographs, identity-card images and covers are the library's records
+    too, and deleting the old installation removes them with it. }
+  if DirExists(PrevDir + '\resources') then
+  begin
+    ResourcesBackupPath := DestDir + '\vlms-' + Tag + '-' + Stamp + '-resources';
+    if not CopyTree(PrevDir + '\resources', ResourcesBackupPath) then
+    begin
+      ResourcesBackupPath := '';
+      Result := False;
+      Exit;
+    end;
+  end;
 end;
 
 { Inno's uninstaller relaunches itself from a temporary copy, so Exec can
@@ -770,10 +810,10 @@ begin
     Exit;
 
   if ShouldBackupDatabase then
-    if not BackupExistingDatabase then
+    if not BackupExistingData then
     begin
       Result :=
-        'Setup could not copy the existing database to' + #13#10 +
+        'Setup could not copy the existing database and images to' + #13#10 +
         ExpandConstant('{userdocs}\VLMS Backups') + #13#10#13#10 +
         'Close VLMS if it is running, or go back and clear the backup option.';
       Exit;
@@ -789,9 +829,15 @@ begin
     the path belongs -- it stays on screen, unlike a message box in the middle
     of the copy that gets clicked away. }
   if (CurPageID = wpFinished) and (BackupPath <> '') then
+  begin
     WizardForm.FinishedLabel.Caption :=
       WizardForm.FinishedLabel.Caption + #13#10#13#10 +
       'The previous database was copied to:' + #13#10 + BackupPath;
+    if ResourcesBackupPath <> '' then
+      WizardForm.FinishedLabel.Caption :=
+        WizardForm.FinishedLabel.Caption + #13#10#13#10 +
+        'Its images were copied to:' + #13#10 + ResourcesBackupPath;
+  end;
 end;
 
 function UpdateReadyMemo(const Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
@@ -806,7 +852,7 @@ begin
     else
       Result := Result + Space + 'Delete it, including its database and cover images' + NewLine;
     if ShouldBackupDatabase then
-      Result := Result + Space + 'Copy the database to Documents\VLMS Backups first' + NewLine;
+      Result := Result + Space + 'Copy the database and images to Documents\VLMS Backups first' + NewLine;
     Result := Result + NewLine;
   end;
 

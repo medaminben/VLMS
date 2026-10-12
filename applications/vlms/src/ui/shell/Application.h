@@ -11,6 +11,7 @@
 #include "ui/presentation/QtMemberLookups.h"
 #include "ui/presentation/ReadSources.h"
 #include "ui/services/OcrService.h"
+#include "ui/shell/InstanceLock.h"
 #include "ui/workflows/DataEvents.h"
 #include "ui/workflows/DialogFactory.h"
 #include "ui/workflows/ErrorPresenter.h"
@@ -39,6 +40,10 @@ public:
     /// False when Connection::open() refused. main() must not build a window on
     /// top of a database that is not there.
     [[nodiscard]] bool isDatabaseReady() const { return m_databaseReady; }
+
+    /// True when another copy of this installation is already running; the
+    /// database was not opened.
+    [[nodiscard]] bool isAlreadyRunning() const { return m_alreadyRunning; }
     [[nodiscard]] VLMS::Repositories::CatalogRepository& catalog() const { return *m_catalogRepository; }
     [[nodiscard]] VLMS::Repositories::MemberRepository& members() const { return *m_memberRepository; }
     [[nodiscard]] VLMS::Repositories::CirculationRepository& circulation() const { return *m_circulationRepository; }
@@ -71,6 +76,8 @@ private:
     QTranslator m_qtTranslator;
 
     VLMS::Database::Connection* m_database = nullptr;
+    std::unique_ptr<VLMS::InstanceLock> m_instanceLock;
+    bool m_alreadyRunning = false;
     bool m_databaseReady = false;
     VLMS::Repositories::CatalogRepository* m_catalogRepository = nullptr;
     VLMS::Repositories::MemberRepository* m_memberRepository = nullptr;

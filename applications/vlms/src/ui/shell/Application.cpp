@@ -122,6 +122,15 @@ Application::Application(int& argc, char** argv)
     m_dataEvents = std::make_unique<VLMS::DataEvents>();
     m_errors = std::make_unique<VLMS::QtErrorPresenter>();
 
+    // Before the database is opened: a second copy must not touch it at all.
+    // When no other copy runs, this check also takes the lock for this copy.
+    m_instanceLock = std::make_unique<VLMS::InstanceLock>(
+        QString::fromStdString(VLMS::Core::Paths::databaseDirectory()));
+    if (m_instanceLock->heldByAnotherCopy()) {
+        m_alreadyRunning = true;
+        return;
+    }
+
     m_database = new VLMS::Database::Connection(VLMS::Core::Paths::databaseDirectory());
     // The result was discarded here until D2 gave open() a reason to refuse on
     // purpose -- a database written by a newer build. Carrying on regardless

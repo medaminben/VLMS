@@ -29,6 +29,8 @@ add_library(${RAW_TARGET_NAME}
     src/BookCopyStore.cpp
     src/CategoryStore.h
     src/CategoryStore.cpp
+    src/StagedFiles.h
+    src/StagedFiles.cpp
     src/LoanPolicy.cpp
     src/CatalogRepository.cpp
     src/MemberRepository.cpp

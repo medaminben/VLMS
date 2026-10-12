@@ -1603,3 +1603,25 @@ TEST_F(test_core_CatalogRepository, AFailedCoverReplacementKeepsTheOldCover)
         << "the cover on record must still be there";
     std::filesystem::permissions(replacement, std::filesystem::perms::owner_all);
 }
+
+TEST_F(test_core_CatalogRepository, ACommittedBookSaveSwapsInTheCoverAndLeavesNoCopy)
+{
+    const std::filesystem::path root(m_db->rootDirectory());
+    std::ofstream(root / "cover.png", std::ios::binary) << "cover";
+
+    Repositories::BookWrite write;
+    write.book = uniqueBookSeed(96).toInput();
+    write.coverSourcePath = (root / "cover.png").string();
+    const auto created = m_repository->saveNewBook(write);
+    ASSERT_TRUE(created) << created.error().key;
+
+    const auto book = m_repository->getBook(created.value());
+    ASSERT_TRUE(book.has_value());
+    const std::filesystem::path stored = m_repository->resolveCoverPath(book->coverImagePath);
+    std::ifstream in(stored, std::ios::binary);
+    EXPECT_EQ(std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()),
+              "cover");
+    std::filesystem::path part = stored;
+    part += ".part";
+    EXPECT_FALSE(std::filesystem::exists(part));
+}

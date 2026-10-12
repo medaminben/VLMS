@@ -63,6 +63,10 @@ private:
 
 class SqliteSession {
 public:
+    /// How long a statement waits for a lock another connection holds before
+    /// it gives up with SQLITE_BUSY.
+    static constexpr int kBusyTimeoutMs = 5000;
+
     static Core::Result<std::unique_ptr<SqliteSession>> open(const std::string& path);
     ~SqliteSession();
 

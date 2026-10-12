@@ -40,6 +40,7 @@ void LoanReturnDialog::buildUi(const VLMS::Repositories::LoanRecord& loan) {
 
     auto* summary = new QLabel(this);
     summary->setObjectName(QStringLiteral("loanReturnSummary"));
+    summary->setTextFormat(Qt::PlainText);
     summary->setWordWrap(true);
     layout->addWidget(summary);
 

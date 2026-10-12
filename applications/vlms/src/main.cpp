@@ -15,6 +15,10 @@ using VLMS::svl;
 
 int main(int argc, char* argv[]) {
     Application app(argc, argv);
+    if (app.isAlreadyRunning()) {
+        VLMS::showWarning(nullptr, QStringLiteral("VLMS"), VLMS::T("app.alreadyRunning"));
+        return 0;
+    }
 
     if (!app.isDatabaseReady()) {
         // Nothing in the window works without a database, and every page would

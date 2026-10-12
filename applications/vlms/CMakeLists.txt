@@ -4,6 +4,7 @@
 # Theme::setupFonts.
 add_library(vlms_ui STATIC
     src/ui/shell/Application.cpp
+    src/ui/shell/InstanceLock.cpp
     src/ui/shell/MainWindow.cpp
     src/ui/shell/LanguageSelector.cpp
     src/ui/shell/ManualLocation.cpp
@@ -61,6 +62,7 @@ add_library(vlms_ui STATIC
     src/ui/presentation/QtCirculationLookups.cpp
 
     src/ui/shell/Application.h
+    src/ui/shell/InstanceLock.h
     src/ui/shell/MainWindow.h
     src/ui/shell/Navigator.h
     src/ui/shell/LanguageSelector.h

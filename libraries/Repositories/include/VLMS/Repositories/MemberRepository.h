@@ -14,6 +14,8 @@ class SqliteSession;
 
 namespace VLMS::Repositories {
 
+class StagedFiles;
+
 class MemberRepository {
 public:
     MemberRepository(Database::SqliteSession& session, std::string resourcesDirectory);
@@ -85,7 +87,8 @@ private:
                                                         const std::string& note = {});
     [[nodiscard]] Core::Status storeMemberImage(std::int64_t memberId,
                                                       const std::string& sourceFilePath,
-                                                      ImageSlot slot);
+                                                      ImageSlot slot,
+                                                      StagedFiles& staged);
     /// Sets the slot's column to NULL and appends the path it held to
     /// `clearedPaths`, so the caller can delete the file once the
     /// transaction has committed. A slot already empty is left alone.

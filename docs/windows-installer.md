@@ -66,9 +66,10 @@ The next page, **What's new**, lists the release entries between the
 installed version and this one; it is skipped when there are none.
 
 Either way, the checkbox on that page copies the existing `vlms.db` (plus
-any `-wal`/`-journal` beside it) to `Documents\VLMS Backups\` first. It is
-on by default and applies to both choices — a kept database is about to be
-migrated in place, which is also worth a copy.
+any `-wal`/`-journal` beside it) and the installation's `resources` folder to
+`Documents\VLMS Backups\` first. It is on by default and applies to both
+choices — a kept database is about to be migrated in place, which is also worth
+a copy.
 
 Two cases the page adapts to:
 
@@ -125,15 +126,18 @@ the sample catalogue, never a library's real one.
 4. Run the new `VLMS_Setup_X.Y.Z.exe`. The page shows the installed version,
    the update level and the recorded schema. Leave the backup box ticked and
    choose *Keep*.
-5. Check `Documents\VLMS Backups\` now holds a `vlms.db`.
+5. Check `Documents\VLMS Backups\` now holds a `vlms-*.db` and a
+   `vlms-*-resources` folder with the three images from step 3.
 6. Start VLMS. The member, their two images, the cover and the open loan are
    all there. If the schema changed, `database\` also holds a
    `vlms.db.bak-v<version>-<time>`.
 
 **Restore the copy**
 
-7. Close VLMS. Rename `database\vlms.db` aside and put the copy from
-   `Documents\VLMS Backups\` in its place.
+7. Close VLMS. Rename `database\vlms.db` aside. The copy in
+   `Documents\VLMS Backups\` is named `vlms-<version>-<stamp>.db`: put it in
+   `database\` and rename it to `vlms.db`. Then put the contents of the matching
+   `vlms-…-resources` folder back into the installation's `resources\` folder.
 8. Start VLMS. It opens, migrates again if it has to, and shows the data from
    step 2.
 
@@ -141,8 +145,9 @@ the sample catalogue, never a library's real one.
 
 9. Run the installer again and choose *Delete*. Setup finishes without an
    error, `database\` holds the shipped catalogue, and the member from step 2
-   is gone — along with their photograph and identity-card image. Those are not
-   in `Documents\VLMS Backups\`: the backup holds the database only.
+   is gone — along with their photograph and identity-card image. Their copies
+   are in the `vlms-*-resources` folder in `Documents\VLMS Backups\` from
+   step 4.
 
 **Uninstall**
 

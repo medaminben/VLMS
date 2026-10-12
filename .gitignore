@@ -39,3 +39,8 @@ __pycache__/
 
 # Per-developer editor settings
 /.vscode/
+
+# Runtime files VLMS leaves behind when it stops abruptly
+/database/vlms.lock
+/resources/**/*.part
+/resources/**/*.old
