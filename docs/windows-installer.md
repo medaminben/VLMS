@@ -16,10 +16,18 @@ libsqlite3-0.dll
 libtesseract-*.dll  liblept-*.dll  (+ their MinGW dependencies)
 tessdata\{ara,fra,eng}.traineddata
 schema.sql
+LICENSE  THIRD_PARTY_NOTICES.txt
+licenses\                      licence texts, BUNDLED_FILES.txt, msys2\<package>\
 database\vlms.db          the catalogue this release ships with
 resources\books\               cover images
 resources\members\             member photos
 ```
+
+`licenses\BUNDLED_FILES.txt` is written by `scripts\write_bundled_licenses.ps1`
+once the stage is complete. It lists every DLL with where it came from (Qt, an
+MSYS2 package, or the GCC runtime) and copies each MSYS2 package's licence
+files beside it. A DLL it cannot place is listed as UNKNOWN with a warning in
+the build log; find its licence before releasing.
 
 The application resolves all of this from `QCoreApplication::applicationDirPath()`
 (`Paths::projectRoot()`), which is why the layout is flat and the install
@@ -97,6 +105,53 @@ The uninstaller asks whether to delete the database and cover images, and
 keeps them if you say no. A silent uninstall deletes them unless `/KEEPDATA`
 is passed — that is the path setup itself uses when clearing an old version.
 
+## Testing an update by hand
+
+None of the paths above run in CI: they need Windows, an older installer and a
+database with someone's work in it. Before a release that changes the
+installer or the schema, run this on a throwaway Windows machine or VM. Use
+the sample catalogue, never a library's real one.
+
+**Prepare**
+
+1. Install the previous release from its GitHub release page.
+2. Start it once. Add a member with a photograph and an identity-card image,
+   give a book a cover, and lend a copy. Close VLMS.
+3. Write down the member count, the open loan, and the three image files under
+   `resources\`.
+
+**Keep its database and cover images**
+
+4. Run the new `VLMS_Setup_X.Y.Z.exe`. The page shows the installed version,
+   the update level and the recorded schema. Leave the backup box ticked and
+   choose *Keep*.
+5. Check `Documents\VLMS Backups\` now holds a `vlms.db`.
+6. Start VLMS. The member, their two images, the cover and the open loan are
+   all there. If the schema changed, `database\` also holds a
+   `vlms.db.bak-v<version>-<time>`.
+
+**Restore the copy**
+
+7. Close VLMS. Rename `database\vlms.db` aside and put the copy from
+   `Documents\VLMS Backups\` in its place.
+8. Start VLMS. It opens, migrates again if it has to, and shows the data from
+   step 2.
+
+**Delete it, including its database and cover images**
+
+9. Run the installer again and choose *Delete*. Setup finishes without an
+   error, `database\` holds the shipped catalogue, and the member from step 2
+   is gone — along with their photograph and identity-card image. Those are not
+   in `Documents\VLMS Backups\`: the backup holds the database only.
+
+**Uninstall**
+
+10. Uninstall from *Settings → Apps* and answer *No* to deleting the data:
+    `database\` and `resources\` stay. Reinstall, then uninstall again
+    answering *Yes*: the folder is gone.
+
+Anything that does not match is a release blocker.
+
 ## Building it
 
 ### On a Windows machine
@@ -124,20 +179,16 @@ becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 Dispatches `.github/workflows/windows-installer.yml`, watches the run, and
 downloads the `.exe` into `dist/`.
 
-CI has no access to `database/vlms.db` or `resources/books/` — both are
-gitignored, and the database holds real member records. It gets them from the
-`VLMS_installer_data.zip` asset on the latest GitHub release. Refresh that
-asset whenever the catalogue or the schema changes:
-
-```bash
-./scripts/package_installer_data.sh
-```
-
-then upload `dist/VLMS_installer_data.zip` to the release.
+The installer ships the sample catalogue tracked in the repository:
+`database/vlms.db`, `resources/books/` and `resources/members/`. CI builds from
+the checkout, so changing the catalogue is an ordinary commit.
+`scripts/fetch_installer_data.ps1` still runs and only confirms that the data is
+present; its download path (`VLMS_installer_data.zip`, or
+`VLMS_INSTALLER_DATA_URL`) is for a checkout without that data.
 
 ## The staleness guard
 
-Three checks exist because one thing went wrong quietly and would again:
+These checks exist because one thing went wrong quietly and would again:
 the July 0.1.0 data zip held a database at `user_version` 0, and nothing in the
 pipeline noticed.
 
@@ -147,8 +198,6 @@ pipeline noticed.
    `user_version` straight out of the SQLite header (offset 60) and compares it
    to the staged `schema.sql`. A mismatch is fatal under `-RequireInstallerData`,
    which is what CI passes.
-3. The CI cache key for the installer data is keyed on the hash of
-   `schema.sql`, so a schema change cannot be served an old cached catalogue.
 
 A bundled database at the wrong schema is not fatal to the *user* — the app
 would migrate it on first launch — but it means every fresh install starts by
@@ -174,6 +223,3 @@ attaches the `.exe`. The version the build uses comes from that tag
 (`cmake/GitVersion.cmake`); a build past the latest tag reports
 `X.Y.Z+N.gSHA`. Each CI run on `Beta` shows the level a merge would release
 under **Next release** in its summary.
-
-The catalogue data zip stays on release `v0.1.0`; the build fetches it from
-there, not from the latest release.

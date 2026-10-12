@@ -71,6 +71,8 @@ set_target_properties(test_vlms_ui PROPERTIES
 # every placeholder pixmap is null here, and a test of what a placeholder looks
 # like in either theme would pass on an empty label.
 target_sources(test_vlms_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/images.qrc)
+# The LICENSE file itself, which the licence dialog shows word for word.
+target_sources(test_vlms_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../resources/licence.qrc)
 
 build_gtest_executable(
     NAME test_vlms_workflows

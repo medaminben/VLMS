@@ -5,6 +5,7 @@
 #include <VLMS/Core/Text.h>
 
 #include <cctype>
+#include <charconv>
 #include <cstdio>
 #include <string>
 #include <unordered_map>
@@ -114,7 +115,14 @@ std::string normalizePublicationDate(std::string_view value)
             while (end < text.size() && std::isdigit(static_cast<unsigned char>(text[end]))) {
                 ++end;
             }
-            numbers.push_back(std::stoi(text.substr(i, end - i)));
+            // from_chars, not stoi: a run too long for an int (an ISBN in the
+            // wrong field) is no date, and stoi would throw it at the caller.
+            int number = 0;
+            const auto parsed = std::from_chars(text.data() + i, text.data() + end, number);
+            if (parsed.ec != std::errc()) {
+                return original;
+            }
+            numbers.push_back(number);
             previousWasNumber = true;
             i = end;
             continue;
