@@ -6,6 +6,7 @@
 #include "QtBridge.h"
 
 #include <QDialogButtonBox>
+#include <QFile>
 #include <QString>
 #include <QStringLiteral>
 #include <QTextBrowser>
@@ -33,6 +34,15 @@ QString clause(const QString& head, const QString& body)
            + paragraph(body);
 }
 
+QString mitLicenceText()
+{
+    QFile file(QStringLiteral(":/licence/LICENSE"));
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return QString::fromUtf8(file.readAll());
+}
+
 QString licenceHtml()
 {
     const QString direction = VLMS::Core::Locale::isRtl() ? QStringLiteral("rtl") : QStringLiteral("ltr");
@@ -40,11 +50,21 @@ QString licenceHtml()
     QString html = QStringLiteral("<div dir=\"%1\">").arg(direction);
     html += QStringLiteral("<h2>") + T("licence.title").toHtmlEscaped() + QStringLiteral("</h2>");
     html += paragraph(T("licence.intro"));
-    html += clause(T("licence.clause.ownership.head"), T("licence.clause.ownership.body"));
     html += clause(T("licence.clause.data.head"), T("licence.clause.data.body"));
     html += clause(T("licence.clause.warranty.head"), T("licence.clause.warranty.body"));
     html += clause(T("licence.clause.liability.head"), T("licence.clause.liability.body"));
     html += clause(T("licence.clause.support.head"), T("licence.clause.support.body"));
+    html += clause(T("licence.thirdParty.head"), T("licence.thirdParty.body"));
+    html += clause(T("licence.fullText.head"), T("licence.fullText.note"));
+    // The LICENSE file itself, never a copy of it, in English in every
+    // language: it is the text that binds, and MIT asks for it in every copy.
+    // Its paragraphs are rewrapped to the window -- the words are what binds,
+    // not the 80-column line breaks, which would only scroll sideways.
+    html += QStringLiteral("<div dir=\"ltr\">");
+    for (const QString& block : mitLicenceText().split(QStringLiteral("\n\n"), Qt::SkipEmptyParts)) {
+        html += paragraph(block.simplified());
+    }
+    html += QStringLiteral("</div>");
     html += QStringLiteral("<h3>") + T("licence.contact.head").toHtmlEscaped()
             + QStringLiteral("</h3>");
     html += QStringLiteral("<p>") + T("licence.contact.author").toHtmlEscaped()

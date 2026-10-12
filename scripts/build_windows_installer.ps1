@@ -231,8 +231,7 @@ function Copy-InstallerRuntimeData {
     Write-Warning @"
 No pre-populated database or resources found.
 The installer will create an empty database on first run.
-For a full catalog build, run scripts/import_catalog.py locally or
-scripts/fetch_installer_data.ps1 (downloads VLMS_installer_data.zip from releases).
+For a full catalog build, run scripts/fetch_installer_data.ps1 (downloads VLMS_installer_data.zip from releases).
 "@
   }
 }
@@ -506,6 +505,9 @@ if ($Toolchain -eq "MinGW") {
   Write-Host "`n--- Verify no MSVC runtime dependencies ---"
   & (Join-Path $RepoRoot "scripts\verify_no_msvc_runtime.ps1") -StageDir $StageDir
 }
+
+Write-Host "`n--- Record bundled licences ---"
+& (Join-Path $RepoRoot "scripts\write_bundled_licenses.ps1") -StageDir $StageDir -QtRoot $QtRoot
 
 $Schema = Join-Path $StageDir "schema.sql"
 if (-not (Test-Path $Schema)) {

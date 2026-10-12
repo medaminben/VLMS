@@ -73,6 +73,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DVLMS_BUILD_TESTS=ON
           ${{ matrix.cmake_args }}
+          ${{ matrix.name == 'default' && format('-DVLMS_TEST_REAL_DB={0}/database/vlms.db', github.workspace) || '' }}
 
       - name: Build
         run: cmake --build build --parallel
@@ -92,6 +93,15 @@ jobs:
             export VLMS_SKIP_BENCH=1
           fi
           ctest --output-on-failure --no-tests=error -LE realdb
+
+      # The realdb checks (integrity, foreign keys, row counts, constraints,
+      # source untouched) against the sample catalogue in the repository. The
+      # library's own catalogue, which they were written for, holds real member
+      # records and never leaves the maintainer's machine.
+      - name: Sample catalogue
+        if: matrix.name == 'default'
+        working-directory: build
+        run: ctest --output-on-failure --no-tests=error -L realdb
 
       - name: Release tool tests
         if: matrix.name == 'default'
