@@ -19,6 +19,7 @@ add_library(vlms_ui STATIC
     src/ui/views/WidgetTableChecks.cpp
     src/ui/views/BulkAction.cpp
     src/ui/views/ListPageFrame.cpp
+    src/ui/views/ActionBar.cpp
     src/ui/views/ListPage.cpp
     src/ui/views/FacetList.cpp
     src/ui/views/PreviewImages.cpp
@@ -76,6 +77,7 @@ add_library(vlms_ui STATIC
     src/ui/views/WidgetTableChecks.h
     src/ui/views/BulkAction.h
     src/ui/views/ListPageFrame.h
+    src/ui/views/ActionBar.h
     src/ui/views/ListPage.h
     src/ui/views/FacetList.h
     src/ui/views/PreviewImages.h

@@ -4,11 +4,14 @@
 #include "ui/views/UiHelpers.h"
 #include "ui/workflows/DataEvents.h"
 
+#include <VLMS/Core/Locale.h>
 #include <VLMS/Core/Result.h>
+#include <VLMS/Core/Strings.h>
 
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QContextMenuEvent>
+#include <QEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -367,4 +370,31 @@ TEST(ListPage, SelectionCallsPreview)
 
     EXPECT_GT(spec.previewCount, before);
     EXPECT_EQ(spec.lastPreviewId, 20);
+}
+
+// The strip is the one place a failed load is explained, so its button has to
+// speak the librarian's language like every other label on the page.
+TEST(ListPage, RetryButtonSpeaksTheChosenLanguage)
+{
+    FakeListSpec spec;
+    DataEvents events;
+    for (const char* locale : {"ar", "fr", "en"}) {
+        SCOPED_TRACE(locale);
+        ASSERT_FALSE(Core::Strings::rawValue(locale, "list.retry").empty());
+        Core::Locale::setCode(locale);
+        ListPage page(&spec, events, defaultConfig());
+        auto* retry = page.findChild<QPushButton*>(QStringLiteral("listErrorRetry"));
+        ASSERT_NE(retry, nullptr);
+        EXPECT_EQ(retry->text(), QString::fromStdString(Core::Strings::rawValue(locale, "list.retry")));
+    }
+
+    Core::Locale::setCode("ar");
+    ListPage page(&spec, events, defaultConfig());
+    Core::Locale::setCode("fr");
+    QEvent languageChange(QEvent::LanguageChange);
+    QApplication::sendEvent(&page, &languageChange);
+    auto* retry = page.findChild<QPushButton*>(QStringLiteral("listErrorRetry"));
+    ASSERT_NE(retry, nullptr);
+    EXPECT_EQ(retry->text(), QString::fromStdString(Core::Strings::rawValue("fr", "list.retry")));
+    Core::Locale::setCode(Core::Locale::kDefaultCode);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/presentation/PageAction.h"
 #include "ui/presentation/QueryState.h"
 
 #include <VLMS/Repositories/ArchiveTypes.h>
@@ -12,11 +13,11 @@ class QEvent;
 #include <cstdint>
 
 class QLabel;
-class QPushButton;
 class QTableView;
 
 namespace VLMS {
 
+class ActionBar;
 class DataEvents;
 class LoanListSpec;
 class LoanWorkflow;
@@ -53,11 +54,9 @@ private:
     void applyPinnedQuery();
     void updateEmptyState();
     void updateActionEnabled();
-    void checkout();
-    void extendLoan();
-    void returnLoan();
+    [[nodiscard]] QList<PageAction> historyActions();
+    [[nodiscard]] ActionContext currentContext();
     [[nodiscard]] qint64 selectedLoanId() const;
-    [[nodiscard]] bool selectedLoanIsOpen() const;
     [[nodiscard]] bool mutableKind() const;
     [[nodiscard]] QString titleKey() const;
     [[nodiscard]] QString emptyKey() const;
@@ -73,9 +72,7 @@ private:
     PagedQueryModel* m_model = nullptr;
     QTableView* m_table = nullptr;
     QLabel* m_emptyLabel = nullptr;
-    QPushButton* m_checkoutButton = nullptr;
-    QPushButton* m_extendButton = nullptr;
-    QPushButton* m_returnButton = nullptr;
+    ActionBar* m_actionBar = nullptr;  // null for archived history: read-only
 };
 
 }  // namespace VLMS

@@ -1,6 +1,7 @@
 #include "ui/views/LoanHistoryDialog.h"
 
 #include "QtBridge.h"
+#include "ui/views/ActionBar.h"
 #include "ui/views/UiHelpers.h"
 #include "ui/presentation/LoanListSpec.h"
 #include "ui/presentation/PagedQueryModel.h"
@@ -14,7 +15,6 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QLabel>
-#include <QPushButton>
 #include <QTableView>
 #include <QVBoxLayout>
 
@@ -123,16 +123,22 @@ void LoanHistoryDialog::buildUi()
 
     auto* footer = new QHBoxLayout();
     if (mutableKind()) {
-        m_checkoutButton = makePrimaryButton({});
-        m_extendButton = makeSecondaryButton({});
-        m_returnButton = makeSecondaryButton({});
-        footer->addWidget(m_checkoutButton);
-        footer->addWidget(m_extendButton);
-        footer->addWidget(m_returnButton);
+        // The same action bar as every list page: buttons, context menu and
+        // shortcuts from one list, enabled by each action's own rule.
+        auto* actions = new QHBoxLayout();
+        actions->setSpacing(8);
+        footer->addLayout(actions);
         footer->addStretch(1);
-        connect(m_checkoutButton, &QPushButton::clicked, this, &LoanHistoryDialog::checkout);
-        connect(m_extendButton, &QPushButton::clicked, this, &LoanHistoryDialog::extendLoan);
-        connect(m_returnButton, &QPushButton::clicked, this, &LoanHistoryDialog::returnLoan);
+        m_actionBar = new ActionBar(this, m_table, actions, this);
+        m_actionBar->setContextProvider([this] { return currentContext(); });
+        m_actionBar->setRunner([this](const PageAction& action, const ActionContext& ctx) {
+            if (action.run) {
+                (void)action.run(ctx);
+            }
+            m_model->reload();
+            updateEmptyState();
+        });
+        m_actionBar->setActions(historyActions());
         connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this,
                 &LoanHistoryDialog::updateActionEnabled);
     }
@@ -166,10 +172,8 @@ void LoanHistoryDialog::applyLabels()
     m_emptyLabel->setText(T(ss(emptyKey())));
     retranslateStandardButtons(findChild<QDialogButtonBox*>());
 
-    if (m_checkoutButton != nullptr) {
-        m_checkoutButton->setText(T("circulation.checkout"));
-        m_extendButton->setText(T("circulation.extend"));
-        m_returnButton->setText(T("circulation.return"));
+    if (m_actionBar != nullptr) {
+        m_actionBar->retranslate();
     }
 }
 
@@ -217,63 +221,46 @@ qint64 LoanHistoryDialog::selectedLoanId() const
     return m_loansSpec.idAt(rows.first().row());
 }
 
-bool LoanHistoryDialog::selectedLoanIsOpen() const
-{
-    if (m_table == nullptr || m_table->selectionModel() == nullptr || m_model == nullptr) {
-        return false;
-    }
-    const QModelIndexList rows = m_table->selectionModel()->selectedRows();
-    if (rows.isEmpty()) {
-        return false;
-    }
-    const int row = rows.first().row();
-    // status is the last LoanListSpec column
-    const QVariant status = m_model->index(row, m_model->columnCount() - 1).data(Qt::DisplayRole);
-    return status.toString() != T("circulation.status.returned");
-}
-
 void LoanHistoryDialog::updateActionEnabled()
 {
-    if (!mutableKind()) {
-        return;
+    if (m_actionBar != nullptr) {
+        m_actionBar->refreshEnabled();
     }
-    const bool open = selectedLoanIsOpen();
-    m_extendButton->setEnabled(open);
-    m_returnButton->setEnabled(open);
 }
 
-void LoanHistoryDialog::checkout()
+QList<PageAction> LoanHistoryDialog::historyActions()
 {
-    LoanCheckoutPrefill prefill;
-    if (m_kind == Kind::Book) {
-        prefill.bookId = m_pinnedId;
-    } else if (m_kind == Kind::Member) {
-        prefill.memberId = m_pinnedId;
+    // The history offers what it always offered: checkout, extend, return.
+    // Checkout starts from the book or member whose history this is.
+    QList<PageAction> kept;
+    for (PageAction action : m_loansSpec.actions()) {
+        if (action.id == QStringLiteral("checkout")) {
+            action.run = [this](const ActionContext& ctx) {
+                LoanCheckoutPrefill prefill;
+                if (m_kind == Kind::Book) {
+                    prefill.bookId = m_pinnedId;
+                } else if (m_kind == Kind::Member) {
+                    prefill.memberId = m_pinnedId;
+                }
+                return m_loans.checkout(ctx.parent, prefill);
+            };
+            kept.append(action);
+        } else if (action.id == QStringLiteral("extend")
+                   || action.id == QStringLiteral("return")) {
+            kept.append(action);
+        }
     }
-    m_loans.checkout(this, prefill);
-    m_model->reload();
-    updateEmptyState();
-    updateActionEnabled();
+    return kept;
 }
 
-void LoanHistoryDialog::extendLoan()
+ActionContext LoanHistoryDialog::currentContext()
 {
-    if (!m_loans.extend(this, selectedLoanId())) {
-        return;
+    ActionContext ctx;
+    ctx.parent = this;
+    if (const qint64 id = selectedLoanId(); id > 0) {
+        ctx.ids.append(id);
     }
-    m_model->reload();
-    updateEmptyState();
-    updateActionEnabled();
-}
-
-void LoanHistoryDialog::returnLoan()
-{
-    if (!m_loans.returnLoan(this, selectedLoanId())) {
-        return;
-    }
-    m_model->reload();
-    updateEmptyState();
-    updateActionEnabled();
+    return ctx;
 }
 
 }  // namespace VLMS

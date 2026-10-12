@@ -19,13 +19,13 @@ class QEvent;
 class QLabel;
 class QLineEdit;
 class QPushButton;
-class QShortcut;
 class QTableView;
 class QTimer;
 class QVBoxLayout;
 
 namespace VLMS {
 
+class ActionBar;
 class ListPagePager;
 
 class ListPage final : public QWidget {
@@ -74,20 +74,12 @@ private:
     void onModelFailed(const Core::Error& error);
     void onSelectionTarget(int row);
     void retryLoad();
-    void rebuildActions();
-    void showContextMenu(const QPoint& pos);
-    void installShortcuts();
-    void clearShortcuts();
     void updateActionEnabled();
     void applyPreview(const PreviewContent& content);
     void clearPreview();
     void runAction(const PageAction& action);
     [[nodiscard]] ActionContext currentContext() const;
     [[nodiscard]] qint64 selectedId() const;
-    [[nodiscard]] QList<PageAction> orderedActions() const;
-    [[nodiscard]] bool actionIsEnabled(const PageAction& action) const;
-    [[nodiscard]] static bool isPageScopedAction(const QString& id);
-    [[nodiscard]] static int actionSortRank(const QString& id);
 
     Config m_config;
     ListSpec* m_spec = nullptr;
@@ -108,9 +100,7 @@ private:
     QWidget* m_errorStrip = nullptr;
     QLabel* m_errorLabel = nullptr;
     QPushButton* m_errorRetry = nullptr;
-    QList<QPushButton*> m_actionButtons;
-    QList<PageAction> m_actions;
-    QList<QShortcut*> m_shortcuts;
+    ActionBar* m_actionBar = nullptr;
 };
 
 }  // namespace VLMS

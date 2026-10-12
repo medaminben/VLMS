@@ -1,5 +1,7 @@
 #include "ui/views/ListPage.h"
 
+#include "ui/views/ActionBar.h"
+
 #include "ui/views/PreviewImages.h"
 #include "ui/views/ListPagePager.h"
 #include "QtBridge.h"
@@ -16,10 +18,8 @@
 #include <QItemSelectionModel>
 #include <QLabel>
 #include <QLineEdit>
-#include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
-#include <QShortcut>
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QTableView>
@@ -34,12 +34,6 @@ namespace VLMS {
 namespace {
 
 constexpr int kDebounceMs = 250;
-
-bool isPrimaryAction(const QString& id)
-{
-    return id == QStringLiteral("add") || id == QStringLiteral("checkout")
-        || id == QStringLiteral("restore");
-}
 
 }  // namespace
 
@@ -164,8 +158,7 @@ void ListPage::setFacets(const QHash<QString, QStringList>& facets)
 
 void ListPage::rebuildChrome()
 {
-    rebuildActions();
-    installShortcuts();
+    m_actionBar->setActions(m_spec != nullptr ? m_spec->actions() : QList<PageAction>{});
     applyLocalizedChrome();
     updateActionEnabled();
 }
@@ -194,17 +187,14 @@ void ListPage::applyLocalizedChrome()
         QCoreApplication::sendEvent(m_pager, &languageChange);
     }
     if (m_errorRetry != nullptr) {
-        m_errorRetry->setText(QStringLiteral("Retry"));
+        m_errorRetry->setText(T("list.retry"));
     }
     if (m_spec != nullptr) {
         m_spec->retranslate();
         if (m_model != nullptr) {
             m_model->notifySpecRetranslated();
         }
-        const QList<PageAction> actions = orderedActions();
-        for (int i = 0; i < m_actionButtons.size() && i < actions.size(); ++i) {
-            m_actionButtons.at(i)->setText(T(ss(actions.at(i).labelKey)));
-        }
+        m_actionBar->retranslate();
         // Refresh preview artwork so theme-dependent placeholders repaint.
         onSelectionChanged();
     }
@@ -227,7 +217,7 @@ void ListPage::buildUi(const Config& config)
     m_errorLabel = new QLabel(m_errorStrip);
     m_errorLabel->setObjectName(QStringLiteral("listErrorLabel"));
     m_errorLabel->setWordWrap(true);
-    m_errorRetry = makeSecondaryButton(QStringLiteral("Retry"));
+    m_errorRetry = makeSecondaryButton(T("list.retry"));
     m_errorRetry->setObjectName(QStringLiteral("listErrorRetry"));
     connect(m_errorRetry, &QPushButton::clicked, this, &ListPage::retryLoad);
     errorLayout->addWidget(m_errorLabel, 1);
@@ -291,8 +281,10 @@ void ListPage::buildUi(const Config& config)
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSortingEnabled(true);
     m_table->verticalHeader()->setVisible(false);
-    m_table->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_table, &QWidget::customContextMenuRequested, this, &ListPage::showContextMenu);
+    m_actionBar = new ActionBar(this, m_table, padLayout, this);
+    m_actionBar->setContextProvider([this] { return currentContext(); });
+    m_actionBar->setRunner(
+        [this](const PageAction& action, const ActionContext&) { runAction(action); });
     if (m_table->selectionModel() != nullptr) {
         connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged,
                 this, &ListPage::onSelectionChanged);
@@ -469,119 +461,10 @@ void ListPage::retryLoad()
     }
 }
 
-void ListPage::rebuildActions()
-{
-    if (m_buttonPad == nullptr) {
-        return;
-    }
-    auto* padLayout = qobject_cast<QHBoxLayout*>(m_buttonPad->layout());
-    if (padLayout == nullptr) {
-        return;
-    }
-    for (QPushButton* button : m_actionButtons) {
-        padLayout->removeWidget(button);
-        button->setParent(nullptr);
-        button->deleteLater();
-    }
-    m_actionButtons.clear();
-    m_actions = orderedActions();
-
-    for (const PageAction& action : m_actions) {
-        QPushButton* button = isPrimaryAction(action.id)
-            ? makePrimaryButton(T(ss(action.labelKey)))
-            : makeSecondaryButton(T(ss(action.labelKey)));
-        button->setObjectName(QStringLiteral("listAction_%1").arg(action.id));
-        button->setProperty("actionId", action.id);
-        connect(button, &QPushButton::clicked, this, [this, action] { runAction(action); });
-        padLayout->addWidget(button);
-        m_actionButtons.append(button);
-    }
-}
-
-void ListPage::showContextMenu(const QPoint& pos)
-{
-    QMenu menu(this);
-    menu.setObjectName(QStringLiteral("listContextMenu"));
-    const QList<PageAction> actions = orderedActions();
-    for (const PageAction& action : actions) {
-        if (!actionIsEnabled(action)) {
-            continue;
-        }
-        QAction* item = menu.addAction(T(ss(action.labelKey)));
-        QObject::connect(item, &QAction::triggered, this, [this, action] { runAction(action); });
-    }
-    if (menu.isEmpty()) {
-        return;
-    }
-    menu.exec(m_table->viewport()->mapToGlobal(pos));
-}
-
-void ListPage::clearShortcuts()
-{
-    for (QShortcut* shortcut : m_shortcuts) {
-        shortcut->deleteLater();
-    }
-    m_shortcuts.clear();
-}
-
-void ListPage::installShortcuts()
-{
-    clearShortcuts();
-    const QList<PageAction> actions = orderedActions();
-    for (const PageAction& action : actions) {
-        QKeySequence sequence = action.shortcut;
-        if (sequence.isEmpty()) {
-            if (action.id == QStringLiteral("add")
-                || action.id == QStringLiteral("checkout")) {
-                sequence = QKeySequence(QStringLiteral("Ctrl+N"));
-            } else if (action.id == QStringLiteral("edit")) {
-                sequence = QKeySequence(Qt::Key_Return);
-            } else if (action.id == QStringLiteral("loans")) {
-                sequence = QKeySequence(QStringLiteral("Ctrl+L"));
-            } else if (action.id == QStringLiteral("archive")
-                       || action.id == QStringLiteral("restore")) {
-                sequence = QKeySequence(Qt::Key_Delete);
-            } else if (action.id == QStringLiteral("purge")) {
-                sequence = QKeySequence(QStringLiteral("Shift+Del"));
-            } else if (action.id == QStringLiteral("tickAll")) {
-                sequence = QKeySequence(QStringLiteral("Ctrl+A"));
-            } else if (action.id == QStringLiteral("refresh")) {
-                sequence = QKeySequence(Qt::Key_F5);
-            }
-        }
-        if (sequence.isEmpty()) {
-            continue;
-        }
-
-        const bool pageScoped = isPageScopedAction(action.id);
-        QWidget* host = pageScoped ? static_cast<QWidget*>(this) : static_cast<QWidget*>(m_table);
-        auto* shortcut = new QShortcut(sequence, host);
-        shortcut->setContext(pageScoped ? Qt::WindowShortcut : Qt::WidgetWithChildrenShortcut);
-        connect(shortcut, &QShortcut::activated, this, [this, action] {
-            if (actionIsEnabled(action)) {
-                runAction(action);
-            }
-        });
-        // Enter and Return both edit when present.
-        if (action.id == QStringLiteral("edit") && sequence == QKeySequence(Qt::Key_Return)) {
-            auto* enter = new QShortcut(QKeySequence(Qt::Key_Enter), m_table);
-            enter->setContext(Qt::WidgetWithChildrenShortcut);
-            connect(enter, &QShortcut::activated, this, [this, action] {
-                if (actionIsEnabled(action)) {
-                    runAction(action);
-                }
-            });
-            m_shortcuts.append(enter);
-        }
-        m_shortcuts.append(shortcut);
-    }
-}
-
 void ListPage::updateActionEnabled()
 {
-    const QList<PageAction> actions = orderedActions();
-    for (int i = 0; i < m_actionButtons.size() && i < actions.size(); ++i) {
-        m_actionButtons.at(i)->setEnabled(actionIsEnabled(actions.at(i)));
+    if (m_actionBar != nullptr) {
+        m_actionBar->refreshEnabled();
     }
 }
 
@@ -651,9 +534,6 @@ void ListPage::clearPreview()
 
 void ListPage::runAction(const PageAction& action)
 {
-    if (!actionIsEnabled(action)) {
-        return;
-    }
     if (action.id == QStringLiteral("tickAll")) {
         m_model->tickAll();
         updateActionEnabled();
@@ -727,63 +607,6 @@ qint64 ListPage::selectedId() const
         }
     }
     return 0;
-}
-
-QList<PageAction> ListPage::orderedActions() const
-{
-    if (m_spec == nullptr) {
-        return {};
-    }
-    QList<PageAction> actions = m_spec->actions();
-    std::stable_sort(actions.begin(), actions.end(),
-                     [](const PageAction& a, const PageAction& b) {
-                         return actionSortRank(a.id) < actionSortRank(b.id);
-                     });
-    return actions;
-}
-
-bool ListPage::actionIsEnabled(const PageAction& action) const
-{
-    const ActionContext ctx = currentContext();
-    if (action.enabled && !action.enabled(ctx)) {
-        return false;
-    }
-    switch (action.needs) {
-    case PageAction::Needs::Nothing:
-        return true;
-    case PageAction::Needs::One:
-        return ctx.ids.size() == 1;
-    case PageAction::Needs::Some:
-        return !ctx.ids.isEmpty();
-    }
-    return false;
-}
-
-bool ListPage::isPageScopedAction(const QString& id)
-{
-    return id == QStringLiteral("add") || id == QStringLiteral("checkout")
-        || id == QStringLiteral("refresh");
-}
-
-int ListPage::actionSortRank(const QString& id)
-{
-    // Circulation visual order first, then the shared list chrome order.
-    static const QStringList kOrder = {
-        QStringLiteral("return"),
-        QStringLiteral("checkout"),
-        QStringLiteral("extend"),
-        QStringLiteral("add"),
-        QStringLiteral("edit"),
-        QStringLiteral("loans"),
-        QStringLiteral("reuse"),
-        QStringLiteral("archive"),
-        QStringLiteral("restore"),
-        QStringLiteral("purge"),
-        QStringLiteral("tickAll"),
-        QStringLiteral("refresh"),
-    };
-    const int index = kOrder.indexOf(id);
-    return index >= 0 ? index : 1000;
 }
 
 }  // namespace VLMS

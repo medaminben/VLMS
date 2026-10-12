@@ -173,7 +173,7 @@ QList<PageAction> BookListSpec::actions() const
 
     PageAction tickAll;
     tickAll.id = QStringLiteral("tickAll");
-    tickAll.labelKey = QStringLiteral("tickAll");
+    tickAll.labelKey = QStringLiteral("list.tickAll");
     tickAll.needs = PageAction::Needs::Nothing;
     // ListPage::runAction handles ticking; no workflow call.
     out.append(tickAll);

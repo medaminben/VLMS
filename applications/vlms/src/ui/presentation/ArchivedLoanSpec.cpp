@@ -154,7 +154,7 @@ QList<PageAction> ArchivedLoanSpec::actions() const
 
     PageAction tickAll;
     tickAll.id = QStringLiteral("tickAll");
-    tickAll.labelKey = QStringLiteral("tickAll");
+    tickAll.labelKey = QStringLiteral("list.tickAll");
     tickAll.needs = PageAction::Needs::Nothing;
     out.append(tickAll);
 

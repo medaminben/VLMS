@@ -76,6 +76,8 @@ StringTable arabicStrings()
         {"common.yes", "نعم"},
         {"common.no", "لا"},
         {"common.close", "إغلاق"},
+        {"list.retry", "إعادة المحاولة"},
+        {"list.tickAll", "تحديد الكل"},
         // The image picker. Qt's own dialog labels these itself, out of the
         // qtbase catalogue; these override it so the wording matches the rest
         // of the application rather than Qt's translator.
@@ -575,6 +577,8 @@ StringTable frenchStrings()
         {"common.yes", "Oui"},
         {"common.no", "Non"},
         {"common.close", "Fermer"},
+        {"list.retry", "Réessayer"},
+        {"list.tickAll", "Tout cocher"},
         {"file.open", "Ouvrir"},
         {"file.fileName", "Nom du fichier :"},
         {"file.fileType", "Type de fichier :"},
@@ -1096,6 +1100,8 @@ StringTable englishStrings()
         {"common.yes", "Yes"},
         {"common.no", "No"},
         {"common.close", "Close"},
+        {"list.retry", "Retry"},
+        {"list.tickAll", "Tick all"},
         {"file.open", "Open"},
         {"file.fileName", "File name:"},
         {"file.fileType", "File type:"},
