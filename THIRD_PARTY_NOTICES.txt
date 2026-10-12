@@ -22,8 +22,8 @@ Source: https://download.qt.io/archive/qt/ — the version bundled is shown
         in the properties of Qt6Core.dll.
 
 VLMS uses Qt unmodified and links it dynamically. The Qt6*.dll files and the
-platforms, styles and imageformats folders beside vlms.exe may be replaced
-with your own build of the same Qt version. Qt's own translations of its
+Qt plugin folders beside vlms.exe may be replaced with your own build of the
+same Qt version. Qt's own translations of its
 standard dialogs are compiled into vlms.exe as resources.
 
 
