@@ -118,6 +118,7 @@ create_application(
     RESOURCES
         resources/fonts.qrc
         resources/images.qrc
+        resources/licence.qrc
         ${VLMS_QT_CATALOGUE_QRC}
     DEPENDENCIES
         vlms_ui
