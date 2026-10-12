@@ -1457,3 +1457,49 @@ TEST_F(test_core_MemberRepository, RankOfMemberFollowsNumberSort)
     ASSERT_FALSE(missing);
     EXPECT_EQ(missing.kind(), Core::ErrorKind::NotFound);
 }
+
+namespace {
+
+std::string readWhole(const std::filesystem::path& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+}
+
+/// A file that exists and is regular, so it passes the up-front checks, but
+/// cannot be opened, so the copy itself fails. False when permissions are not
+/// enforced (root, Windows); the caller skips.
+bool makeUnreadable(const std::filesystem::path& path)
+{
+    std::filesystem::permissions(path, std::filesystem::perms::none);
+    return !std::ifstream(path).is_open();
+}
+
+}  // namespace
+
+TEST_F(test_core_MemberRepository, AFailedPhotoReplacementKeepsTheOldPhoto)
+{
+    const std::int64_t id = seedMember(*m_db, uniqueMemberSeed(60));
+    ASSERT_GT(id, 0);
+    ASSERT_TRUE(m_repository->setPhotoImage(id, writeSampleImage("old.png")));
+    const auto before = m_repository->getMember(id);
+    ASSERT_TRUE(before.has_value());
+    const std::filesystem::path stored = m_repository->resolveImagePath(before->photoPath);
+    const std::string oldBytes = readWhole(stored);
+    ASSERT_FALSE(oldBytes.empty());
+
+    // Same extension, so the new copy would land on the very file in use.
+    const std::filesystem::path replacement = std::filesystem::path(m_db->rootDirectory()) / "new.png";
+    std::ofstream(replacement, std::ios::binary) << "new";
+    if (!makeUnreadable(replacement)) {
+        GTEST_SKIP() << "file permissions are not enforced for this user";
+    }
+
+    EXPECT_FALSE(m_repository->setPhotoImage(id, replacement.string()));
+
+    const auto after = m_repository->getMember(id);
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->photoPath, before->photoPath);
+    EXPECT_EQ(readWhole(stored), oldBytes) << "the photo on record must still be there";
+    std::filesystem::permissions(replacement, std::filesystem::perms::owner_all);
+}

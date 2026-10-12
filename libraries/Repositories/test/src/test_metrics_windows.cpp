@@ -210,7 +210,8 @@ TEST_F(test_core_MetricsWindows, WindowsNestSoTodayNeverExceedsTheMonth)
     // consequence of the two windows using different rules on purpose.
     EXPECT_LE(m.today.checkouts, m.thisWeek.checkouts) << "today exceeded this week";
     EXPECT_LE(m.today.checkouts, m.thisMonth.checkouts) << "today exceeded this month";
-    EXPECT_EQ(m.today.checkouts, 1);
+    // On the 1st, the first-of-month loan is also today's.
+    EXPECT_EQ(m.today.checkouts, firstOfMonth == today ? 2 : 1);
 }
 
 TEST_F(test_core_MetricsWindows, OverdueKpiAgreesWithTheOverdueFilter)

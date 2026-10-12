@@ -22,7 +22,7 @@ cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT
 
 if [[ ! -f "$DB" ]]; then
-  echo "Error: missing $DB — run scripts/import_catalog.py first." >&2
+  echo "Error: missing $DB." >&2
   exit 1
 fi
 

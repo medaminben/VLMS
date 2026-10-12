@@ -52,7 +52,14 @@ function Get-SchemaFileVersion {
 $required = @(
   (Join-Path $StageDir "vlms.exe"),
   (Join-Path $StageDir "schema.sql"),
-  (Join-Path $StageDir "platforms\qwindows.dll")
+  (Join-Path $StageDir "platforms\qwindows.dll"),
+  # The notices MIT, the LGPL and the Apache licence ask for in every copy.
+  (Join-Path $StageDir "LICENSE"),
+  (Join-Path $StageDir "THIRD_PARTY_NOTICES.txt"),
+  (Join-Path $StageDir "licenses\LGPL-3.0.txt"),
+  (Join-Path $StageDir "licenses\GPL-3.0.txt"),
+  (Join-Path $StageDir "licenses\Apache-2.0.txt"),
+  (Join-Path $StageDir "licenses\BUNDLED_FILES.txt")
 )
 
 $missing = @($required | Where-Object { -not (Test-Path $_) })
@@ -100,7 +107,7 @@ if ($hasDb) {
 
   if ($null -ne $expected -and $actual -ne $expected) {
     $message = "Bundled database is at schema $actual but this build ships schema $expected. " +
-      "Refresh database/vlms.db (open it once with this build, or re-run scripts/import_catalog.py) " +
+      "Refresh database/vlms.db (open it once with this build) " +
       "and rebuild."
     if ($RequireInstallerData) { throw $message }
     Write-Warning $message
