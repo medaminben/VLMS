@@ -1,5 +1,5 @@
-#include "ui/ListPageFrame.h"
-#include "ui/UiHelpers.h"
+#include "ui/views/ListPageFrame.h"
+#include "ui/views/UiHelpers.h"
 
 #include <QApplication>
 #include <QLabel>

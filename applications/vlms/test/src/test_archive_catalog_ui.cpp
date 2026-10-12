@@ -1,12 +1,17 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/archive/ReuseNumberFlow.h"
-#include "ui/catalog/BookCopiesTable.h"
-#include "ui/catalog/BookEditorDialog.h"
-#include "ui/catalog/CatalogPage.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/ReuseNumberFlow.h"
+#include "ui/views/BookCopiesTable.h"
+#include "ui/views/BookEditorDialog.h"
+#include "ui/presentation/BookListSpec.h"
+#include "ui/presentation/QtCatalogLookups.h"
+#include "ui/services/OcrService.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
+#include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Locale.h>
 
@@ -15,6 +20,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTableView>
 #include <QTableWidget>
 #include <QTimer>
 
@@ -87,10 +93,17 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
+        m_lookups = std::make_unique<QtCatalogLookups>(*m_catalog);
+        m_ocr = std::make_unique<OcrService>();
     }
 
     void TearDown() override
     {
+        m_ocr.reset();
+        m_lookups.reset();
+        m_members.reset();
+        m_circulation.reset();
         m_catalog.reset();
         m_db.reset();
     }
@@ -114,14 +127,29 @@ protected:
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
+    std::unique_ptr<Repositories::MemberRepository> m_members;
+    std::unique_ptr<QtCatalogLookups> m_lookups;
+    std::unique_ptr<OcrService> m_ocr;
 };
 
 TEST_F(test_ui_ArchiveCatalog, CatalogDeleteArchivesTheSelectedBook)
 {
     const std::int64_t bookId = seedBook(*m_db, uniqueBookSeed(1));
-    CatalogPage page(*m_catalog, *m_circulation);
-    QPushButton* remove = buttonWithText(&page, QStringLiteral("Delete"));
+    BookWorkflowHarness workflows(*m_catalog, *m_circulation, *m_members);
+    BookListSpec spec(*m_catalog, *workflows.books);
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.catalog.title");
+    cfg.bodyKey = QStringLiteral("page.catalog.body");
+    cfg.searchPlaceholderKey = QStringLiteral("catalog.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("bookCover");
+    cfg.imageBounds = bookCoverPreviewBounds();
+    ListPage page(&spec, workflows.events, cfg);
+    QPushButton* remove = page.findChild<QPushButton*>(QStringLiteral("listAction_archive"));
     ASSERT_NE(remove, nullptr);
+    QTableView* table = page.table();
+    ASSERT_NE(table, nullptr);
+    ASSERT_GT(table->model()->rowCount(), 0);
+    table->selectRow(0);
 
     answerNextBoxYes();
     remove->click();
@@ -139,7 +167,7 @@ TEST_F(test_ui_ArchiveCatalog, AReservedRowCarriesTheNumberAndCannotBeEdited)
     copy.localId = "7";
     copy.globalCopyId = "AR-7";
 
-    BookEditorDialog dialog(*m_catalog);
+    BookEditorDialog dialog(*m_lookups, *m_ocr);
     dialog.reserveCopyNumber(copy);
 
     const auto inputs = dialog.copyInputs();
@@ -171,7 +199,7 @@ TEST_F(test_ui_ArchiveCatalog, AReservedRowCannotBeRemoved)
     copy.localId = "7";
     copy.globalCopyId = "AR-7";
 
-    BookEditorDialog dialog(*m_catalog);
+    BookEditorDialog dialog(*m_lookups, *m_ocr);
     dialog.reserveCopyNumber(copy);
 
     auto* copies = dialog.findChild<BookCopiesTable*>();
@@ -199,7 +227,7 @@ TEST_F(test_ui_ArchiveCatalog, ChooserOffersANewBookAndOnlyBooksOfTheSameSource)
     Repositories::BookCopyRecord copy;
     copy.source = "arabic";
     copy.localId = "7";
-    ReuseBookChooser chooser(*m_catalog, copy);
+    ReuseBookChooser chooser(*m_lookups, copy);
     auto* books = chooser.findChild<QListWidget*>(QStringLiteral("reuseBooks"));
     ASSERT_NE(books, nullptr);
     ASSERT_EQ(books->count(), 2);
@@ -214,8 +242,10 @@ TEST_F(test_ui_ArchiveCatalog, CancellingReuseLeavesTheArchivedNumberInPlace)
     const Repositories::BookCopyRecord copy = archivedCopy(copyIdsOf(*m_db, bookId).front());
     ASSERT_FALSE(copy.localId.empty());
 
+    ArchiveWorkflowHarness workflows(*m_members, *m_catalog, *m_circulation);
     rejectNextDialog();
-    EXPECT_FALSE(VLMS::runReuseNumberFlow(nullptr, *m_catalog, copy));
+    EXPECT_TRUE(workflows.archive->reuseNumber(nullptr, copy.id));
+    EXPECT_TRUE(workflows.errors.calls.empty());
     EXPECT_EQ(m_db->scalar("SELECT local_id FROM book_copies WHERE id = " + std::to_string(copy.id))
                   .toString(),
               copy.localId);

@@ -152,7 +152,7 @@ std::string copyFilterClause(const CopyQuery& query)
 bool bindCopyFilters(Database::SqliteStatement& q, const CopyQuery& query)
 {
     const std::string search = Core::trim(query.search);
-    if (!search.empty() && !q.bind(":search", "%" + Database::SqlText::escapeLike(search) + "%")) {
+    if (!search.empty() && !q.bind(":search", Database::SqlText::likePattern(search))) {
         return false;
     }
     for (std::size_t i = 0; i < query.categoryCodes.size(); ++i) {

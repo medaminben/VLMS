@@ -10,7 +10,7 @@
 
 class MainWindow;
 class QAbstractButton;
-class QTableWidget;
+class QTableView;
 
 namespace ManualCapture {
 
@@ -30,8 +30,8 @@ public:
     /// First visible QAbstractButton under root whose text is T(key) (after
     /// stripping '&'). Throws std::runtime_error naming the key when absent.
     [[nodiscard]] QAbstractButton* button(const char* key, QWidget* root = nullptr) const;
-    /// First QTableWidget under root (default: page()).
-    [[nodiscard]] QTableWidget* table(QWidget* root = nullptr) const;
+    /// First list QTableView under root (default: page()).
+    [[nodiscard]] QTableView* table(QWidget* root = nullptr) const;
     /// First child of type W under root whose objectName is name.
     template <typename W>
     [[nodiscard]] W* named(const QString& name, QWidget* root = nullptr) const;

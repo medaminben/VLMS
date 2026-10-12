@@ -1,9 +1,10 @@
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/circulation/LoanCheckoutDialog.h"
-#include "ui/circulation/LoanExtendDialog.h"
-#include "ui/circulation/LoanReturnDialog.h"
+#include "ui/views/LoanCheckoutDialog.h"
+#include "ui/presentation/QtCirculationLookups.h"
+#include "ui/views/LoanExtendDialog.h"
+#include "ui/views/LoanReturnDialog.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
@@ -24,11 +25,13 @@ protected:
         m_db = std::make_unique<TestDatabase>();
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_repository = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_lookups = std::make_unique<QtCirculationLookups>(*m_repository);
     }
 
     void TearDown() override
     {
         EXPECT_FALSE(Core::Clock::isOverridden()) << "a test leaked a clock override";
+        m_lookups.reset();
         m_repository.reset();
         m_db.reset();
     }
@@ -50,11 +53,12 @@ protected:
 
     std::unique_ptr<TestDatabase> m_db;
     std::unique_ptr<Repositories::CirculationRepository> m_repository;
+    std::unique_ptr<QtCirculationLookups> m_lookups;
 };
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultsToTodayAndFourteenDays)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     EXPECT_EQ(edits.at(0)->date(), QDate::currentDate());
@@ -63,7 +67,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultsToTodayAndFourteenDays)
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogDueFollowsAChangedBorrowDate)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     const QDate backdated = QDate::currentDate().addDays(-5);
@@ -83,7 +87,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForAB
     ASSERT_GT(bookId, 0);
     const auto copies = copyIdsOf(*m_db, bookId);
 
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
 
@@ -101,7 +105,7 @@ TEST_F(test_ui_LoanDialogs, CheckoutDialogDefaultDueMatchesWhatCoreProducesForAB
 
 TEST_F(test_ui_LoanDialogs, CheckoutDialogRefusesAFutureBorrowDate)
 {
-    LoanCheckoutDialog dialog(*m_repository);
+    LoanCheckoutDialog dialog(*m_lookups);
     const auto edits = dialog.findChildren<QDateEdit*>();
     ASSERT_EQ(edits.size(), 2);
     EXPECT_EQ(edits.at(0)->maximumDate(), QDate::currentDate());

@@ -37,7 +37,7 @@ Voir [Statut d'un adhérent](reference#member-status).
 
 ## Prêts
 
-`Prêts` ouvre l'historique de cet adhérent, y compris les prêts qui ont été archivés. Il s'ouvre même quand l'adhérent n'a jamais emprunté, et `Prêter` est là pour un adhérent actif.
+`Prêts` ouvre la même fenêtre d'historique des prêts, épinglée à cet adhérent. Elle inclut les prêts qui ont été archivés. Elle s'ouvre même quand l'adhérent n'a jamais emprunté. `Prêter` est là pour un adhérent actif ; `Prolonger` et `Retourner` suivent un prêt encore sorti dans la liste.
 
 ![Les prêts d'un adhérent.](shot:mem-loans-dialog)
 

@@ -24,12 +24,12 @@ La fenêtre demande un adhérent et un exemplaire. Cherchez dans l'une ou l'autr
 `Annuler` laisse la Circulation inchangée.
 :::
 
-## Depuis les prêts d'un ouvrage
+## Depuis l'historique des prêts d'un ouvrage
 
-Dans le Catalogue, surlignez le titre et cliquez `Prêts`. `Prêter` est là même quand le titre n'a jamais été emprunté. La liste d'exemplaires est seulement celle de ce titre, et il n'y a pas de recherche d'exemplaire.
+Dans le Catalogue, surlignez le titre et cliquez `Prêts`. La fenêtre d'historique des prêts s'ouvre avec `Prêter` même quand le titre n'a jamais été emprunté. La liste d'exemplaires est seulement celle de ce titre, et il n'y a pas de recherche d'exemplaire.
 
 ::: step
-**Cliquez `Prêter` dans la fenêtre des prêts.**
+**Cliquez `Prêter` dans la fenêtre d'historique des prêts.**
 
 ![Prêter depuis un titre. La liste d'exemplaires est ce titre seul.](shot:lend-from-book)
 :::
@@ -38,9 +38,9 @@ Dans le Catalogue, surlignez le titre et cliquez `Prêts`. `Prêter` est là mê
 
 Choisissez l'adhérent, confirmez l'exemplaire, et cliquez `OK`. `Fermer` quitte l'historique.
 
-## Depuis les prêts d'un adhérent
+## Depuis l'historique des prêts d'un adhérent
 
-Dans les Adhérents, surlignez l'adhérent et cliquez `Prêts`, puis `Prêter`. L'adhérent est montré comme un nom, pas comme une recherche. Vous choisissez l'exemplaire.
+Dans les Adhérents, surlignez l'adhérent et cliquez `Prêts`, puis `Prêter` dans la fenêtre d'historique des prêts. L'adhérent est montré comme un nom, pas comme une recherche. Vous choisissez l'exemplaire.
 
 ![Prêter depuis un adhérent. L'adhérent est déjà choisi.](shot:lend-from-member)
 

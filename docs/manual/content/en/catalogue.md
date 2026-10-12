@@ -40,7 +40,7 @@ The colour rules are in [Local numbers](reference#local-number).
 
 ## Loans
 
-`Loans` follows the highlighted title. It opens even when the title has never been borrowed, and it offers `Checkout` from there. The list is every loan of every copy the title has ever had, including copies and loans that have since been archived.
+`Loans` opens the loan history dialog for the highlighted title. The dialog uses the same list chrome as Circulation, pinned to that title: every loan of every copy the title has ever had, including copies and loans that have since been archived. It opens even when the title has never been borrowed. `Checkout`, `Extend`, and `Return` are available when the selection allows them.
 
 ![The loans of one title.](shot:cat-loans-dialog)
 

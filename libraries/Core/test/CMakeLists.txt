@@ -26,6 +26,10 @@ set(TST_SOURCES
     src/test_clock.cpp
     src/test_date_text.cpp
     src/test_licence_strings.cpp
+    src/test_paths.cpp
+    src/test_locale.cpp
+    src/test_text.cpp
+    src/test_strings.cpp
 )
 
 build_gtest_executable(

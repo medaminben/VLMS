@@ -1,5 +1,5 @@
-#include "ui/catalog/LocalNumberDelegate.h"
-#include "ui/Theme.h"
+#include "ui/views/LocalNumberDelegate.h"
+#include "ui/services/Theme.h"
 
 #include <QAbstractItemView>
 #include <QApplication>

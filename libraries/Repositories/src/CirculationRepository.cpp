@@ -553,7 +553,7 @@ CirculationRepository::listBorrowableMembers(const std::string& search) const
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
     if (!trimmedSearch.empty()
-        && !q->bind(":search", "%" + Database::SqlText::escapeLike(trimmedSearch) + "%")) {
+        && !q->bind(":search", Database::SqlText::likePattern(trimmedSearch))) {
         return RepoSql::sqlResult<std::vector<LoanMemberOption>>(m_session.lastError());
     }
 
@@ -618,7 +618,7 @@ CirculationRepository::listAvailableCopies(const std::string& search,
         return RepoSql::sqlResult<std::vector<LoanCopyOption>>(q.error().detail);
     }
     if (!trimmedSearch.empty()
-        && !q->bind(":search", "%" + Database::SqlText::escapeLike(trimmedSearch) + "%")) {
+        && !q->bind(":search", Database::SqlText::likePattern(trimmedSearch))) {
         return RepoSql::sqlResult<std::vector<LoanCopyOption>>(m_session.lastError());
     }
     if (bookId > 0 && !q->bind(":book_id", bookId)) {

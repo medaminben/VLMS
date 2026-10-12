@@ -59,7 +59,7 @@ Un adhérent ne peut être retiré pour de bon que lorsque cette colonne est à 
 
 ## Historique des prêts
 
-`Prêts` se trouve après la recherche sur les listes `Adhérents`, `Ouvrages` et `Exemplaires`. Il ouvre tous les prêts de l'adhérent, de l'ouvrage ou de l'exemplaire surligné, prêts archivés compris : l'adhérent, le numéro d'adhésion, l'exemplaire, les dates, l'état et le moment de l'archivage. L'historique se lit seulement ; on n'y prête ni n'y retourne rien. Le bouton est grisé quand la ligne n'a jamais été prêtée.
+`Prêts` se trouve après la recherche sur les listes `Adhérents`, `Ouvrages` et `Exemplaires`. Il ouvre la même fenêtre d'historique des prêts que sur les écrans en service, épinglée à l'adhérent, à l'ouvrage ou à l'exemplaire surligné, prêts archivés compris : l'adhérent, le numéro d'adhésion, l'exemplaire, les dates, l'état et le moment de l'archivage. Depuis les Archives la fenêtre se lit seulement — `Prêter`, `Prolonger` et `Retourner` n'y sont pas proposés. Le bouton est grisé quand la ligne n'a jamais été prêtée.
 
 ## Restaurer
 

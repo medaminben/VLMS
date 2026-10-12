@@ -153,3 +153,27 @@ TEST(test_core_SqlText, SplitStatementsKeepsStringLiteralsWhole)
     EXPECT_NE(statements.front().find("'first; second'"), std::string::npos) << statements.front();
     EXPECT_NE(statements.front().find("'L''Etranger'"), std::string::npos) << statements.front();
 }
+
+TEST(test_core_SqlText, LikePatternMatchesAnywhereByDefault)
+{
+    EXPECT_EQ(Database::SqlText::likePattern("1"), "%1%");
+    EXPECT_EQ(Database::SqlText::likePattern("  hugo "), "%hugo%");
+}
+
+TEST(test_core_SqlText, LikePatternInQuotesMatchesTheWholeValue)
+{
+    EXPECT_EQ(Database::SqlText::likePattern("\"1\""), "1");
+    EXPECT_EQ(Database::SqlText::likePattern(" \" Victor Hugo \" "), "Victor Hugo");
+}
+
+TEST(test_core_SqlText, LikePatternKeepsWildcardsEscapedInsideQuotes)
+{
+    EXPECT_EQ(Database::SqlText::likePattern("\"50%\""), "50\\%");
+    EXPECT_EQ(Database::SqlText::likePattern("50%"), "%50\\%%");
+}
+
+TEST(test_core_SqlText, LikePatternTreatsALoneQuoteAsText)
+{
+    EXPECT_EQ(Database::SqlText::likePattern("\""), "%\"%");
+    EXPECT_EQ(Database::SqlText::likePattern("\"1"), "%\"1%");
+}

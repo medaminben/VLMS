@@ -1,0 +1,64 @@
+#pragma once
+
+#include <VLMS/Repositories/LoanTypes.h>
+
+#include <QDialog>
+
+class QEvent;
+#include <QString>
+
+namespace VLMS {
+class CirculationLookups;
+}
+
+class QComboBox;
+class QDateEdit;
+class QDialogButtonBox;
+class QLabel;
+class QLineEdit;
+class QPlainTextEdit;
+
+/// Fixes one side of a checkout. Zero on both is the unscoped dialog the
+/// Circulation page opens; a book id offers only that book's free copies, and
+/// a member id replaces the member rows with the name.
+struct LoanScope {
+    qint64 bookId = 0;
+    qint64 memberId = 0;
+    QString label;
+};
+
+class LoanCheckoutDialog final : public QDialog {
+    Q_OBJECT
+
+public:
+    explicit LoanCheckoutDialog(VLMS::CirculationLookups& lookups,
+                                const LoanScope& scope = {},
+                                QWidget* parent = nullptr);
+
+    [[nodiscard]] VLMS::Repositories::LoanInput loanInput() const;
+
+    /// False when the scope left nothing to lend — every copy is out.
+    [[nodiscard]] bool hasLendableCopy() const;
+
+protected:
+    void changeEvent(QEvent* event) override;
+
+private:
+    void buildUi();
+    void applyLabels();
+    void refreshMembers();
+    void refreshCopies();
+
+    VLMS::CirculationLookups& m_lookups;
+    LoanScope m_scope;
+
+    QLineEdit* m_memberSearchEdit = nullptr;
+    QComboBox* m_memberCombo = nullptr;
+    QLineEdit* m_copySearchEdit = nullptr;
+    QComboBox* m_copyCombo = nullptr;
+    QDateEdit* m_borrowedDateEdit = nullptr;
+    QDateEdit* m_dueDateEdit = nullptr;
+    QPlainTextEdit* m_notesEdit = nullptr;
+    QLabel* m_memberFixedLabel = nullptr;
+    QDialogButtonBox* m_buttons = nullptr;
+};

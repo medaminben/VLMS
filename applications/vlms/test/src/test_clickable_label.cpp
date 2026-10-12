@@ -1,4 +1,4 @@
-#include "ui/ClickableLabel.h"
+#include "ui/views/ClickableLabel.h"
 
 #include <QPoint>
 #include <QSignalSpy>

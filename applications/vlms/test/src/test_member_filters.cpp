@@ -1,25 +1,34 @@
+#include "ui/presentation/ReadSources.h"
 #include "TestDatabase.h"
 #include "TestSeed.h"
 
-#include "ui/members/MembersPage.h"
-#include "ui/TablePager.h"
+#include "QtBridge.h"
+#include "ui/views/ListPage.h"
+#include "ui/views/ListPagePager.h"
+#include "ui/views/MemberFacetFilters.h"
+#include "ui/presentation/MemberListSpec.h"
+#include "ui/shell/Navigator.h"
+#include "WorkflowTestSupport.h"
 
 #include <VLMS/Repositories/CirculationRepository.h>
 #include <VLMS/Core/Clock.h>
 #include <VLMS/Core/Date.h>
 #include <VLMS/Core/Locale.h>
+#include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/MemberRepository.h>
 #include <VLMS/Repositories/MemberTypes.h>
 
 #include <QApplication>
 #include <QComboBox>
+#include <QHash>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QObject>
 #include <QPushButton>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include <QTableView>
+#include <QTest>
 
 #include <gtest/gtest.h>
 
@@ -47,10 +56,25 @@ bool selectFilterCode(QListWidget* list, const QString& code)
     return false;
 }
 
-QString tableText(QTableWidget* table, int row, int column)
+QString tableText(QTableView* table, int row, int column)
 {
-    QTableWidgetItem* item = table->item(row, column);
-    return item == nullptr ? QString() : item->text();
+    return table->model()->index(row, column).data(Qt::DisplayRole).toString();
+}
+
+qint64 tableId(QTableView* table, int row)
+{
+    return table->model()->index(row, 0).data(Qt::UserRole).toLongLong();
+}
+
+ListPage::Config membersConfig()
+{
+    ListPage::Config cfg;
+    cfg.titleKey = QStringLiteral("page.members.title");
+    cfg.bodyKey = QStringLiteral("page.members.body");
+    cfg.searchPlaceholderKey = QStringLiteral("members.searchPlaceholder");
+    cfg.imageObjectName = QStringLiteral("memberPhoto");
+    cfg.imageBounds = memberPhotoPreviewBounds();
+    return cfg;
 }
 
 }  // namespace
@@ -65,12 +89,16 @@ protected:
         ASSERT_TRUE(m_db->isValid()) << m_db->lastError();
         m_members = std::make_unique<Repositories::MemberRepository>(m_db->session(), m_db->resourcesDirectory());
         m_circulation = std::make_unique<Repositories::CirculationRepository>(m_db->session());
+        m_catalog = std::make_unique<Repositories::CatalogRepository>(m_db->session(), m_db->resourcesDirectory());
     }
 
     void TearDown() override
     {
         m_page.reset();
+        m_spec.reset();
+        m_memberWorkflows.reset();
         m_circulation.reset();
+        m_catalog.reset();
         m_members.reset();
         m_db.reset();
     }
@@ -98,17 +126,54 @@ protected:
         ASSERT_TRUE(rawSetRegisteredAt(*m_db, m_femaleId, "2024-06-15 09:00:00"));
     }
 
+    void openPage()
+    {
+        m_memberWorkflows = std::make_unique<MemberWorkflowHarness>(*m_members, *m_circulation, *m_catalog);
+        m_spec = std::make_unique<MemberListSpec>(*m_members, *m_memberWorkflows->members);
+        m_page = std::make_unique<ListPage>(m_spec.get(), m_memberWorkflows->events, membersConfig());
+        m_memberFacets = std::make_unique<RepositoryMemberFacets>(*m_members);
+        m_filters = new MemberFacetFilters(*m_memberFacets, Repositories::ArchiveScope::Live,
+                                           m_page->filterColumn());
+        m_filters->refresh();
+        m_page->addFilterWidget(m_filters, 1);
+        QObject::connect(m_filters, &MemberFacetFilters::changed, m_page.get(), [this]() {
+            const Repositories::MemberFacets facets = m_filters->facets();
+            QHash<QString, QStringList> mapped;
+            mapped.insert(QStringLiteral("status"), qsl(facets.statuses));
+            mapped.insert(QStringLiteral("sex"), qsl(facets.sexes));
+            mapped.insert(QStringLiteral("year"), qsl(facets.inscriptionYears));
+            mapped.insert(QStringLiteral("ageGroup"), qsl(facets.ageGroups));
+            mapped.insert(QStringLiteral("city"), qsl(facets.cities));
+            m_page->setFacets(mapped);
+        });
+    }
+
+    void searchNow(const QString& text)
+    {
+        auto* search = m_page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
+        ASSERT_NE(search, nullptr);
+        search->setText(text);
+        QTest::keyClick(search, Qt::Key_Return);
+        QApplication::processEvents();
+    }
+
     std::unique_ptr<TestDatabase> m_db;
+    std::unique_ptr<Repositories::CatalogRepository> m_catalog;
     std::unique_ptr<Repositories::MemberRepository> m_members;
     std::unique_ptr<Repositories::CirculationRepository> m_circulation;
-    std::unique_ptr<MembersPage> m_page;
+    VLMS::FakeNavigator m_navigator;
+    std::unique_ptr<MemberWorkflowHarness> m_memberWorkflows;
+    std::unique_ptr<MemberListSpec> m_spec;
+    std::unique_ptr<ListPage> m_page;
+    std::unique_ptr<RepositoryMemberFacets> m_memberFacets;
+    MemberFacetFilters* m_filters = nullptr;
     qint64 m_maleId = 0;
     qint64 m_femaleId = 0;
 };
 
 TEST_F(test_ui_MemberFilters, FilterListsArePresent)
 {
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
     EXPECT_NE(m_page->findChild<QListWidget*>(QStringLiteral("statusFilter")), nullptr);
     EXPECT_NE(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")), nullptr);
@@ -121,26 +186,26 @@ TEST_F(test_ui_MemberFilters, FilterListsArePresent)
 TEST_F(test_ui_MemberFilters, SexFilterKeepsOnlyTheMatchingRow)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    EXPECT_EQ(table->rowCount(), 2);
+    EXPECT_EQ(table->model()->rowCount(), 2);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")),
                                  QString::fromLatin1(Repositories::MemberSex::kMale)));
 
-    ASSERT_EQ(table->rowCount(), 1);
+    ASSERT_EQ(table->model()->rowCount(), 1);
     EXPECT_EQ(tableText(table, 0, 3), QStringLiteral("Tunis"));
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_maleId);
+    EXPECT_EQ(tableId(table, 0), m_maleId);
 }
 
 TEST_F(test_ui_MemberFilters, CityAndSexFiltersCombineWithAnd)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("sexFilter")),
@@ -148,63 +213,60 @@ TEST_F(test_ui_MemberFilters, CityAndSexFiltersCombineWithAnd)
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("cityFilter")),
                                  QStringLiteral("Sfax")));
 
-    EXPECT_EQ(table->rowCount(), 0);
+    EXPECT_EQ(table->model()->rowCount(), 0);
 }
 
 TEST_F(test_ui_MemberFilters, SelectingAllClearsTheDimension)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     auto* sexFilter = m_page->findChild<QListWidget*>(QStringLiteral("sexFilter"));
     ASSERT_NE(table, nullptr);
     ASSERT_NE(sexFilter, nullptr);
 
     ASSERT_TRUE(selectFilterCode(sexFilter, QString::fromLatin1(Repositories::MemberSex::kMale)));
-    ASSERT_EQ(table->rowCount(), 1);
+    ASSERT_EQ(table->model()->rowCount(), 1);
 
     ASSERT_TRUE(selectFilterCode(sexFilter, QString()));
-    EXPECT_EQ(table->rowCount(), 2);
+    EXPECT_EQ(table->model()->rowCount(), 2);
 }
 
 TEST_F(test_ui_MemberFilters, YearAndAgeGroupNarrowTheTable)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("yearFilter")),
                                  QStringLiteral("2024")));
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_femaleId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_femaleId);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("yearFilter")),
                                  QString()));
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("ageGroupFilter")),
                                  QString::fromLatin1(Repositories::MemberAgeGroup::kYouth)));
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_femaleId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_femaleId);
 }
 
 TEST_F(test_ui_MemberFilters, SearchStillFindsMembersByOccupation)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
 
-    auto* table = m_page->findChild<QTableWidget*>();
-    auto* search = m_page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    ASSERT_NE(search, nullptr);
-    ASSERT_EQ(table->rowCount(), 2);
+    ASSERT_EQ(table->model()->rowCount(), 2);
 
-    search->setText(QStringLiteral("قاضي"));
-    QApplication::processEvents();
+    searchNow(QStringLiteral("قاضي"));
 
-    ASSERT_EQ(table->rowCount(), 1);
-    EXPECT_EQ(table->item(0, 0)->data(Qt::UserRole).toLongLong(), m_maleId);
+    ASSERT_EQ(table->model()->rowCount(), 1);
+    EXPECT_EQ(tableId(table, 0), m_maleId);
 }
 
 TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
@@ -213,11 +275,11 @@ TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
         ASSERT_GT(seedMember(*m_db, uniqueMemberSeed(i)), 0) << i;
     }
 
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
     m_page->show();
     QApplication::processEvents();
 
-    auto* pager = m_page->findChild<VLMS::TablePager*>();
+    auto* pager = m_page->findChild<VLMS::ListPagePager*>();
     ASSERT_NE(pager, nullptr);
     EXPECT_EQ(pager->totalCount(), 60);
     // The pager opens on ALL, so there is nothing to page through until a size
@@ -242,15 +304,15 @@ TEST_F(test_ui_MemberFilters, PagerNextLoadsTheSecondPage)
     QApplication::processEvents();
 
     EXPECT_EQ(pager->currentPage(), 2);
-    auto* table = m_page->findChild<QTableWidget*>();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    EXPECT_EQ(table->rowCount(), 10);
+    EXPECT_EQ(table->model()->rowCount(), 10);
 }
 
 TEST_F(test_ui_MemberFilters, StatusFilterOffersActiveAndNotActive)
 {
     seedTunisAndSfax();
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
+    openPage();
     auto* list = m_page->findChild<QListWidget*>(QStringLiteral("statusFilter"));
     ASSERT_NE(list, nullptr);
 
@@ -270,14 +332,14 @@ TEST_F(test_ui_MemberFilters, NotActiveKeepsOnlyTheMemberWhoseYearEnded)
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2026-01-01' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_maleId)}}));
     const Core::ScopedClock pinned(Core::Date(2026, 9, 23));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
-    auto* table = m_page->findChild<QTableWidget*>();
+    openPage();
+    auto* table = m_page->table();
     ASSERT_NE(table, nullptr);
-    ASSERT_EQ(table->rowCount(), 2);
+    ASSERT_EQ(table->model()->rowCount(), 2);
 
     ASSERT_TRUE(selectFilterCode(m_page->findChild<QListWidget*>(QStringLiteral("statusFilter")),
                                  QStringLiteral("non_active")));
-    ASSERT_EQ(table->rowCount(), 1);
+    ASSERT_EQ(table->model()->rowCount(), 1);
     EXPECT_EQ(tableText(table, 0, 4), QStringLiteral("Not active"));
 }
 
@@ -286,13 +348,10 @@ TEST_F(test_ui_MemberFilters, DetailsShowTheLastActiveDay)
     seedTunisAndSfax();
     ASSERT_TRUE(m_db->execBound("UPDATE members SET active_until = '2027-04-30' WHERE id = :id",
                                 {{"id", static_cast<std::int64_t>(m_femaleId)}}));
-    m_page = std::make_unique<MembersPage>(*m_members, *m_circulation);
-    auto* search = m_page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
-    ASSERT_NE(search, nullptr);
-    search->setText(QStringLiteral("Sfax"));
-    QApplication::processEvents();
-    auto* table = m_page->findChild<QTableWidget*>();
-    ASSERT_EQ(table->rowCount(), 1);
+    openPage();
+    searchNow(QStringLiteral("Sfax"));
+    auto* table = m_page->table();
+    ASSERT_EQ(table->model()->rowCount(), 1);
     table->selectRow(0);
     QApplication::processEvents();
 

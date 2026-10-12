@@ -33,7 +33,7 @@ The panel shows the membership number, the status, the last active day, and the 
 
 ## Loans
 
-`Loans` opens this member's history, including loans that have been archived. It opens even when the member has never borrowed, and `Checkout` is there for an active member.
+`Loans` opens the same loan history dialog, pinned to this member. It includes loans that have been archived. It opens even when the member has never borrowed. `Checkout` is there for an active member; `Extend` and `Return` follow an open loan in the list.
 
 ![A member's loans.](shot:mem-loans-dialog)
 

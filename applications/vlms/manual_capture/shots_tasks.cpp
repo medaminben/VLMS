@@ -1,12 +1,12 @@
 #include "Capture.h"
 #include "Shots.h"
 
-#include "Application.h"
+#include "ui/shell/Application.h"
 #include "QtBridge.h"
-#include "ui/MainWindow.h"
-#include "ui/ListPageFrame.h"
-#include "ui/catalog/LocalNumberDelegate.h"
-#include "ui/members/BirthDateEdit.h"
+#include "ui/shell/MainWindow.h"
+#include "ui/views/ListPagePager.h"
+#include "ui/views/LocalNumberDelegate.h"
+#include "ui/views/BirthDateEdit.h"
 
 #include <VLMS/Repositories/CatalogRepository.h>
 #include <VLMS/Repositories/CirculationRepository.h>
@@ -23,6 +23,10 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QTabWidget>
+#include <QAbstractItemModel>
+#include <QAbstractItemView>
+#include <QLabel>
+#include <QTableView>
 #include <QTableWidget>
 #include <QTest>
 #include <QTimer>
@@ -51,37 +55,73 @@ Application& app()
     return *application;
 }
 
-VLMS::ListPageFrame* frameOf(Capture& capture)
+struct ListChrome {
+    QLineEdit* search = nullptr;
+    QWidget* filterColumn = nullptr;
+    QTableView* table = nullptr;
+    VLMS::ListPagePager* pager = nullptr;
+    QWidget* previewPanel = nullptr;
+    QWidget* buttonPad = nullptr;
+    QLabel* image = nullptr;
+    QLabel* secondImage = nullptr;
+};
+
+ListChrome chromeOf(Capture& capture)
 {
-    auto* frame = capture.page()->findChild<VLMS::ListPageFrame*>();
-    if (frame == nullptr) {
-        fail("list frame is missing");
+    QWidget* page = capture.page();
+    ListChrome chrome;
+    chrome.search = page->findChild<QLineEdit*>(QStringLiteral("listSearch"));
+    chrome.filterColumn = page->findChild<QWidget*>(QStringLiteral("filterColumn"));
+    chrome.table = page->findChild<QTableView*>(QStringLiteral("listTable"));
+    chrome.pager = page->findChild<VLMS::ListPagePager*>();
+    chrome.previewPanel = page->findChild<QWidget*>(QStringLiteral("previewPanel"));
+    chrome.buttonPad = page->findChild<QWidget*>(QStringLiteral("buttonPad"));
+    for (const char* name : {"bookCover", "memberPhoto", "archiveImage"}) {
+        chrome.image = page->findChild<QLabel*>(QLatin1String(name));
+        if (chrome.image != nullptr) {
+            break;
+        }
     }
-    return frame;
+    for (const char* name : {"loanMemberPhoto", "archiveMemberPhoto"}) {
+        chrome.secondImage = page->findChild<QLabel*>(QLatin1String(name));
+        if (chrome.secondImage != nullptr) {
+            break;
+        }
+    }
+    if (chrome.search == nullptr || chrome.table == nullptr) {
+        fail("list chrome is missing");
+    }
+    return chrome;
 }
+
+QLineEdit* searchOf(Capture& capture)
+{
+    return chromeOf(capture).search;
+}
+
 
 void setSearch(Capture& capture, const QString& text)
 {
-    auto* edit = frameOf(capture)->searchEdit();
+    auto* edit = searchOf(capture);
     edit->setAttribute(Qt::WA_InputMethodEnabled, false);
     edit->setText(text);
     capture.settle(500);
 }
 
-void holdRow(QTableWidget* table, int row)
+void holdRow(QAbstractItemView* table, int row)
 {
     const QModelIndex index = table->model()->index(row, 0);
     table->selectionModel()->setCurrentIndex(
         index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-bool selectId(QTableWidget* table, qint64 id)
+bool selectId(QTableView* table, qint64 id)
 {
-    for (int row = 0; row < table->rowCount(); ++row) {
-        const QTableWidgetItem* item = table->item(row, 0);
-        if (item != nullptr && item->data(Qt::UserRole).toLongLong() == id) {
+    auto* model = table->model();
+    for (int row = 0; row < model->rowCount(); ++row) {
+        if (model->index(row, 0).data(Qt::UserRole).toLongLong() == id) {
             holdRow(table, row);
-            return table->currentRow() == row && !table->selectedItems().isEmpty();
+            return table->currentIndex().row() == row && table->selectionModel()->hasSelection();
         }
     }
     return false;
@@ -337,24 +377,28 @@ const char* unreturnedFilterKey()
 void showUnreturnedLoan(Capture& capture)
 {
     capture.goTo("nav.circulation");
-    auto* search = frameOf(capture)->searchEdit();
+    auto* search = searchOf(capture);
     search->setAttribute(Qt::WA_InputMethodEnabled, false);
     search->clear();
     pickList(capture, "loanFilter", T(unreturnedFilterKey()));
-    if (capture.table()->rowCount() < 1) {
+    if (capture.table()->model()->rowCount() < 1) {
         fail("no unreturned loan is on screen");
     }
     holdRow(capture.table(), 0);
 }
 
-void selectUnreturnedRow(QTableWidget* table)
+void selectUnreturnedRow(QAbstractItemView* table)
 {
+    if (table == nullptr || table->model() == nullptr) {
+        fail("the history table is missing");
+    }
     const QString open = T("circulation.status.open");
     const QString overdue = T("circulation.status.overdue");
-    for (int row = 0; row < table->rowCount(); ++row) {
-        for (int column = 0; column < table->columnCount(); ++column) {
-            const QTableWidgetItem* item = table->item(row, column);
-            if (item != nullptr && (item->text() == open || item->text() == overdue)) {
+    auto* model = table->model();
+    for (int row = 0; row < model->rowCount(); ++row) {
+        for (int column = 0; column < model->columnCount(); ++column) {
+            const QString text = model->index(row, column).data(Qt::DisplayRole).toString();
+            if (text == open || text == overdue) {
                 holdRow(table, row);
                 return;
             }
@@ -686,7 +730,8 @@ void shotRetFromHistory(Capture& capture)
     capture.openModal(
         [&]() { capture.click(capture.button("catalog.loans")); },
         [&](QWidget* modal) {
-            selectUnreturnedRow(modal->findChild<QTableWidget*>());
+            auto* historyTable = modal->findChild<QTableView*>(QStringLiteral("loanHistoryTable"));
+            selectUnreturnedRow(historyTable);
             capture.settle(200);
             capture.save(QStringLiteral("ret-from-history"), capture.grab(modal));
             closeModal(modal);
@@ -741,11 +786,11 @@ void shotRmCopyRow(Capture& capture)
 void shotRmLoanConfirm(Capture& capture)
 {
     capture.goTo("nav.circulation");
-    auto* search = frameOf(capture)->searchEdit();
+    auto* search = searchOf(capture);
     search->setAttribute(Qt::WA_InputMethodEnabled, false);
     search->clear();
     pickList(capture, "loanFilter", T("circulation.filter.returned"));
-    if (capture.table()->rowCount() < 1) {
+    if (capture.table()->model()->rowCount() < 1) {
         fail("no returned loan is on screen");
     }
     holdRow(capture.table(), 0);
@@ -760,30 +805,29 @@ void shotRmLoanConfirm(Capture& capture)
 void shotRmBulkConfirm(Capture& capture)
 {
     capture.goTo("nav.catalog");
-    frameOf(capture)->searchEdit()->clear();
+    searchOf(capture)->clear();
     capture.settle(400);
-    QTableWidget* table = capture.table();
+    QTableView* table = capture.table();
+    auto* model = table->model();
     const int localColumn = [&]() {
-        for (int column = 0; column < table->columnCount(); ++column) {
-            const QTableWidgetItem* header = table->horizontalHeaderItem(column);
-            if (header != nullptr && header->text() == T("catalog.col.localNumber")) {
+        for (int column = 0; column < model->columnCount(); ++column) {
+            if (model->headerData(column, Qt::Horizontal).toString() == T("catalog.col.localNumber")) {
                 return column;
             }
         }
         return -1;
     }();
     int ticked = 0;
-    for (int row = 0; row < table->rowCount() && ticked < 3; ++row) {
-        const QTableWidgetItem* local = localColumn < 0 ? nullptr : table->item(row, localColumn);
-        if (local != nullptr
-            && !local->data(LocalNumberDelegate::kOnLoanRole).toStringList().isEmpty()) {
+    for (int row = 0; row < model->rowCount() && ticked < 3; ++row) {
+        if (localColumn >= 0) {
+            const QModelIndex local = model->index(row, localColumn);
+            if (!local.data(LocalNumberDelegate::kOnLoanRole).toStringList().isEmpty()) {
+                continue;
+            }
+        }
+        if (!model->setData(model->index(row, 0), Qt::Checked, Qt::CheckStateRole)) {
             continue;
         }
-        QTableWidgetItem* title = table->item(row, 0);
-        if (title == nullptr) {
-            continue;
-        }
-        title->setCheckState(Qt::Checked);
         ++ticked;
     }
     if (ticked < 3) {
@@ -803,7 +847,7 @@ void shotReuseChooser(Capture& capture)
     ensureArchivedBook();
     capture.goTo("nav.archive");
     pickList(capture, "archiveType", T("archive.type.copies"));
-    if (capture.table()->rowCount() < 1) {
+    if (capture.table()->model()->rowCount() < 1) {
         fail("no archived copy");
     }
     holdRow(capture.table(), 0);
@@ -820,7 +864,7 @@ void shotReuseEditor(Capture& capture)
     ensureArchivedBook();
     capture.goTo("nav.archive");
     pickList(capture, "archiveType", T("archive.type.copies"));
-    if (capture.table()->rowCount() < 1) {
+    if (capture.table()->model()->rowCount() < 1) {
         fail("no archived copy");
     }
     holdRow(capture.table(), 0);

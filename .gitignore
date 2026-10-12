@@ -34,5 +34,8 @@
 # Python bytecode from the manual and import scripts
 __pycache__/
 
+# CTest scratch output from running ctest in the source tree
+/Testing/
+
 # Per-developer editor settings
 /.vscode/

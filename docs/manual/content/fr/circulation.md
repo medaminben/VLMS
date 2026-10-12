@@ -45,4 +45,4 @@ La recherche suit le titre, le numéro d'adhésion et le nom complet. Un nom et 
 
 ## Les boutons
 
-`Prêter` sort un exemplaire. `Prolonger` et `Retourner` suivent le prêt surligné et ne sont disponibles que tant que ce prêt est encore sorti. `Supprimer` archive un prêt retourné. Les étapes sont [Prêter un ouvrage](task-lend-book), [Retourner ou prolonger](task-return-extend) et [Retirer](task-remove-book).
+`Prêter` sort un exemplaire. `Prolonger` et `Retourner` suivent le prêt surligné et ne sont disponibles que tant que ce prêt est encore sorti. `Supprimer` archive un prêt retourné. L'historique d'un titre ou d'un adhérent est la même fenêtre d'historique des prêts ouverte depuis le [Catalogue](catalogue) ou les [Adhérents](members). Les étapes sont [Prêter un ouvrage](task-lend-book), [Retourner ou prolonger](task-return-extend) et [Retirer](task-remove-book).
