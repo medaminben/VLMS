@@ -52,6 +52,13 @@ New-Item -ItemType Directory -Force -Path $LicensesDir | Out-Null
 # its bin folder, so finding one there does not make it Qt.
 $RuntimeDllPattern = '^(?i)(libgcc_s_[a-z0-9]+-1|libstdc\+\+-6|libwinpthread-1)\.dll$'
 
+# Packages whose MSYS2 build installs no licence file, and the text in
+# licenses\ that covers them.
+$KnownLicences = @{
+  "mingw-w64-x86_64-giflib"  = "licenses\giflib.txt";
+  "mingw-w64-x86_64-libidn2" = "licenses\LGPL-3.0.txt (libidn2 is LGPLv3+ or GPLv2+; it is used here under LGPLv3)"
+}
+
 function Invoke-Pacman {
   param([string[]]$Arguments)
   # pacman writes "No package owns ..." to stderr; that is an answer, not a
@@ -155,6 +162,8 @@ foreach ($package in ($packages.Keys | Sort-Object)) {
   $copied = @(Copy-PackageLicences -Package $package)
   if ($copied.Count -gt 0) {
     $lines += ($copied | ForEach-Object { "    $_" })
+  } elseif ($KnownLicences.ContainsKey($package)) {
+    $lines += "    " + $KnownLicences[$package]
   } else {
     $lines += "    (the package installs no licence file; see https://packages.msys2.org/package/$package)"
   }

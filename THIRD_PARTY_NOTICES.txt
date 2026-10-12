@@ -9,7 +9,9 @@ beside this file.
 
 The Windows installer also contains DLLs that these components depend on.
 Each of them, the package it came from and that package's licence files are
-listed in licenses\BUNDLED_FILES.txt, which the build writes. On Linux these
+listed in licenses\BUNDLED_FILES.txt, which the build writes. Two of those
+packages install no licence file of their own: giflib (licenses/giflib.txt)
+and libidn2 (LGPLv3+ or GPLv2+, used here under licenses/LGPL-3.0.txt). On Linux these
 libraries come from the system instead.
 
 
