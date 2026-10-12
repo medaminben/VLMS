@@ -49,6 +49,7 @@ set(TST_SOURCES
     src/test_archive_members.cpp
     src/test_archive_reuse.cpp
     src/test_can_remove.cpp
+    src/test_staged_files.cpp
 )
 
 build_gtest_executable(
@@ -63,4 +64,11 @@ build_gtest_executable(
     TIMEOUT 300
     TIMEZONES Pacific/Kiritimati Pacific/Midway
     TIMEZONE_FILTER test_core_Timezone.*
+)
+
+# StagedFiles is a private helper of the library, so its tests include the
+# library's source directory.
+target_include_directories(test_vlms_repositories
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )

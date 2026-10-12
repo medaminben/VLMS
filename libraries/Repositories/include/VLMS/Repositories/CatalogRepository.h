@@ -18,6 +18,8 @@ class BookCopyStore;
 class CategoryStore;
 class NamedEntityStore;
 
+class StagedFiles;
+
 class CatalogRepository {
 public:
     CatalogRepository(Database::SqliteSession& session, std::string resourcesDirectory);
@@ -92,7 +94,8 @@ private:
     [[nodiscard]] Core::Result<std::int64_t> insertBookRow(const BookInput& input);
     [[nodiscard]] Core::Status applyBookFields(std::int64_t id, const BookInput& input);
     [[nodiscard]] Core::Status applyCoverImage(std::int64_t bookId,
-                                                     const std::string& sourceFilePath);
+                                                     const std::string& sourceFilePath,
+                                                     StagedFiles& staged);
     [[nodiscard]] bool archivedBookHasKey(const BookInput& input,
                                           std::int64_t authorId,
                                           std::int64_t publisherId) const;

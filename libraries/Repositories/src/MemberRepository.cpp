@@ -8,6 +8,7 @@
 #include "LoanSql.h"
 #include "MemberSql.h"
 #include "RepoSql.h"
+#include "StagedFiles.h"
 #include <VLMS/Database/SqliteSession.h>
 #include <VLMS/Core/Text.h>
 
@@ -18,33 +19,6 @@
 namespace VLMS::Repositories {
 
 namespace {
-
-/// Copies `source` over `target` without ever leaving `target` missing: the
-/// copy goes to a sibling first and only a finished copy is renamed into place.
-/// Removing the old file up front lost it whenever the copy then failed.
-bool replaceWithCopy(const std::filesystem::path& source, const std::filesystem::path& target)
-{
-    std::filesystem::path partial = target;
-    partial += ".part";
-    std::error_code error;
-    std::filesystem::remove(partial, error);
-    if (!std::filesystem::copy_file(source, partial, error)) {
-        std::filesystem::remove(partial, error);
-        return false;
-    }
-    std::filesystem::rename(partial, target, error);
-    if (error) {
-        // A rename that will not replace an existing file. The new image is
-        // complete beside it by now, so the swap itself is all that is at risk.
-        std::filesystem::remove(target, error);
-        std::filesystem::rename(partial, target, error);
-    }
-    if (error) {
-        std::filesystem::remove(partial, error);
-        return false;
-    }
-    return true;
-}
 
 
 std::string memberSelectSql()
@@ -633,6 +607,7 @@ Core::Status MemberRepository::updateMember(const std::int64_t id, const MemberI
 Core::Result<std::int64_t> MemberRepository::saveNewMember(const MemberWrite& write)
 {
     std::int64_t memberId = 0;
+    StagedFiles staged;
     const Core::Status work = m_session.transaction([&] {
         const auto inserted = insertMemberRow(write.member);
         if (!inserted) {
@@ -641,23 +616,28 @@ Core::Result<std::int64_t> MemberRepository::saveNewMember(const MemberWrite& wr
         memberId = inserted.value();
 
         if (!write.photoSourcePath.empty()) {
-            if (const auto photo = storeMemberImage(memberId, write.photoSourcePath, ImageSlot::Photo);
+            if (const auto photo = storeMemberImage(memberId, write.photoSourcePath, ImageSlot::Photo, staged);
                 !photo) {
                 return photo;
             }
         }
         if (!write.idImageSourcePath.empty()) {
             if (const auto idImage =
-                    storeMemberImage(memberId, write.idImageSourcePath, ImageSlot::IdCard);
+                    storeMemberImage(memberId, write.idImageSourcePath, ImageSlot::IdCard, staged);
                 !idImage) {
                 return idImage;
             }
+        }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old files back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.image.copyFailed");
         }
         return Core::Status::ok();
     });
     if (!work) {
         return Core::Result<std::int64_t>::fail(work.error().kind, work.error().key, work.error().detail);
     }
+    staged.finish();
     return Core::Result<std::int64_t>::ok(memberId);
 }
 
@@ -698,12 +678,13 @@ bool isOwnMemberImage(const std::filesystem::path& stored, const std::int64_t me
 Core::Status MemberRepository::saveExistingMember(const std::int64_t id, const MemberWrite& write)
 {
     std::vector<std::string> clearedPaths;
+    StagedFiles staged;
     const Core::Status saved = m_session.transaction([&] {
         if (const auto updated = applyMemberFields(id, write.member); !updated) {
             return updated;
         }
         if (!write.photoSourcePath.empty()) {
-            if (const auto photo = storeMemberImage(id, write.photoSourcePath, ImageSlot::Photo);
+            if (const auto photo = storeMemberImage(id, write.photoSourcePath, ImageSlot::Photo, staged);
                 !photo) {
                 return photo;
             }
@@ -714,7 +695,7 @@ Core::Status MemberRepository::saveExistingMember(const std::int64_t id, const M
             }
         }
         if (!write.idImageSourcePath.empty()) {
-            if (const auto idImage = storeMemberImage(id, write.idImageSourcePath, ImageSlot::IdCard);
+            if (const auto idImage = storeMemberImage(id, write.idImageSourcePath, ImageSlot::IdCard, staged);
                 !idImage) {
                 return idImage;
             }
@@ -724,8 +705,16 @@ Core::Status MemberRepository::saveExistingMember(const std::int64_t id, const M
                 return cleared;
             }
         }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old files back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.image.copyFailed");
+        }
         return Core::Status::ok();
     });
+
+    if (saved) {
+        staged.finish();
+    }
 
     // Only after the commit: a save that failed must not have lost the file.
     if (saved) {
@@ -930,7 +919,8 @@ std::string MemberRepository::resolveImagePath(const std::string& storedPath) co
 
 Core::Status MemberRepository::storeMemberImage(const std::int64_t memberId,
                                                 const std::string& sourceFilePath,
-                                                const ImageSlot slot)
+                                                const ImageSlot slot,
+                                                StagedFiles& staged)
 {
     const char* basename = slot == ImageSlot::Photo ? "photo" : "id";
 
@@ -963,7 +953,7 @@ Core::Status MemberRepository::storeMemberImage(const std::int64_t memberId,
     const std::filesystem::path targetPath =
         std::filesystem::path(m_resourcesDirectory) / relativePath;
 
-    if (!replaceWithCopy(source, targetPath)) {
+    if (!staged.stage(source, targetPath)) {
         return RepoSql::validation("error.image.copyFailed");
     }
 
@@ -1022,12 +1012,42 @@ Core::Status MemberRepository::clearMemberImage(const std::int64_t memberId,
 Core::Status MemberRepository::setPhotoImage(const std::int64_t memberId,
                                              const std::string& sourceFilePath)
 {
-    return storeMemberImage(memberId, sourceFilePath, ImageSlot::Photo);
+    StagedFiles staged;
+    const Core::Status work = m_session.transaction([&] {
+        if (const auto stored = storeMemberImage(memberId, sourceFilePath, ImageSlot::Photo, staged);
+            !stored) {
+            return stored;
+        }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old file back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.image.copyFailed");
+        }
+        return Core::Status::ok();
+    });
+    if (work) {
+        staged.finish();
+    }
+    return work;
 }
 
 Core::Status MemberRepository::setIdImage(const std::int64_t memberId, const std::string& sourceFilePath)
 {
-    return storeMemberImage(memberId, sourceFilePath, ImageSlot::IdCard);
+    StagedFiles staged;
+    const Core::Status work = m_session.transaction([&] {
+        if (const auto stored = storeMemberImage(memberId, sourceFilePath, ImageSlot::IdCard, staged);
+            !stored) {
+            return stored;
+        }
+        // Last step: if COMMIT then fails, ~StagedFiles puts the old file back.
+        if (!staged.swap()) {
+            return RepoSql::validation("error.image.copyFailed");
+        }
+        return Core::Status::ok();
+    });
+    if (work) {
+        staged.finish();
+    }
+    return work;
 }
 
 }  // namespace VLMS::Repositories
