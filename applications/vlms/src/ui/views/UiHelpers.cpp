@@ -314,6 +314,8 @@ QWidget* makeDetailValueWidget(QWidget* parent, const bool scrollable)
 
     auto* label = new QLabel(parent);
     label->setObjectName(QStringLiteral("bookDetailValue"));
+    // Library data: a title that looks like HTML is shown as typed.
+    label->setTextFormat(Qt::PlainText);
     label->setWordWrap(true);
     label->setAlignment(Qt::AlignTop | Qt::AlignLeading);
     label->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -426,6 +428,8 @@ void localizeMessageBox(QMessageBox* box)
     if (box == nullptr) {
         return;
     }
+    // Messages quote titles and names; markup in them is shown as typed.
+    box->setTextFormat(Qt::PlainText);
 
     // QMessageBox::StandardButton mirrors QDialogButtonBox::StandardButton
     // value for value, which is why one table serves both.

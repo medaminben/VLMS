@@ -7,6 +7,7 @@ build_gtest_executable(
     SRC
         src/test_main.cpp
         src/test_loan_dialogs.cpp
+        src/test_plain_text.cpp
         src/test_dialog_translations.cpp
         src/test_birth_date_edit.cpp
         src/test_member_removal.cpp

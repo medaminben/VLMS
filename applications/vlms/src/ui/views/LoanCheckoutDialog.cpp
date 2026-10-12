@@ -69,6 +69,7 @@ void LoanCheckoutDialog::buildUi() {
     if (m_scope.memberId > 0) {
         // The member is already decided; the name is shown, not chosen.
         m_memberFixedLabel = new QLabel(m_scope.label, this);
+        m_memberFixedLabel->setTextFormat(Qt::PlainText);
         form->addRow(new QLabel(this), m_memberFixedLabel);
     } else {
         m_memberSearchEdit = new QLineEdit(this);

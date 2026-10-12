@@ -12,6 +12,7 @@
 
 #include <QDate>
 #include <QDateEdit>
+#include <QLabel>
 
 #include <gtest/gtest.h>
 
@@ -217,4 +218,42 @@ TEST_F(test_ui_LoanDialogs, ExtendDialogMinimumIsAcceptedByCore)
     EXPECT_TRUE(m_repository->extendLoan(loanId, earliest))
         << "core rejected the dialog's earliest date " << earliest;
     EXPECT_EQ(m_repository->getLoan(loanId)->dueAt, earliest);
+}
+
+// A title or name that looks like HTML must read as typed, not render.
+TEST_F(test_ui_LoanDialogs, ReturnSummaryShowsMarkupAsTyped)
+{
+    Repositories::LoanRecord loan = loanDueOn(QDate::currentDate().toString(Qt::ISODate));
+    loan.bookTitle = "<b>Bold</b> title";
+    LoanReturnDialog dialog(loan);
+    auto* summary = dialog.findChild<QLabel*>(QStringLiteral("loanReturnSummary"));
+    ASSERT_NE(summary, nullptr);
+    EXPECT_EQ(summary->textFormat(), Qt::PlainText);
+    EXPECT_TRUE(summary->text().contains(QStringLiteral("<b>Bold</b> title")));
+}
+
+TEST_F(test_ui_LoanDialogs, ExtendSummaryShowsMarkupAsTyped)
+{
+    Repositories::LoanRecord loan = loanDueOn(QDate::currentDate().addDays(3).toString(Qt::ISODate));
+    loan.memberName = "<i>Amina</i>";
+    LoanExtendDialog dialog(loan);
+    auto* summary = dialog.findChild<QLabel*>(QStringLiteral("loanExtendSummary"));
+    ASSERT_NE(summary, nullptr);
+    EXPECT_EQ(summary->textFormat(), Qt::PlainText);
+}
+
+TEST_F(test_ui_LoanDialogs, CheckoutShowsAFixedMemberNameAsTyped)
+{
+    LoanScope scope;
+    scope.memberId = 1;
+    scope.label = QStringLiteral("<h1>Amina</h1>");
+    LoanCheckoutDialog dialog(*m_lookups, scope);
+    bool found = false;
+    for (QLabel* label : dialog.findChildren<QLabel*>()) {
+        if (label->text() == scope.label) {
+            found = true;
+            EXPECT_EQ(label->textFormat(), Qt::PlainText);
+        }
+    }
+    EXPECT_TRUE(found) << "the fixed member label was not found";
 }
