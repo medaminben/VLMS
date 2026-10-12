@@ -69,7 +69,13 @@ Either way, the checkbox on that page copies the existing `vlms.db` (plus
 any `-wal`/`-journal` beside it) and the installation's `resources` folder to
 `Documents\VLMS Backups\` first. It is on by default and applies to both
 choices — a kept database is about to be migrated in place, which is also worth
-a copy.
+a copy. The images are copied even when the installation has no `vlms.db`. If
+the copy fails, Setup says which part failed and changes nothing.
+
+If VLMS is still open, Setup asks to close it before it copies or deletes
+anything, and offers *Retry* and *Cancel*. It knows from `database\vlms.lock`,
+which a running VLMS holds open. The uninstaller asks the same. A run with
+`/SUPPRESSMSGBOXES` cannot ask, so it stops with an error instead of waiting.
 
 Two cases the page adapts to:
 
@@ -123,9 +129,10 @@ the sample catalogue, never a library's real one.
 
 **Keep its database and cover images**
 
-4. Run the new `VLMS_Setup_X.Y.Z.exe`. The page shows the installed version,
-   the update level and the recorded schema. Leave the backup box ticked and
-   choose *Keep*.
+4. Start VLMS, then run the new `VLMS_Setup_X.Y.Z.exe`. The page shows the
+   installed version, the update level and the recorded schema. Leave the
+   backup box ticked and choose *Keep*. Setup says VLMS is still open: close
+   it and click *Retry*.
 5. Check `Documents\VLMS Backups\` now holds a `vlms-*.db` and a
    `vlms-*-resources` folder with the three images from step 3.
 6. Start VLMS. The member, their two images, the cover and the open loan are
@@ -151,8 +158,9 @@ the sample catalogue, never a library's real one.
 
 **Uninstall**
 
-10. Uninstall from *Settings → Apps* and answer *No* to deleting the data:
-    `database\` and `resources\` stay. Reinstall, then uninstall again
+10. Start VLMS and uninstall from *Settings → Apps*: the uninstaller says VLMS
+    is still open. Close it, click *Retry*, and answer *No* to deleting the
+    data: `database\` and `resources\` stay. Reinstall, then uninstall again
     answering *Yes*: the folder is gone.
 
 Anything that does not match is a release blocker.
