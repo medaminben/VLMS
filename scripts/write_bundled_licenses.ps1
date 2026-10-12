@@ -52,6 +52,13 @@ New-Item -ItemType Directory -Force -Path $LicensesDir | Out-Null
 # its bin folder, so finding one there does not make it Qt.
 $RuntimeDllPattern = '^(?i)(libgcc_s_[a-z0-9]+-1|libstdc\+\+-6|libwinpthread-1)\.dll$'
 
+# Packages whose MSYS2 build installs no licence file, and the text in
+# licenses\ that covers them.
+$KnownLicences = @{
+  "mingw-w64-x86_64-giflib"  = "licenses\giflib.txt";
+  "mingw-w64-x86_64-libidn2" = "licenses\LGPL-3.0.txt (libidn2 is LGPLv3+ or GPLv2+; it is used here under LGPLv3)"
+}
+
 function Invoke-Pacman {
   param([string[]]$Arguments)
   # pacman writes "No package owns ..." to stderr; that is an answer, not a
@@ -102,7 +109,11 @@ foreach ($dll in (Get-ChildItem $stageFull -Recurse -File -Filter *.dll | Sort-O
   $name = $dll.Name
   $origin = $null
 
-  if ($relative.Contains("\") -and (Test-Path (Join-Path (Join-Path $QtRoot "plugins") $relative))) {
+  # windeployqt stages plugins both as platforms\qwindows.dll and as
+  # plugins\platforms\qwindows.dll; in the kit they live under plugins\ once.
+  $pluginPath = $relative
+  if ($pluginPath -match '^(?i)plugins\\') { $pluginPath = $pluginPath.Substring(8) }
+  if ($relative.Contains("\") -and (Test-Path (Join-Path (Join-Path $QtRoot "plugins") $pluginPath))) {
     $origin = "Qt 6 plugin - licenses\LGPL-3.0.txt"
   } elseif ($name -match '^(?i)Qt6' -and (Test-Path (Join-Path (Join-Path $QtRoot "bin") $name))) {
     $origin = "Qt 6 - licenses\LGPL-3.0.txt"
@@ -151,6 +162,8 @@ foreach ($package in ($packages.Keys | Sort-Object)) {
   $copied = @(Copy-PackageLicences -Package $package)
   if ($copied.Count -gt 0) {
     $lines += ($copied | ForEach-Object { "    $_" })
+  } elseif ($KnownLicences.ContainsKey($package)) {
+    $lines += "    " + $KnownLicences[$package]
   } else {
     $lines += "    (the package installs no licence file; see https://packages.msys2.org/package/$package)"
   }
@@ -160,6 +173,8 @@ $out = Join-Path $LicensesDir "BUNDLED_FILES.txt"
 [System.IO.File]::WriteAllLines($out, [string[]]$lines, (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host "Recorded $($rows.Count) DLLs and $($packages.Count) MSYS2 packages in $out"
+# Into the build log too: the installer cannot be unpacked to review it.
+Get-Content $out -Encoding UTF8 | ForEach-Object { Write-Host "  $_" }
 if ($unknown.Count -gt 0) {
   Write-Warning ("No known source for these DLLs; find their licences before releasing:`n  " +
     ($unknown -join "`n  "))
