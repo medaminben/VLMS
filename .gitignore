@@ -7,8 +7,16 @@
 *.user
 *.autosave
 
-# Runtime data (database/vlms.db, resources/books, resources/members) is mock
-# data and is tracked, so the Windows installer build finds it in the checkout.
+# Sample runtime data. database/vlms.db is tracked. The cover images and member
+# photographs are too large for the repository: they ship as
+# VLMS_installer_data.zip on a release, fetched by scripts/fetch_runtime_data.sh
+# (or fetch_installer_data.ps1 on Windows).
+/resources/books/**
+!/resources/books/.gitkeep
+/resources/members/**
+!/resources/members/.gitkeep
+/resources/.installer-data
+
 # Hand-made backups of the live database. These hold real member records
 # (names, dates of birth) and must never enter version control.
 /database/*.db.bak-*

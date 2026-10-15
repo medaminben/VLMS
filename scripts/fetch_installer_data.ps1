@@ -1,27 +1,37 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Ensure pre-populated database and resources exist before building the installer.
+  Ensure the sample cover images and member photographs exist before building
+  the installer. They are not tracked; database/vlms.db is, and the zip does not
+  carry it.
 #>
 
 param(
   [switch]$Require,
   # The release that holds the catalogue data zip. Not "latest": releases cut
-  # automatically carry only the installer and CHANGELOG.md.
-  [string]$DataTag = "v0.1.0"
+  # automatically carry only the installer and CHANGELOG.md. Keep in step with
+  # DATA_TAG in fetch_runtime_data.sh.
+  [string]$DataTag = "installer-data-2"
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$DbPath = Join-Path $RepoRoot "database\vlms.db"
 $BooksDir = Join-Path $RepoRoot "resources\books"
 $ZipName = "VLMS_installer_data.zip"
+# Names the data release last unpacked here, so a bump of DataTag fetches again.
+$MarkerPath = Join-Path $RepoRoot "resources\.installer-data"
 
 function Test-InstallerDataPresent {
-  if (-not (Test-Path $DbPath)) { return $false }
   $bookFiles = @(Get-ChildItem $BooksDir -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -ne ".gitkeep" })
   return $bookFiles.Count -gt 0
+}
+
+function Test-InstallerDataCurrent {
+  if (-not (Test-InstallerDataPresent)) { return $false }
+  if ($env:VLMS_INSTALLER_DATA_URL) { return $true }
+  if (-not (Test-Path $MarkerPath)) { return $false }
+  return (Get-Content $MarkerPath -Raw).Trim() -eq $DataTag
 }
 
 function Expand-InstallerDataZip {
@@ -31,14 +41,6 @@ function Expand-InstallerDataZip {
   New-Item -ItemType Directory -Force -Path $temp | Out-Null
   try {
     Expand-Archive -Path $ZipPath -DestinationPath $temp -Force
-
-    $db = Get-ChildItem $temp -Recurse -Filter "vlms.db" -File -ErrorAction SilentlyContinue |
-      Select-Object -First 1
-    if ($db) {
-      New-Item -ItemType Directory -Force -Path (Split-Path $DbPath) | Out-Null
-      Copy-Item $db.FullName $DbPath -Force
-      Write-Host "  Installed database/vlms.db"
-    }
 
     foreach ($subdir in @("books", "members")) {
       $src = Get-ChildItem $temp -Recurse -Directory -Filter $subdir -ErrorAction SilentlyContinue |
@@ -102,12 +104,12 @@ function Fail-IfRequired {
   Write-Warning $Message
 }
 
-if (Test-InstallerDataPresent) {
+if (Test-InstallerDataCurrent) {
   Write-Host "Installer runtime data already present."
   exit 0
 }
 
-Write-Host "Pre-populated database/resources not found — downloading release asset..."
+Write-Host "Cover images not found — downloading release asset..."
 $ZipPath = Join-Path $RepoRoot $ZipName
 
 if ($env:VLMS_INSTALLER_DATA_URL) {
@@ -130,7 +132,8 @@ Expand-InstallerDataZip -ZipPath $ZipPath
 Remove-Item $ZipPath -Force -ErrorAction SilentlyContinue
 
 if (Test-InstallerDataPresent) {
+  if (-not $env:VLMS_INSTALLER_DATA_URL) { Set-Content -Path $MarkerPath -Value $DataTag }
   Write-Host "Installer runtime data ready."
 } else {
-  Fail-IfRequired "Download completed but database/covers still missing."
+  Fail-IfRequired "Download completed but cover images are still missing."
 }

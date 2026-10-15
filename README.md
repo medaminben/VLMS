@@ -16,7 +16,7 @@ The interface is in Arabic, French, and English.
 
 The manual shipped with the application is under [`docs/manual/`](docs/manual/index.html). It can also be read online at <https://medaminben.github.io/VLMS/>.
 
-A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). That data is for trying the program. It is not a live library.
+A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). The images are not tracked; run `scripts/fetch_runtime_data.sh` once to download them. That data is for trying the program. It is not a live library.
 
 ## Requirements
 

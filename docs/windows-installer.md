@@ -192,12 +192,23 @@ becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 Dispatches `.github/workflows/windows-installer.yml`, watches the run, and
 downloads the `.exe` into `dist/`.
 
-The installer ships the sample catalogue tracked in the repository:
-`database/vlms.db`, `resources/books/` and `resources/members/`. CI builds from
-the checkout, so changing the catalogue is an ordinary commit.
-`scripts/fetch_installer_data.ps1` still runs and only confirms that the data is
-present; its download path (`VLMS_installer_data.zip`, or
-`VLMS_INSTALLER_DATA_URL`) is for a checkout without that data.
+The installer ships the sample catalogue: `database/vlms.db`, which is tracked,
+and `resources/books/` and `resources/members/`, which are not. The images live
+in `VLMS_installer_data.zip` on the release named by `DataTag` in
+`scripts/fetch_installer_data.ps1`. CI runs that script, which downloads the zip
+(or `VLMS_INSTALLER_DATA_URL`) into a checkout without the images. On Linux,
+`scripts/fetch_runtime_data.sh` does the same for a development checkout.
+
+To change the sample images:
+
+1. Edit `resources/books/` or `resources/members/` locally.
+2. Run `scripts/package_installer_data.sh` to build `dist/VLMS_installer_data.zip`.
+3. Upload it to a new release, for example
+   `gh release create installer-data-3 dist/VLMS_installer_data.zip --latest=false --prerelease`.
+   The tag must not start with `v`: release tags are `vX.Y.Z` and cut
+   automatically. `--latest=false` keeps the newest program release the latest.
+4. Bump `DataTag` in `fetch_installer_data.ps1` and `DATA_TAG` in
+   `fetch_runtime_data.sh` to the new tag.
 
 ## The staleness guard
 
@@ -205,8 +216,8 @@ These checks exist because one thing went wrong quietly and would again:
 the July 0.1.0 data zip held a database at `user_version` 0, and nothing in the
 pipeline noticed.
 
-1. `scripts/package_installer_data.sh` refuses to pack a database whose
-   `user_version` does not match `database/schema.sql`.
+1. The data zip no longer carries a database; `database/vlms.db` is tracked and
+   built from the checkout.
 2. `scripts/verify_installer_stage.ps1` reads the staged database's
    `user_version` straight out of the SQLite header (offset 60) and compares it
    to the staged `schema.sql`. A mismatch is fatal under `-RequireInstallerData`,
