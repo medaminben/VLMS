@@ -15,6 +15,7 @@
 !/resources/books/.gitkeep
 /resources/members/**
 !/resources/members/.gitkeep
+/resources/.installer-data
 
 # Hand-made backups of the live database. These hold real member records
 # (names, dates of birth) and must never enter version control.

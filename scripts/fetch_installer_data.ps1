@@ -11,18 +11,27 @@ param(
   # The release that holds the catalogue data zip. Not "latest": releases cut
   # automatically carry only the installer and CHANGELOG.md. Keep in step with
   # DATA_TAG in fetch_runtime_data.sh.
-  [string]$DataTag = "installer-data-1"
+  [string]$DataTag = "installer-data-2"
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $BooksDir = Join-Path $RepoRoot "resources\books"
 $ZipName = "VLMS_installer_data.zip"
+# Names the data release last unpacked here, so a bump of DataTag fetches again.
+$MarkerPath = Join-Path $RepoRoot "resources\.installer-data"
 
 function Test-InstallerDataPresent {
   $bookFiles = @(Get-ChildItem $BooksDir -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -ne ".gitkeep" })
   return $bookFiles.Count -gt 0
+}
+
+function Test-InstallerDataCurrent {
+  if (-not (Test-InstallerDataPresent)) { return $false }
+  if ($env:VLMS_INSTALLER_DATA_URL) { return $true }
+  if (-not (Test-Path $MarkerPath)) { return $false }
+  return (Get-Content $MarkerPath -Raw).Trim() -eq $DataTag
 }
 
 function Expand-InstallerDataZip {
@@ -95,7 +104,7 @@ function Fail-IfRequired {
   Write-Warning $Message
 }
 
-if (Test-InstallerDataPresent) {
+if (Test-InstallerDataCurrent) {
   Write-Host "Installer runtime data already present."
   exit 0
 }
@@ -123,6 +132,7 @@ Expand-InstallerDataZip -ZipPath $ZipPath
 Remove-Item $ZipPath -Force -ErrorAction SilentlyContinue
 
 if (Test-InstallerDataPresent) {
+  if (-not $env:VLMS_INSTALLER_DATA_URL) { Set-Content -Path $MarkerPath -Value $DataTag }
   Write-Host "Installer runtime data ready."
 } else {
   Fail-IfRequired "Download completed but cover images are still missing."

@@ -11,7 +11,7 @@ continue the integer sequence used by the live catalogue.
 
 Images are not drawn here. Portrait and membership-card files live at
 resources/members/<id>/photo.jpg and id.jpg. One cover per book lives at
-resources/books/<id>/cover.png. A re-run links those files on the archived
+resources/books/<id>/cover.jpg. A re-run links those files on the archived
 rows, the same relative paths MemberRepository and CatalogRepository store.
 A row that already has a path is left alone.
 """
@@ -305,11 +305,11 @@ def attach_images(conn: sqlite3.Connection) -> tuple[int, int, int]:
         if found is None:
             continue
         book_id, cover_path = found
-        cover = RESOURCES / "books" / str(book_id) / "cover.png"
+        cover = RESOURCES / "books" / str(book_id) / "cover.jpg"
         if cover.is_file() and not (cover_path or "").strip():
             conn.execute(
                 "UPDATE books SET cover_image_path = ? WHERE id = ?",
-                (f"books/{book_id}/cover.png", book_id),
+                (f"books/{book_id}/cover.jpg", book_id),
             )
             covers += 1
     return photos, cards, covers

@@ -204,7 +204,7 @@ To change the sample images:
 1. Edit `resources/books/` or `resources/members/` locally.
 2. Run `scripts/package_installer_data.sh` to build `dist/VLMS_installer_data.zip`.
 3. Upload it to a new release, for example
-   `gh release create installer-data-2 dist/VLMS_installer_data.zip --latest=false --prerelease`.
+   `gh release create installer-data-3 dist/VLMS_installer_data.zip --latest=false --prerelease`.
    The tag must not start with `v`: release tags are `vX.Y.Z` and cut
    automatically. `--latest=false` keeps the newest program release the latest.
 4. Bump `DataTag` in `fetch_installer_data.ps1` and `DATA_TAG` in

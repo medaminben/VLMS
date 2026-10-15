@@ -5,25 +5,28 @@
 # named by DATA_TAG; scripts/package_installer_data.sh builds that zip.
 #
 # Usage: scripts/fetch_runtime_data.sh [--force]
-#   --force  download again even when resources/books/ already has covers
+#   --force  download again even when this data release is already installed
 #
 # VLMS_INSTALLER_DATA_URL overrides the download URL.
 
 set -euo pipefail
 
 # Keep in step with DataTag in fetch_installer_data.ps1.
-DATA_TAG="installer-data-1"
+DATA_TAG="installer-data-2"
 ZIP_NAME="VLMS_installer_data.zip"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOOKS="$ROOT/resources/books"
+# Names the data release last unpacked here, so a bump of DATA_TAG fetches again.
+MARKER="$ROOT/resources/.installer-data"
 
 has_covers() {
   [[ -n "$(find "$BOOKS" -type f ! -name .gitkeep -print -quit 2>/dev/null)" ]]
 }
 
-if [[ "${1:-}" != "--force" ]] && has_covers; then
-  echo "Cover images already present in resources/books/."
+if [[ "${1:-}" != "--force" ]] && has_covers \
+    && [[ "$(cat "$MARKER" 2>/dev/null)" == "$DATA_TAG" ]]; then
+  echo "Cover images from $DATA_TAG already present in resources/books/."
   exit 0
 fi
 
@@ -56,3 +59,4 @@ for subdir in books members; do
 done
 
 has_covers || { echo "Error: the zip held no cover images." >&2; exit 1; }
+echo "$DATA_TAG" > "$MARKER"
