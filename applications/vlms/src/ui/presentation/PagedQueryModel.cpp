@@ -92,6 +92,21 @@ void PagedQueryModel::clearTicks()
     }
 }
 
+void PagedQueryModel::toggleTicks()
+{
+    if (m_spec == nullptr) {
+        return;
+    }
+    const int rows = m_spec->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        if (!m_checked.contains(m_spec->idAt(row))) {
+            tickAll();
+            return;
+        }
+    }
+    clearTicks();
+}
+
 bool PagedQueryModel::revealId(qint64 id)
 {
     if (m_spec == nullptr) {
