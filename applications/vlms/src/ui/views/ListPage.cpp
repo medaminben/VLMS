@@ -535,7 +535,7 @@ void ListPage::clearPreview()
 void ListPage::runAction(const PageAction& action)
 {
     if (action.id == QStringLiteral("tickAll")) {
-        m_model->tickAll();
+        m_model->toggleTicks();
         updateActionEnabled();
         if (action.run) {
             (void)action.run(currentContext());

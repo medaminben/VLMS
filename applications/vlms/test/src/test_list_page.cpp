@@ -319,6 +319,10 @@ TEST(ListPage, TableScopedShortcutsDoNotStealSearchCtrlA)
     QTest::keyClick(page.table(), Qt::Key_A, Qt::ControlModifier);
     QTest::qWait(0);
     EXPECT_EQ(page.model()->checkedIds().size(), 2);
+
+    QTest::keyClick(page.table(), Qt::Key_A, Qt::ControlModifier);
+    QTest::qWait(0);
+    EXPECT_TRUE(page.model()->checkedIds().isEmpty());
 }
 
 TEST(ListPage, FailedLoadShowsRetryStrip)

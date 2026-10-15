@@ -177,6 +177,41 @@ TEST(PagedQueryModel, TickAllChecksEveryListedId)
     EXPECT_EQ(sorted(model.checkedIds()), (QList<qint64>{1, 2, 3}));
 }
 
+TEST(PagedQueryModel, ToggleTicksUnticksWhenEveryRowIsTicked)
+{
+    FakeListSpec spec;
+    spec.nextRows = {{1, QStringLiteral("A"), QStringLiteral("a")},
+                     {2, QStringLiteral("B"), QStringLiteral("b")}};
+    spec.nextTotal = 2;
+
+    DataEvents events;
+    PagedQueryModel model(&spec, events);
+    model.reload();
+
+    model.toggleTicks();
+    EXPECT_EQ(sorted(model.checkedIds()), (QList<qint64>{1, 2}));
+
+    model.toggleTicks();
+    EXPECT_TRUE(model.checkedIds().isEmpty());
+}
+
+TEST(PagedQueryModel, ToggleTicksTicksEveryRowWhenSomeAreTicked)
+{
+    FakeListSpec spec;
+    spec.nextRows = {{1, QStringLiteral("A"), QStringLiteral("a")},
+                     {2, QStringLiteral("B"), QStringLiteral("b")}};
+    spec.nextTotal = 2;
+
+    DataEvents events;
+    PagedQueryModel model(&spec, events);
+    model.reload();
+    model.setData(model.index(0, 0), Qt::Checked, Qt::CheckStateRole);
+
+    model.toggleTicks();
+
+    EXPECT_EQ(sorted(model.checkedIds()), (QList<qint64>{1, 2}));
+}
+
 TEST(PagedQueryModel, UntickIdsMissingAfterReload)
 {
     FakeListSpec spec;
