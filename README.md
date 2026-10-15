@@ -4,6 +4,8 @@ VLMS is a desktop application for a library desk. It keeps the catalogue, the me
 
 The interface is in Arabic, French, and English.
 
+![The Catalogue page in English, with a title and its cover selected](docs/manual/assets/shots/en/readme-catalogue.png)
+
 ## What it does
 
 - **Catalogue** — titles, copies, and local numbers. A cover image can be read with OCR when Tesseract is available.

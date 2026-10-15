@@ -354,6 +354,20 @@ void shotCatOverview(Capture& capture)
     capture.save(QStringLiteral("cat-overview"), capture.calloutsAt(capture.grab(), marks));
 }
 
+/// The README's picture of the program: the Catalogue in English, a title with
+/// its cover selected, no callouts. Only the English run saves it.
+void shotReadmeCatalogue(Capture& capture)
+{
+    if (capture.lang() != QLatin1String("en")) {
+        return;
+    }
+    capture.goTo("nav.catalog");
+    setSearch(capture, QStringLiteral("Terry Pratchett"));
+    selectFirst(capture);
+    capture.settle(400);
+    capture.save(QStringLiteral("readme-catalogue"), capture.grab());
+}
+
 void shotCatSearchNumber(Capture& capture)
 {
     const VLMS::Repositories::BookRecord book = multiCopyOnLoan();
@@ -674,6 +688,7 @@ void registerScreenShots(ShotRegistry& registry)
     registry.emplace(QStringLiteral("arc-purge-confirm"), shotArcPurge);
     registry.emplace(QStringLiteral("met-overview"), shotMetOverview);
     registry.emplace(QStringLiteral("met-full"), shotMetFull);
+    registry.emplace(QStringLiteral("readme-catalogue"), shotReadmeCatalogue);
 }
 
 }  // namespace ManualCapture
