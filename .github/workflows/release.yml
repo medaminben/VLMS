@@ -46,21 +46,21 @@ jobs:
             echo "Nothing to release: only docs, tests or CI changed." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # A draft until the installer is attached: the release is the installer,
+      # and nobody should find one without it. The page leads with the download.
       - name: Create the GitHub release
         if: steps.tag.outputs.version != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
-          python3 scripts/release/release.py notes "$VERSION" > notes.md
-          python3 scripts/release/release.py changelog --out CHANGELOG.md
+          python3 scripts/release/release.py page "$VERSION" --repo-slug "$GITHUB_REPOSITORY" > notes.md
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             gh release edit "v${VERSION}" --notes-file notes.md
           else
-            gh release create "v${VERSION}" --verify-tag --latest \
+            gh release create "v${VERSION}" --verify-tag --draft \
               --title "VLMS ${VERSION}" --notes-file notes.md
           fi
-          gh release upload "v${VERSION}" CHANGELOG.md --clobber
 
   installer:
     needs: tag
@@ -84,3 +84,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh release upload "v${{ needs.tag.outputs.version }}" dist/VLMS_Setup_*.exe --clobber
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "v${{ needs.tag.outputs.version }}" --draft=false --latest

@@ -243,9 +243,12 @@ changed since the latest `vX.Y.Z` tag:
 | patch | any other change to what ships |
 | none | only docs, tests, CI or the session log changed; no release |
 
-It then tags the merge commit, creates the GitHub release with the entry as its
-notes and `CHANGELOG.md` attached, builds this installer from the tag and
-attaches the `.exe`. The version the build uses comes from that tag
+It then tags the merge commit, creates the GitHub release as a draft, builds
+this installer from the tag, attaches the `.exe` and only then publishes the
+release. VLMS is an application, so the release is the installer: its page
+(`release.py page`) leads with the download link and install steps, then lists
+the changes. The level and its reasons stay in the tag message, and the full
+history ships as `CHANGELOG.md` beside `vlms.exe`. The version the build uses comes from that tag
 (`cmake/GitVersion.cmake`); a build past the latest tag reports
 `X.Y.Z+N.gSHA`. Each CI run on `Beta` shows the level a merge would release
 under **Next release** in its summary.

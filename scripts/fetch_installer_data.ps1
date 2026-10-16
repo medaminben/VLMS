@@ -9,7 +9,7 @@
 param(
   [switch]$Require,
   # The release that holds the catalogue data zip. Not "latest": releases cut
-  # automatically carry only the installer and CHANGELOG.md. Keep in step with
+  # automatically carry only the installer. Keep in step with
   # DATA_TAG in fetch_runtime_data.sh.
   [string]$DataTag = "installer-data-2"
 )
