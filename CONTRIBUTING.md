@@ -6,7 +6,7 @@ Issues and pull requests are welcome. Everyone taking part follows the [code of 
 
 1. Build and run the tests as described in the [README](README.md#tests).
 2. Keep changes focused. A pull request should do one thing.
-3. Do not add real member records, identity documents, or a live catalogue. The files under `database/` and `resources/` are sample data.
+3. Do not add real member records, identity documents, or a live catalogue. The files under `database/` and `resources/` are sample data. The images under `resources/` are not tracked; to change them, see [Sample data](docs/windows-installer.md#sample-data).
 
 ## Branches
 

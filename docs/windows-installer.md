@@ -178,10 +178,10 @@ Needs CMake 3.21+, a Qt 6 MinGW kit, Inno Setup 6, and
 The script builds Release, stages into `build\installer\stage`, runs
 `windeployqt`, verifies the stage, and compiles `dist\VLMS_Setup_<version>.exe`.
 
-Version numbers come from the repository, not from the script:
-`project(VLMS VERSION ...)` in the top-level `CMakeLists.txt` becomes
-`MyAppVersion`, and the last `PRAGMA user_version = N` in `database/schema.sql`
-becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
+Version numbers come from the repository, not from the script: the latest
+`vX.Y.Z` tag sets `project(VLMS VERSION ...)` in the top-level `CMakeLists.txt`
+(`cmake/GitVersion.cmake`), which becomes `MyAppVersion`, and the last
+`PRAGMA user_version = N` in `database/schema.sql` becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 
 ### From Linux, via GitHub Actions
 
@@ -191,6 +191,8 @@ becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 
 Dispatches `.github/workflows/windows-installer.yml`, watches the run, and
 downloads the `.exe` into `dist/`.
+
+### Sample data
 
 The installer ships the sample catalogue: `database/vlms.db`, which is tracked,
 and `resources/books/` and `resources/members/`, which are not. The images live
