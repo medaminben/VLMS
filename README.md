@@ -4,6 +4,8 @@ VLMS is a desktop application for a library desk. It keeps the catalogue, the me
 
 The interface is in Arabic, French, and English.
 
+![The Catalogue page in English, with a title and its cover selected](docs/manual/assets/shots/en/readme-catalogue.png)
+
 ## What it does
 
 - **Catalogue** — titles, copies, and local numbers. A cover image can be read with OCR when Tesseract is available.
@@ -12,9 +14,9 @@ The interface is in Arabic, French, and English.
 - **Archive** — records that were removed, and what can still be restored.
 - **Metrics** — a short picture of the library: stock, members, and recent activity.
 
-The manual shipped with the application is under [`docs/manual/`](docs/manual/index.html).
+The manual shipped with the application is under [`docs/manual/`](docs/manual/index.html). It can also be read online at <https://medaminben.github.io/VLMS/>.
 
-A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). That data is for trying the program. It is not a live library.
+A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). The images are not tracked; run `scripts/fetch_runtime_data.sh` once to download them. That data is for trying the program. It is not a live library.
 
 ## Requirements
 

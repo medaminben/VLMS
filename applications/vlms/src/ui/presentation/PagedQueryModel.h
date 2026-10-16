@@ -30,6 +30,8 @@ public:
     [[nodiscard]] QList<qint64> checkedIds() const;
     void tickAll();
     void clearTicks();
+    /// Clears the ticks when every listed row is ticked, else ticks them all.
+    void toggleTicks();
     /// Uses spec->rankOf to change page and select; returns whether found.
     bool revealId(qint64 id);
 

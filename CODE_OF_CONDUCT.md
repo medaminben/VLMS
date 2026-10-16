@@ -1,6 +1,6 @@
 # Code of conduct
 
-VLMS is a small project that runs a real library's desk. It holds the names, addresses, photographs and identity-card images of people who never agreed to appear on GitHub. The people who work on it write in Arabic, French and English, and some of them work through AI coding tools. This code says how we treat each other, and how we treat the people in the data.
+VLMS is a small project that runs the desk of a real library. On that library's own computer, it stores members' names, addresses, photographs and identity-card images. None of those records are in this repository: the catalogue, members and photographs here are generated sample data, and no real person appears in them. The people who work on VLMS write in Arabic, French and English, and some of them work through AI coding tools. This code says how we treat each other, and how we protect the real people whose records the program handles.
 
 ## How we work together
 
@@ -14,7 +14,7 @@ VLMS is a small project that runs a real library's desk. It holds the names, add
 
 This matters more here than in most projects, because a leak cannot be taken back.
 
-- Never put real member data in an issue, a pull request, a comment, a screenshot, a log, a test or a commit. That includes names, phone numbers, addresses, dates of birth, photographs and identity-card images. Use the sample catalogue that ships with the repository, and blur anything you are not sure about.
+- Never put real member data in an issue, a pull request, a comment, a screenshot, a log, a test or a commit. That includes names, phone numbers, addresses, dates of birth, photographs and identity-card images. Use the generated sample catalogue that ships with the repository, and blur anything you are not sure about.
 - Do not name the library where VLMS runs, its town, its staff or its members. Use neutral stand-ins such as "Tunis".
 - If you see real data posted anywhere in the project, do not quote it or share it further. Report it privately (see below), and the maintainer will remove it.
 - Report a security problem privately, as described in [SECURITY.md](SECURITY.md), not in a public issue.
@@ -59,4 +59,4 @@ Real data that has been posted is removed straight away, before anything else is
 
 ## Credits
 
-This code draws on the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1, adapted to a project that keeps other people's personal records.
+This code draws on the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1, adapted to software that handles other people's personal records.
