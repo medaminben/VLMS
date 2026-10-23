@@ -178,10 +178,10 @@ Needs CMake 3.21+, a Qt 6 MinGW kit, Inno Setup 6, and
 The script builds Release, stages into `build\installer\stage`, runs
 `windeployqt`, verifies the stage, and compiles `dist\VLMS_Setup_<version>.exe`.
 
-Version numbers come from the repository, not from the script:
-`project(VLMS VERSION ...)` in the top-level `CMakeLists.txt` becomes
-`MyAppVersion`, and the last `PRAGMA user_version = N` in `database/schema.sql`
-becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
+Version numbers come from the repository, not from the script: the latest
+`vX.Y.Z` tag sets `project(VLMS VERSION ...)` in the top-level `CMakeLists.txt`
+(`cmake/GitVersion.cmake`), which becomes `MyAppVersion`, and the last
+`PRAGMA user_version = N` in `database/schema.sql` becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 
 ### From Linux, via GitHub Actions
 
@@ -191,6 +191,8 @@ becomes `SchemaVersion`. Both are passed to `ISCC` as `/D` defines.
 
 Dispatches `.github/workflows/windows-installer.yml`, watches the run, and
 downloads the `.exe` into `dist/`.
+
+### Sample data
 
 The installer ships the sample catalogue: `database/vlms.db`, which is tracked,
 and `resources/books/` and `resources/members/`, which are not. The images live
@@ -241,9 +243,12 @@ changed since the latest `vX.Y.Z` tag:
 | patch | any other change to what ships |
 | none | only docs, tests, CI or the session log changed; no release |
 
-It then tags the merge commit, creates the GitHub release with the entry as its
-notes and `CHANGELOG.md` attached, builds this installer from the tag and
-attaches the `.exe`. The version the build uses comes from that tag
+It then tags the merge commit, creates the GitHub release as a draft, builds
+this installer from the tag, attaches the `.exe` and only then publishes the
+release. VLMS is an application, so the release is the installer: its page
+(`release.py page`) leads with the download link and install steps, then lists
+the changes. The level and its reasons stay in the tag message, and the full
+history ships as `CHANGELOG.md` beside `vlms.exe`. The version the build uses comes from that tag
 (`cmake/GitVersion.cmake`); a build past the latest tag reports
 `X.Y.Z+N.gSHA`. Each CI run on `Beta` shows the level a merge would release
 under **Next release** in its summary.
