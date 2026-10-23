@@ -10,6 +10,9 @@ cmake -S "$repo" -B "$build" -DCMAKE_BUILD_TYPE=Release \
       -DVLMS_MANUAL_CAPTURE=ON -DVLMS_BUILD_TESTS=OFF >/dev/null
 cmake --build "$build" --target manual_capture -j"$(nproc)"
 
+# The covers are not tracked; without them every shot shows the placeholder.
+"$repo/scripts/fetch_runtime_data.sh"
+
 python3 "$repo/scripts/manual/prepare_sandbox.py" \
     --source "$repo/database/vlms.db" --books "$repo/resources/books" --out "$sandbox"
 
