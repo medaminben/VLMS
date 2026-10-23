@@ -303,6 +303,35 @@ def notes(repo: Path, version: str, head: str = "HEAD") -> str:
                         summarise(plan.reasons), commit_subjects(repo, plan.base, plan.head))
 
 
+def release_page(repo: Path, version: str, repo_slug: str) -> str:
+    """The GitHub release text: the installer first, then what changed for users.
+
+    VLMS is an application, not a library, so the page leads with the download
+    and leaves out the level and its reasons, which are for maintainers."""
+    version = format_version(parse_version(version))
+    asset = f"VLMS_Setup_{version}.exe"
+    url = f"https://github.com/{repo_slug}/releases/download/v{version}/{asset}"
+    changes = [line for line in notes(repo, version).splitlines() if line.startswith("- ")]
+    lines = [
+        "## Download",
+        "",
+        f"**[{asset}]({url})**: the installer for 64-bit Windows 10 and 11.",
+        "",
+        "1. Download the installer and run it.",
+        "2. Windows may say *Windows protected your PC*, because the installer is not code-signed."
+        " Click **More info**, then **Run anyway**.",
+        "3. VLMS installs for your Windows user only and needs no administrator rights."
+        " If VLMS is already installed, Setup asks whether to keep its catalogue and offers to back it up first.",
+        "",
+        "## What's new",
+        "",
+        *(changes or ["- Maintenance and fixes."]),
+        "",
+        "The *Source code* archives below are added by GitHub to every release. You do not need them to use VLMS.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def changelog(repo: Path) -> str:
     entries = [tag_entry(repo, name) for _, name in reversed(version_tags(repo))]
     return "# Release history\n\n" + "\n".join(entries)
@@ -342,6 +371,9 @@ def main(argv: list[str] | None = None) -> int:
     notes_parser = commands.add_parser("notes")
     notes_parser.add_argument("version")
     notes_parser.add_argument("--head", default="HEAD")
+    page_parser = commands.add_parser("page")
+    page_parser.add_argument("version")
+    page_parser.add_argument("--repo-slug", required=True)
     tag_parser = commands.add_parser("tag")
     tag_parser.add_argument("--head", default="HEAD")
     tag_parser.add_argument("--version")
@@ -358,6 +390,8 @@ def main(argv: list[str] | None = None) -> int:
                 print_plan(plan)
         elif args.command == "notes":
             sys.stdout.write(notes(args.repo, args.version, args.head))
+        elif args.command == "page":
+            sys.stdout.write(release_page(args.repo, args.version, args.repo_slug))
         elif args.command == "tag":
             version = cut_tag(args.repo, args.head, args.version)
             if version is not None:

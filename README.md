@@ -16,7 +16,7 @@ The interface is in Arabic, French, and English.
 
 The manual shipped with the application is under [`docs/manual/`](docs/manual/index.html). It can also be read online at <https://medaminben.github.io/VLMS/>.
 
-A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). The images are not tracked; run `scripts/fetch_runtime_data.sh` once to download them. That data is for trying the program. It is not a live library.
+A development build opens the sample catalogue in [`database/vlms.db`](database/vlms.db), with cover images and member photographs under [`resources/`](resources/). The images are not tracked: the build steps below download them once. That data is for trying the program. It is not a live library.
 
 ## Requirements
 
@@ -43,6 +43,9 @@ sudo apt-get install -y --no-install-recommends \
 # sudo apt-get install -y libtesseract-dev libleptonica-dev \
 #   tesseract-ocr-ara tesseract-ocr-fra tesseract-ocr-eng
 
+# Sample cover images and member photographs, once per checkout:
+./scripts/fetch_runtime_data.sh
+
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/bin/vlms
@@ -61,6 +64,9 @@ pacman -S --needed \
 #   mingw-w64-x86_64-tesseract-data-eng
 # powershell -File scripts/fetch_windows_ocr.ps1 -Toolchain MinGW
 
+# Sample cover images and member photographs, once per checkout:
+powershell -File scripts/fetch_installer_data.ps1
+
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ./build/bin/vlms.exe
@@ -78,7 +84,7 @@ cmake --build build
 QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure --no-tests=error -LE realdb
 ```
 
-`QT_QPA_PLATFORM=offscreen` lets the interface tests run without a display. The `realdb` label is the suite that opens the sample catalogue; continuous integration leaves it out of the default run.
+`QT_QPA_PLATFORM=offscreen` lets the interface tests run without a display. The `realdb` label is the suite that opens the sample catalogue; continuous integration runs it as a separate step.
 
 The same checks run on Ubuntu in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 

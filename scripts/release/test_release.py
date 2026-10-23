@@ -371,6 +371,18 @@ class EntryTests(ReleaseTestCase):
         self.assertEqual(release.notes(self.repo.root, "0.3.1"), expected)
         self.assertEqual(release.tag_entry(self.repo.root, "v0.3.1"), expected)
 
+    def test_release_page_leads_with_the_installer(self):
+        page = release.release_page(self.repo.root, "0.3.1", "owner/vlms")
+        self.assertTrue(page.startswith(
+            "## Download\n\n**[VLMS_Setup_0.3.1.exe]"
+            "(https://github.com/owner/vlms/releases/download/v0.3.1/VLMS_Setup_0.3.1.exe)**"))
+        self.assertIn("## What's new\n\n- Second\n", page)
+        self.assertNotIn("Why patch", page)
+
+    def test_release_page_without_changes_says_so(self):
+        page = release.release_page(self.repo.root, "0.1.0", "owner/vlms")
+        self.assertIn("## What's new\n\n- Maintenance and fixes.\n", page)
+
 
 class CliTests(ReleaseTestCase):
     def test_plan_json(self):
@@ -418,6 +430,11 @@ class CliTests(ReleaseTestCase):
         code, out = run_cli(self.repo, "notes", "0.3.1")
         self.assertEqual(code, 0)
         self.assertEqual(out, "## 0.3.1 — 2026-09-24 — patch\nWhy patch: changed x\n- Second\n")
+
+    def test_page_cli_prints_the_release_page(self):
+        code, out = run_cli(self.repo, "page", "0.3.1", "--repo-slug", "owner/vlms")
+        self.assertEqual(code, 0)
+        self.assertTrue(out.startswith("## Download\n"))
 
     def test_tag_cli_backfills_a_given_version(self):
         self.repo.git("tag", "-d", "v0.3.1")
