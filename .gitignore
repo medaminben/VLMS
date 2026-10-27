@@ -39,6 +39,9 @@
 # Brainstorming companion scratch (mockups, session state)
 /.superpowers/
 
+# Local design specs and plans from the superpowers skills
+/docs/superpowers/
+
 # Python bytecode from the manual and import scripts
 __pycache__/
 
