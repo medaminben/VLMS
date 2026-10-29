@@ -39,6 +39,9 @@
 # Brainstorming companion scratch (mockups, session state)
 /.superpowers/
 
+# Local design specs and plans from the superpowers skills
+/docs/superpowers/
+
 # Python bytecode from the manual and import scripts
 __pycache__/
 
@@ -52,3 +55,6 @@ __pycache__/
 /database/vlms.lock
 /resources/**/*.part
 /resources/**/*.old
+
+# Local Claude Code settings, hooks, skills and project instructions
+/.claude/
