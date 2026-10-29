@@ -55,3 +55,6 @@ __pycache__/
 /database/vlms.lock
 /resources/**/*.part
 /resources/**/*.old
+
+# Local Claude Code settings, hooks, skills and project instructions
+/.claude/
