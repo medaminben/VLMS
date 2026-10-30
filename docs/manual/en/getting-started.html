@@ -22,6 +22,7 @@
     <h1>Getting started</h1>
     <p class="summary">The window, the list pages, sorting, and ticks.</p>
     <p>Open VLMS. The window comes up on the Catalogue, in the language and the light or dark theme you left it in.</p>
+<p>VLMS opens once per computer. Opening it again while it is open shows <em>VLMS is already open on this computer. Use the window that is already open.</em> and starts nothing; go back to the window you have.</p>
 <figure class="shot"><a href="../assets/shots/en/gs-window.png"><img src="../assets/shots/en/gs-window.png" alt="The Catalogue, with the parts of the window numbered." loading="lazy"></a><figcaption>The Catalogue, with the parts of the window numbered.</figcaption></figure>
 <ol><li><span class="ui">Catalogue</span> — the screen you are on. <span class="ui">Members</span>, <span class="ui">Circulation</span>, <span class="ui">Archive</span>, and <span class="ui">Metrics</span> sit beside it.</li><li>The three flags. The filled one is the language of the screen. Choosing another flag switches the whole application at once.</li><li>The theme button, and the ? beside it. The theme button turns the dark theme on and off. The ? opens this manual.</li><li>The filters for this screen.</li><li>Search.</li><li>The list.</li><li>The pager.</li><li>The details of the highlighted row.</li><li>The buttons for this screen.</li><li>The footer. The library's name is a link.</li></ol>
 <figure class="shot"><a href="../assets/shots/en/gs-dark.png"><img src="../assets/shots/en/gs-dark.png" alt="The same window in the dark theme." loading="lazy"></a><figcaption>The same window in the dark theme.</figcaption></figure>
@@ -41,7 +42,8 @@
 <figure class="shot"><a href="../assets/shots/en/gs-ticks.png"><img src="../assets/shots/en/gs-ticks.png" alt="Three ticked rows, and the heading tick." loading="lazy"></a><figcaption>Three ticked rows, and the heading tick.</figcaption></figure>
 <ol><li>The tick of the highlighted row.</li><li>The heading tick.</li></ol>
 <p><span class="ui">Delete</span>, <span class="ui">Restore</span>, and <span class="ui">Permanently remove</span> act on every ticked row. With nothing ticked, they act on the highlighted row alone. Those buttons stay available while any row is ticked, even when the highlighted row itself could not take the action. Each ticked row is still checked on its own: a row that cannot be removed is skipped and the others go through.</p>
-<p>A tick is only a mark. It is forgotten when the list is loaded again.</p>
+<p>A tick stays as long as its row is in the list. Searching, filtering, sorting, or a change made elsewhere does not clear it. A row that leaves the list loses its tick, also when it moves to another page; after a <span class="ui">Delete</span>, the rows that went are no longer ticked and the rest still are. Choosing another kind of record on the Archive clears every tick.</p>
+<p><span class="ui">Tick all</span> (Ctrl+A) ticks every row in the list. When every row is already ticked, it clears them instead.</p>
     <nav class="pager"><a class="prev" href="index.html"><span>Previous</span>Home</a><a class="next" href="catalogue.html"><span>Next</span>Catalogue</a></nav>
   </main>
 </div>

@@ -101,7 +101,7 @@ Every list page shares the same actions on the button pad and on the table's con
 | Loans | Ctrl+L | Table-scoped |
 | Archive / Restore | Del | Table-scoped; Archive on live lists, Restore on Archive |
 | Purge | Shift+Del | Archive only |
-| Tick all | Ctrl+A | Table-scoped (search box keeps Ctrl+A for text) |
+| Tick all | Ctrl+A | Table-scoped (search box keeps Ctrl+A for text). Clears the ticks when every row is ticked |
 | Refresh | F5 | Page-scoped |
 
 Enter in the search box still runs search immediately. Del in the search box still edits text.
