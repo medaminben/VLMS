@@ -6,6 +6,8 @@ summary: The window, the list pages, sorting, and ticks.
 
 Open VLMS. The window comes up on the Catalogue, in the language and the light or dark theme you left it in.
 
+VLMS opens once per computer. Opening it again while it is open shows *VLMS is already open on this computer. Use the window that is already open.* and starts nothing; go back to the window you have.
+
 ![The Catalogue, with the parts of the window numbered.](shot:gs-window)
 
 1. `Catalogue` — the screen you are on. `Members`, `Circulation`, `Archive`, and `Metrics` sit beside it.
@@ -59,4 +61,6 @@ A tick in the first cell of a row marks that row for a button. The tick in the h
 
 `Delete`, `Restore`, and `Permanently remove` act on every ticked row. With nothing ticked, they act on the highlighted row alone. Those buttons stay available while any row is ticked, even when the highlighted row itself could not take the action. Each ticked row is still checked on its own: a row that cannot be removed is skipped and the others go through.
 
-A tick is only a mark. It is forgotten when the list is loaded again.
+A tick stays as long as its row is in the list. Searching, filtering, sorting, or a change made elsewhere does not clear it. A row that leaves the list loses its tick, also when it moves to another page; after a `Delete`, the rows that went are no longer ticked and the rest still are. Choosing another kind of record on the Archive clears every tick.
+
+`Tick all` (Ctrl+A) ticks every row in the list. When every row is already ticked, it clears them instead.

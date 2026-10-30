@@ -2,6 +2,7 @@
 import sqlite3
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
 
 import prepare_sandbox as ps
@@ -79,6 +80,63 @@ class ScrubTest(unittest.TestCase):
     def test_remaining_names_reports_a_leak(self):
         names = ps.live_names(self.conn)
         self.assertIn("رنيم", ps.remaining_names(self.conn, names))
+
+
+class ShiftDatesTest(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.executescript(
+            "CREATE TABLE loans (id INTEGER PRIMARY KEY, borrowed_at TEXT, due_at TEXT,"
+            " returned_at TEXT, archived_at TEXT);"
+            "CREATE TABLE members (id INTEGER PRIMARY KEY, date_of_birth TEXT,"
+            " active_until TEXT, registered_at TEXT);")
+        self.conn.execute(
+            "INSERT INTO loans VALUES (1,'2026-09-20','2026-10-04',NULL,'2026-09-25 08:15:00')")
+        self.conn.execute(
+            "INSERT INTO members VALUES (1,'1990-01-01','2026-09-29','2026-07-14 10:00:00')")
+        self.conn.execute("INSERT INTO members VALUES (2,'1991-01-01','2027-01-31','2026-07-14')")
+
+    def tearDown(self):
+        self.conn.close()
+
+    def test_moves_activity_dates_by_the_days_since_the_data_was_made(self):
+        today = ps.DATA_AS_OF + timedelta(days=31)
+        self.assertEqual(ps.shift_dates(self.conn, today), 31)
+        loan = self.conn.execute(
+            "SELECT borrowed_at, due_at, returned_at, archived_at FROM loans").fetchone()
+        self.assertEqual(loan, ("2026-10-21", "2026-11-04", None, "2026-10-26 08:15:00"))
+
+    def test_keeps_each_value_in_its_own_format(self):
+        ps.shift_dates(self.conn, ps.DATA_AS_OF + timedelta(days=2))
+        rows = self.conn.execute(
+            "SELECT active_until, registered_at FROM members ORDER BY id").fetchall()
+        self.assertEqual(rows, [("2026-10-01", "2026-07-16 10:00:00"),
+                                ("2027-02-02", "2026-07-16")])
+
+    def test_leaves_birth_dates_alone(self):
+        ps.shift_dates(self.conn, ps.DATA_AS_OF + timedelta(days=40))
+        dob = self.conn.execute("SELECT date_of_birth FROM members WHERE id=1").fetchone()[0]
+        self.assertEqual(dob, "1990-01-01")
+
+    def test_does_nothing_on_or_before_the_data_date(self):
+        self.assertEqual(ps.shift_dates(self.conn, ps.DATA_AS_OF), 0)
+        due = self.conn.execute("SELECT due_at FROM loans").fetchone()[0]
+        self.assertEqual(due, "2026-10-04")
+
+    def test_moves_a_row_in_one_step_so_ordering_checks_hold(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute("CREATE TABLE loans (id INTEGER PRIMARY KEY, borrowed_at TEXT, due_at TEXT,"
+                     " CHECK (date(due_at) > date(borrowed_at)))")
+        conn.execute("INSERT INTO loans VALUES (1,'2026-09-20','2026-10-04')")
+        ps.shift_dates(conn, ps.DATA_AS_OF + timedelta(days=60))
+        self.assertEqual(conn.execute("SELECT borrowed_at, due_at FROM loans").fetchone(),
+                         ("2026-11-19", "2026-12-03"))
+        conn.close()
+
+    def test_skips_tables_the_database_does_not_have(self):
+        conn = make_db(":memory:")
+        self.assertEqual(ps.shift_dates(conn, ps.DATA_AS_OF + timedelta(days=5)), 5)
+        conn.close()
 
 
 class CliTest(unittest.TestCase):
