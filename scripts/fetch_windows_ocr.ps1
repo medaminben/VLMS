@@ -30,12 +30,19 @@ function Copy-TessLanguages {
     [string]$DestTess
   )
 
+  # MSYS2 dropped the tesseract-data packages from mingw64; they were built from
+  # tessdata_fast 4.1.0, so fetch the same files when the pack is not installed.
+  $tessdataFast = "https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0"
+
   foreach ($lang in @("ara", "fra", "eng")) {
     $src = Join-Path $SrcTess "$lang.traineddata"
-    if (-not (Test-Path $src)) {
-      throw "Missing $src — install the $lang language pack."
+    $dest = Join-Path $DestTess "$lang.traineddata"
+    if (Test-Path $src) {
+      Copy-Item $src $dest -Force
+    } else {
+      Write-Host "Downloading $lang.traineddata (tessdata_fast 4.1.0)..."
+      Invoke-WebRequest -Uri "$tessdataFast/$lang.traineddata" -OutFile $dest
     }
-    Copy-Item $src (Join-Path $DestTess "$lang.traineddata") -Force
   }
 }
 
@@ -74,10 +81,7 @@ function Copy-MinGwOcrBundle {
 MSYS2 mingw64 root not found.
 
 Install MSYS2 packages (in an MSYS2 MinGW64 shell):
-  pacman -S --needed mingw-w64-x86_64-tesseract-data-eng \
-                  mingw-w64-x86_64-tesseract-data-fra \
-                  mingw-w64-x86_64-tesseract-data-ara \
-                  mingw-w64-x86_64-tesseract-ocr \
+  pacman -S --needed mingw-w64-x86_64-tesseract-ocr \
                   mingw-w64-x86_64-leptonica
 
 Then re-run:
