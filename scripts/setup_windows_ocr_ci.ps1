@@ -178,9 +178,6 @@ MSYS2 MinGW OCR packages not found.
 Install in CI with msys2/setup-msys2:
   mingw-w64-x86_64-tesseract-ocr
   mingw-w64-x86_64-leptonica
-  mingw-w64-x86_64-tesseract-data-eng
-  mingw-w64-x86_64-tesseract-data-fra
-  mingw-w64-x86_64-tesseract-data-ara
 "@
   }
 

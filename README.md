@@ -86,9 +86,8 @@ pacman -S --needed \
   mingw-w64-x86_64-qt6-base mingw-w64-x86_64-sqlite3
 
 # Optional, for cover OCR:
-# pacman -S --needed mingw-w64-x86_64-tesseract-ocr mingw-w64-x86_64-leptonica \
-#   mingw-w64-x86_64-tesseract-data-ara mingw-w64-x86_64-tesseract-data-fra \
-#   mingw-w64-x86_64-tesseract-data-eng
+# pacman -S --needed mingw-w64-x86_64-tesseract-ocr mingw-w64-x86_64-leptonica
+# The script downloads the Arabic, French and English language data.
 # powershell -File scripts/fetch_windows_ocr.ps1 -Toolchain MinGW
 
 # Sample cover images and member photographs, once per checkout:
