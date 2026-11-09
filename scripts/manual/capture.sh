@@ -8,7 +8,8 @@ sandbox="$repo/build/manual-sandbox"
 
 cmake -S "$repo" -B "$build" -DCMAKE_BUILD_TYPE=Release \
       -DVLMS_MANUAL_CAPTURE=ON -DVLMS_BUILD_TESTS=OFF >/dev/null
-cmake --build "$build" --target manual_capture -j"$(nproc)"
+# Capped: an unbounded build on every core runs the machine out of memory.
+cmake --build "$build" --target manual_capture -j4
 
 # The covers are not tracked; without them every shot shows the placeholder.
 "$repo/scripts/fetch_runtime_data.sh"

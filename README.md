@@ -1,6 +1,33 @@
-# VLMS
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="applications/vlms/resources/images/brand/logo-dark.svg">
+    <img src="applications/vlms/resources/images/brand/logo.svg" alt="" width="96">
+  </picture>
+  <br>VLMS
+</h1>
 
-VLMS is a desktop application for a library desk. It keeps the catalogue, the members, and the loans, and it is where a book is added, a member is registered, and a copy goes out and comes back.
+<p align="center">
+  <a href="https://github.com/medaminben/VLMS/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/medaminben/VLMS/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/medaminben/VLMS/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/medaminben/VLMS"></a>
+  <a href="https://github.com/medaminben/VLMS/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/medaminben/VLMS/total"></a>
+  <img alt="C++20" src="https://img.shields.io/badge/C%2B%2B-20-00599C">
+  <img alt="Qt 6" src="https://img.shields.io/badge/Qt-6-41CD52">
+  <img alt="SQLite 3" src="https://img.shields.io/badge/SQLite-3-003B57">
+  <img alt="OCR: Tesseract" src="https://img.shields.io/badge/OCR-Tesseract-5A5A5A">
+  <img alt="platform: Windows | Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-555">
+  <a href="https://github.com/medaminben/VLMS/actions/workflows/manual-pages.yml"><img alt="Pages" src="https://github.com/medaminben/VLMS/actions/workflows/manual-pages.yml/badge.svg?branch=main"></a>
+  <a href="https://medaminben.github.io/VLMS/"><img alt="docs: manual" src="https://img.shields.io/badge/docs-manual-0A7BBB"></a>
+  <a href="LICENSE"><img alt="license: MIT" src="https://img.shields.io/github/license/medaminben/VLMS"></a>
+</p>
+
+<p align="center">
+  <a href="https://medaminben.github.io/VLMS/">Manual</a> ·
+  <a href="https://github.com/medaminben/VLMS/releases/latest">Download</a> ·
+  <a href="docs/">Docs</a> ·
+  <a href="https://github.com/medaminben/VLMS/releases">Changelog</a>
+</p>
+
+VLMS is an open-source library management system: a desktop application for a library desk. It keeps the catalogue, the members, and the loans, and it is where a book is added, a member is registered, and a copy goes out and comes back.
 
 The interface is in Arabic, French, and English.
 
@@ -59,9 +86,8 @@ pacman -S --needed \
   mingw-w64-x86_64-qt6-base mingw-w64-x86_64-sqlite3
 
 # Optional, for cover OCR:
-# pacman -S --needed mingw-w64-x86_64-tesseract-ocr mingw-w64-x86_64-leptonica \
-#   mingw-w64-x86_64-tesseract-data-ara mingw-w64-x86_64-tesseract-data-fra \
-#   mingw-w64-x86_64-tesseract-data-eng
+# pacman -S --needed mingw-w64-x86_64-tesseract-ocr mingw-w64-x86_64-leptonica
+# The script downloads the Arabic, French and English language data.
 # powershell -File scripts/fetch_windows_ocr.ps1 -Toolchain MinGW
 
 # Sample cover images and member photographs, once per checkout:

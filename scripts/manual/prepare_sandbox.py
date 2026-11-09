@@ -2,8 +2,9 @@
 """Build the screenshot sandbox for the user manual.
 
 Copies the live database (opened read-only) into <out>/database/, overwrites every
-member's personal data, verifies no live name survives, copies book covers, leaves
-member photographs behind, and writes the marker manual_capture requires.
+member's personal data, moves the activity dates up to today, verifies no live name
+survives, copies book covers, leaves member photographs behind, and writes the marker
+manual_capture requires.
 """
 from __future__ import annotations
 
@@ -11,7 +12,20 @@ import argparse
 import shutil
 import sqlite3
 import sys
+from datetime import date
 from pathlib import Path
+
+# The day the sample loans, memberships and archive dates read as "today": the
+# mock database's activity stops a few days before it. Change it only together
+# with that data.
+DATA_AS_OF = date(2026, 9, 29)
+SHIFTED_COLUMNS = {
+    "loans": ("borrowed_at", "due_at", "returned_at", "archived_at"),
+    "members": ("active_until", "registered_at", "archived_at"),
+    "member_status_history": ("changed_at",),
+    "books": ("archived_at",),
+    "book_copies": ("archived_at",),
+}
 
 MARKER = ".vlms-manual-sandbox"
 MARKER_TEXT = "vlms-manual-sandbox v1\n"
@@ -58,6 +72,37 @@ def scrub(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def shift_dates(conn: sqlite3.Connection, today: date) -> int:
+    """Moves every activity date forward by the days since DATA_AS_OF.
+
+    The shots run on the real clock, so without this the sample loans age a day
+    for every day the manual is not recaptured, until every one of them is
+    overdue. One offset for all keeps each loan, membership and archive in the
+    same order relative to the others and to today. Returns the offset.
+    """
+    days = (today - DATA_AS_OF).days
+    if days <= 0:
+        return 0
+    modifier = f"+{days} days"
+    for table, wanted in SHIFTED_COLUMNS.items():
+        present = {row[0] for row in conn.execute("SELECT name FROM pragma_table_info(?)", (table,))}
+        columns = [c for c in wanted if c in present]
+        if not columns:
+            continue
+        # All of a row's columns in one statement: a CHECK such as due after
+        # borrowed fails while only one of the two has moved. date() for plain
+        # days, datetime() for stamps, so date(x) IS x still holds and a time
+        # of day is kept. A NULL stays NULL.
+        assignments = ", ".join(
+            f'"{c}" = CASE WHEN length("{c}") = 10 THEN date("{c}", :m)'
+            f' ELSE datetime("{c}", :m) END'
+            for c in columns
+        )
+        conn.execute(f'UPDATE "{table}" SET {assignments}', {"m": modifier})
+    conn.commit()
+    return days
+
+
 def remaining_names(conn: sqlite3.Connection, names: set[str]) -> list[str]:
     fake = set(FAKE_FIRST) | set(FAKE_LAST)
     present = live_names(conn)
@@ -92,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     live.close()
 
     scrub(copy)
+    shift_dates(copy, date.today())
     leaked = remaining_names(copy, names)
     copy.close()
     if leaked:

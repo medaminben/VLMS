@@ -99,7 +99,7 @@ Chaque page de liste partage les mêmes actions sur le pad de boutons et sur le 
 | Prêts | Ctrl+L | Au niveau du tableau |
 | Supprimer / Restaurer | Del | Au niveau du tableau ; Supprimer sur les listes en service, Restaurer aux Archives |
 | Suppression définitive | Shift+Del | Archives seulement |
-| Tout cocher | Ctrl+A | Au niveau du tableau (la recherche garde Ctrl+A pour le texte) |
+| Tout cocher | Ctrl+A | Au niveau du tableau (la recherche garde Ctrl+A pour le texte). Décoche tout quand chaque ligne est cochée |
 | Actualiser | F5 | Au niveau de la page |
 
 Enter dans le champ de recherche lance encore la recherche tout de suite. Del dans le champ de recherche édite encore le texte.

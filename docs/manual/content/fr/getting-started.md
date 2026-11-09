@@ -6,6 +6,8 @@ summary: La fenêtre, les listes, le tri et les cases.
 
 Ouvrez VLMS. La fenêtre s'ouvre sur le Catalogue, dans la langue et le thème clair ou sombre que vous aviez laissés.
 
+VLMS s'ouvre une seule fois par ordinateur. L'ouvrir à nouveau pendant qu'il est ouvert affiche *VLMS est déjà ouvert sur cet ordinateur. Utilisez la fenêtre déjà ouverte.* et ne lance rien ; revenez à la fenêtre déjà ouverte.
+
 ![Le Catalogue, avec les parties de la fenêtre numérotées.](shot:gs-window)
 
 1. `Catalogue` — l'écran affiché. `Adhérents`, `Circulation`, `Archives` et `Indicateurs` sont à côté.
@@ -59,4 +61,6 @@ Une case dans la première cellule d'une ligne marque cette ligne pour un bouton
 
 `Supprimer`, `Restaurer` et `Suppression définitive` agissent sur chaque ligne cochée. Sans aucune case, ils agissent sur la ligne surlignée seule. Ces boutons restent disponibles tant qu'une ligne est cochée, même si la ligne surlignée elle-même ne pourrait pas recevoir l'action. Chaque ligne cochée est encore vérifiée pour elle-même : une ligne qui ne peut pas être retirée est passée, et les autres suivent.
 
-Une case n'est qu'une marque. Elle est oubliée quand la liste est rechargée.
+Une case reste cochée tant que sa ligne est dans la liste. Une recherche, un filtre, un tri ou une modification faite ailleurs ne l'efface pas. Une ligne qui quitte la liste perd sa case, y compris quand elle passe sur une autre page ; après `Supprimer`, les lignes parties ne sont plus cochées et les autres le restent. Choisir un autre type d'enregistrement dans l'Archive efface toutes les cases.
+
+`Tout cocher` (Ctrl+A) coche toutes les lignes de la liste. Quand elles sont déjà toutes cochées, il les décoche.

@@ -1,13 +1,12 @@
 # VLMS — Beta UML
 
-Snapshot of **branch `Beta`** at `ce6fac0` (tag lineage **v1.2.0-1-gce6fac0**,
-project version **1.2.0**). SQLite `PRAGMA user_version` /
+Snapshot of **branch `Beta`** at `6017cc8` (tag lineage **v1.3.3-9-g6017cc8**,
+project version **1.3.3**). SQLite `PRAGMA user_version` /
 `Database::Connection::kSchemaVersion` = **7**.
 
 This is a reverse-engineered design of the code as it stands, not a proposal.
-An approved frontend redesign
-([spec](../superpowers/specs/2026-09-29-frontend-redesign-design.md))
-restructures `applications/vlms/src/ui` later; it is **not** in this snapshot.
+It includes the frontend redesign that shipped in 1.3.0: list pages driven
+by `ListSpec`, writes through workflows, and refreshes through `DataEvents`.
 Diagrams are top-down so they print in a narrow A4 column.
 
 ---
@@ -21,7 +20,7 @@ catalog, members, circulation, archive, metrics.
 ```mermaid
 flowchart TD
     Librarian[Librarian]
-    App[vlms<br/>Qt Widgets 1.2.0]
+    App[vlms<br/>Qt Widgets 1.3.3]
     Db[(database/vlms.db<br/>schema 7)]
     Books[resources/books]
     Members[resources/members]
@@ -64,7 +63,7 @@ flowchart TD
 
     Exe --> Ui
     Ui --> Repos
-    Ui -.->|PRIVATE<br/>BookEditorDialog only| Ocr
+    Ui -.->|PRIVATE<br/>OcrService + BookEditorDialog| Ocr
     Ui --> QtW
     Repos --> DbLib
     DbLib --> Core
@@ -88,10 +87,9 @@ Include prefixes mirror namespaces: `<VLMS/Core/…>`, `<VLMS/Database/…>`,
 
 ## 3. Runtime composition
 
-Two trees, not one tangle. `Application` owns persistence.
-`MainWindow` owns five pages. Each live list page is the UI of **one**
-primary repository. Repositories hold a `SqliteSession&` and must die
-**before** `Connection`.
+Two owners. `Application` owns persistence and the Qt adapters that sit
+on it. `MainWindow` owns the workflows, the list specs, and the pages.
+Repositories hold a `SqliteSession&` and must die **before** `Connection`.
 
 ```mermaid
 flowchart TD
@@ -108,112 +106,222 @@ flowchart TD
     Met --> Sess
 ```
 
+Built by `Application` once the four repositories exist (all one instance):
+
+```mermaid
+flowchart TD
+    App[Application]
+    App --> DE[DataEvents]
+    App --> EP[QtErrorPresenter]
+    App --> LK[QtCatalogLookups<br/>QtMemberLookups<br/>QtCirculationLookups]
+    App --> OCR[OcrService]
+    App --> RS[RepositoryBookFacets<br/>RepositoryMemberFacets<br/>RepositoryMetrics]
+    App --> DF[QtDialogFactory]
+    DF --> LK
+    DF --> OCR
+```
+
+Built by `MainWindow`, which also implements `Navigator`:
+
 ```mermaid
 flowchart TD
     MW[MainWindow]
-    MW --> CP[CatalogPage]
-    MW --> MP[MembersPage]
-    MW --> LP[CirculationPage]
-    MW --> AP[ArchivePage]
+    MW --> CP[ListPage<br/>Catalogue]
+    MW --> MP[ListPage<br/>Members]
+    MW --> LP[ListPage<br/>Circulation]
+    MW --> AP[ListPage<br/>Archive]
     MW --> XP[MetricsPage]
-    CP --> Cat[CatalogRepository]
-    MP --> Mem[MemberRepository]
-    LP --> Cir[CirculationRepository]
-    AP --> Cat
-    AP --> Mem
-    AP --> Cir
-    XP --> Met[MetricsRepository]
+    CP --> BLS[BookListSpec]
+    MP --> MLS[MemberListSpec]
+    LP --> LLS[LoanListSpec]
+    AP --> AS[ArchivedMemberSpec<br/>ArchivedBookSpec<br/>ArchivedCopySpec<br/>ArchivedLoanSpec]
+    XP --> MS[MetricsSource]
+    BLS --> BW[BookWorkflow]
+    MLS --> MWf[MemberWorkflow]
+    LLS --> LW[LoanWorkflow]
+    AS --> AW[ArchiveWorkflow]
+    BW --> LW
+    MWf --> LW
+    AW --> LW
+    BW --> BR[BulkRunner]
+    MWf --> BR
+    LW --> BR
+    AW --> BR
 ```
 
-Cross-page repository reads (lookups, not second owners):
-
-- `MembersPage` / `CatalogPage` → `CirculationRepository` for loan history dialogs.
-- `CirculationPage` → `CatalogRepository` (covers) and `MemberRepository` (facets).
-- `ArchivePage` binds all three write-capable repositories; scope is
-  `ArchiveScope::Archived` (or `Any` for some facet lists).
+- A **spec** reads its repository directly (`load`, `cell`, `preview`) and
+  exposes actions. Each action calls a workflow.
+- A **workflow** is the only thing that writes. It opens windows only through
+  `DialogFactory`, reports failures through `ErrorPresenter`, and announces
+  every write on `DataEvents`. Multi-row actions go through the shared
+  `BulkRunner`.
+- Book, member, and archive workflows open loan history windows. These use
+  a second `LoanListSpec` (`m_loanHistorySpec`), never Circulation's, so a
+  pinned query cannot leak into the live page. Return and extend from those
+  windows go through `LoanWorkflow`.
+- `MainWindow` builds the facet widgets (`BookFacetFilters`,
+  `MemberFacetFilters`, the loan status list, the archive type list) from
+  `BookFacetSource` / `MemberFacetSource`. It maps their picks into
+  `QueryState.facets` through `ListPage::setFacets`.
+- The Archive page is one `ListPage`. Switching type swaps the spec with
+  `ListPage::setSpec`.
+- Cross-repository reads are lookups, not second owners. `LoanListSpec`
+  and `ArchivedLoanSpec` read catalog and members (cover, photo).
+  `ArchivedBookSpec` reads circulation (loan counts).
 
 ---
 
-## 3.1 List page frame
+## 3.1 List page
 
-The list pages are one machine. On screen the row is LTR (RTL flips it).
-The diagram is top-down so it prints.
+The four list pages are one class, `ListPage`, configured by a `ListSpec`.
+On screen the row is LTR (RTL flips it). The diagram is top-down so it
+prints.
 
 ```mermaid
 flowchart TD
-    Frame[ListPageFrame]
-    Frame --> Filters[FilterColumn<br/>controller]
-    Frame --> Main[MainColumn]
-    Main --> Bar[Search + ButtonPad]
-    Main --> Model[Table + Pager<br/>model]
-    Main --> Viewer[Viewer<br/>image + details]
+    Page[ListPage]
+    Page --> Filters[Filter column<br/>facet widgets]
+    Page --> Main[Main column]
+    Main --> Bar[Search + ActionBar]
+    Main --> Model[QTableView + ListPagePager<br/>PagedQueryModel]
+    Main --> Viewer[Preview<br/>image + fields]
 ```
 
 | Slot | Role |
 | --- | --- |
-| `FilterColumn` | Facets that rewrite the query. Controller. |
-| `Search` | Text that also rewrites the query. Part of the model key. |
-| `ButtonPad` | Page actions (add / edit / delete / loans / restore / …). |
-| `Table + Pager` | The list. Selection drives the viewer. |
-| `Viewer` | Image box (cover, member photo, dual cover+photo, or placeholder) plus the detail pad. |
+| Filter column | Facet widgets that `MainWindow` adds. They rewrite `QueryState.facets`. |
+| Search | Rewrites `QueryState.search` after a 250 ms debounce. |
+| `ActionBar` | Buttons, context menu, and shortcuts from `spec->actions()`, in one standard order. |
+| Table + pager | `PagedQueryModel` over the spec. Ticks are kept in the model. The selection drives the preview. |
+| Preview | `spec->preview(id)` → `PreviewContent` (one or two images plus fields). |
+| Error strip | Shown when `load` fails, with a Retry button. |
 
-How each page fills the slots:
+How each page fills the slots (action ids; every list also has `tickAll`
+and `refresh`):
 
-```mermaid
-flowchart TD
-    Frame[ListPageFrame]
-    Frame --> C[Catalog]
-    Frame --> M[Members]
-    Frame --> L[Circulation]
-    Frame --> A[Archive]
-    Frame --> X[Metrics<br/>special case]
-```
-
-| | Filters | ButtonPad | Table | Viewer image |
-| --- | --- | --- | --- | --- |
-| Catalog | language, category, cover (`ArchiveScope::Live`) | Loans Add Edit Delete | books | book cover / placeholder |
-| Members | status and other facets (`Live`) | Loans Add Edit Delete | members | photo / placeholder |
-| Circulation | open / overdue / returned + years | Return Checkout Extend Delete | loans | cover **and** member photo |
-| Archive | type switch + type-specific facets (`Archived`) | Loans / Reuse / Restore / Purge (by type) | archived rows | depends on type |
-| Metrics | none | Refresh | none | overloaded: cards + activity + top categories |
-
-Metrics is the same frame with the filter column empty, no search,
-a one-button pad, and the viewer taking the whole main column.
-
-`ListPageFrame` is that class. Pages compose it; they do not inherit it.
-Metrics calls `buildDashboard`. `ListConfig` may set a second image label
-(Circulation dual preview).
+| | Filters | Actions | Preview image |
+| --- | --- | --- | --- |
+| Catalogue | `BookFacetFilters` language, category, cover (`Live`) | `loans` `add` `edit` `archive` | cover / placeholder |
+| Members | `MemberFacetFilters` status, sex, year, age group, city (`Live`) | `loans` `add` `edit` `archive` | photo / placeholder |
+| Circulation | loan status list + `MemberFacetFilters` (`Any`, loan years) | `return` `checkout` `extend` `archive` | cover **and** member photo |
+| Archive | type list + member or book facets (`Archived`) | members, books: `loans` `restore` `purge`; copies: adds `reuse`; loans: `restore` `purge` | depends on type |
+| Metrics | none | Refresh | *(not a ListPage)* |
 
 ```mermaid
 classDiagram
     direction TB
-    class ListPageFrame {
-        +buildList(ListConfig)
-        +buildDashboard(subtitle)
-        +addFilter(widget, stretch)
-        +addButton(button)
-        +filterColumn() QWidget
-        +searchEdit() QLineEdit
-        +buttonPad() QWidget
-        +table() QTableWidget
-        +pager() TablePager
-        +imageLabel() QLabel
-        +secondImageLabel() QLabel
-        +previewPanel() QWidget
-        +detailsPanel() QWidget
-        +viewerHost() QWidget
+    class ListSpec {
+        <<interface>>
+        +id() QString
+        +columns() ColumnSpec list
+        +facets() FacetSpec list
+        +actions() PageAction list
+        +dependsOn() EntitySet
+        +load(QueryState) Status
+        +rowCount() / totalCount()
+        +idAt(row) qint64
+        +cell(row, column, role) QVariant
+        +rankOf(id, QueryState) Result
+        +preview(id) PreviewContent
+        +retranslate()
     }
-    class CatalogPage
-    class MembersPage
-    class CirculationPage
-    class ArchivePage
-    class MetricsPage
-    CatalogPage *-- ListPageFrame : buildList
-    MembersPage *-- ListPageFrame : buildList
-    CirculationPage *-- ListPageFrame : buildList
-    ArchivePage *-- ListPageFrame : buildList
-    MetricsPage *-- ListPageFrame : buildDashboard
+    class PagedQueryModel {
+        +setSpec(ListSpec)
+        +setQuery(QueryState)
+        +reload()
+        +checkedIds() ids
+        +revealId(id) bool
+        +loaded(total)
+        +failed(Error)
+    }
+    class ListPage {
+        +setSpec(ListSpec)
+        +setFacets(facets)
+        +setSearchText(text)
+        +revealId(id)
+        +addFilterWidget(widget, stretch)
+        +rebuildChrome()
+    }
+    class ActionBar {
+        +setActions(PageAction list)
+        +setContextProvider(fn)
+        +refreshEnabled()
+    }
+    class QueryState {
+        +search
+        +facets
+        +sortKey / ascending
+        +pageSize / page
+        +ArchiveScope scope
+        +optional LoanScope pinned
+    }
+    class PageAction {
+        +id / labelKey / shortcut
+        +Needs needs
+        +run(ActionContext) Status
+        +enabled(ActionContext) bool
+    }
+    ListPage *-- PagedQueryModel
+    ListPage *-- ActionBar
+    ListPage *-- ListPagePager
+    PagedQueryModel --> ListSpec
+    PagedQueryModel --> QueryState
+    ListSpec --> PageAction
+    ActionBar --> PageAction
+    BookListSpec ..|> ListSpec
+    MemberListSpec ..|> ListSpec
+    LoanListSpec ..|> ListSpec
+    ArchivedMemberSpec ..|> ListSpec
+    ArchivedBookSpec ..|> ListSpec
+    ArchivedCopySpec ..|> ListSpec
+    ArchivedLoanSpec ..|> ListSpec
 ```
+
+`ActionContext` is the ticked ids, or else the selected row. An action is
+enabled when its `Needs` (`Nothing` / `One` / `Some`) and its optional
+`enabled` rule both hold. `LoanHistoryDialog` uses the same `ActionBar`, so
+a history window binds and orders its actions the same way.
+
+`ListPagePager` opens on Show All (page size 0); 50 is the fallback size.
+`rankOf` lets `revealId` jump to the page holding a row
+(`Navigator::showBook`).
+
+`MetricsPage` is not a list. It is the last user of `ListPageFrame`, which
+it calls in dashboard mode (`buildDashboard`): no filters, no search, one
+Refresh button, and a viewer that fills the main column.
+
+---
+
+## 3.2 Change propagation
+
+Nothing refreshes a page by hand. A workflow writes, then emits one event.
+Every model whose spec depends on the change reloads.
+
+```mermaid
+flowchart TD
+    W[Workflow write] --> E[DataEvents.changed<br/>EntitySet + ids]
+    E --> M[each PagedQueryModel]
+    M --> D{what and spec.dependsOn}
+    D -->|overlap| R[reload]
+    D -->|none| S[skip]
+    E --> MW[MainWindow.onDataChanged]
+    MW --> F[refresh facet widgets]
+```
+
+`Entity` flags: `Books`, `Copies`, `Members`, `Loans`, `Categories`.
+
+| Spec | `dependsOn` |
+| --- | --- |
+| `BookListSpec` | Books, Copies, Categories |
+| `MemberListSpec` | Members, Loans |
+| `LoanListSpec` | Loans, Members, Copies, Books |
+| `ArchivedMemberSpec` | Members, Loans |
+| `ArchivedBookSpec` | Books, Copies |
+| `ArchivedCopySpec` | Copies, Books, Loans |
+| `ArchivedLoanSpec` | Loans, Members, Copies |
+
+`BulkRunner` emits **one** event with every id that succeeded, not one per
+row.
 
 Startup, in order (`Application` constructor, then `main`):
 
@@ -222,10 +330,14 @@ Startup, in order (`Application` constructor, then `main`):
 3. `Locale` load from `QSettings`, apply RTL + `QLocale`, install Qt catalogue
 4. fonts, `Theme::loadSaved`, palette + stylesheet
 5. `Paths::ensureLayout`
-6. `Connection::open` — refuse if a newer schema wrote the file; on failure
+6. `DataEvents` and `QtErrorPresenter`
+7. `InstanceLock`. If another copy of this installation runs, stop here
+   (`isAlreadyRunning()`)
+8. `Connection::open`. Refuse if a newer schema wrote the file. On failure,
    leave repositories unset (`isDatabaseReady()` false)
-7. construct the four repositories on `connection.session()`
-8. `MainWindow` only if `isDatabaseReady()`
+9. construct the four repositories on `connection.session()`
+10. lookups, `OcrService`, facet and metrics sources, `QtDialogFactory`
+11. `MainWindow` only if `isDatabaseReady()`
 
 ---
 
@@ -234,9 +346,12 @@ Startup, in order (`Application` constructor, then `main`):
 ```mermaid
 flowchart TD
     subgraph ui [vlms_ui]
-        Pages[Pages + dialogs]
+        Shell[shell<br/>Application MainWindow Navigator]
+        Views[views<br/>ListPage ActionBar dialogs MetricsPage]
+        Pres[presentation<br/>ListSpec PagedQueryModel Lookups ReadSources]
+        Flows[workflows<br/>workflows DialogFactory ErrorPresenter DataEvents BulkRunner]
+        Svc[services<br/>Theme OcrService]
         Bridge[QtBridge qs/ss/T]
-        Theme[Theme + UiHelpers]
     end
 
     subgraph repos [VLMS::Repositories]
@@ -263,10 +378,17 @@ flowchart TD
         Rec[recognize / Job]
     end
 
-    Pages --> Bridge
-    Pages --> Facades
-    Pages --> Theme
-    Pages -.-> Rec
+    Shell --> Views
+    Shell --> Flows
+    Views --> Pres
+    Views --> Svc
+    Pres -->|actions| Flows
+    Pres -->|reads| Facades
+    Flows -->|writes| Facades
+    Flows -.->|DialogFactory impl| Views
+    Svc -.-> Rec
+    Views --> Bridge
+    Pres --> Bridge
     Facades --> Err
     Facades --> Types
     Facades --> Policy
@@ -284,6 +406,17 @@ flowchart TD
 UI never talks to sqlite. Repositories never include Qt. OCR never includes
 Core, Database, Repositories, or Qt. `QtBridge` is the only place that
 converts `std::string` / `Core::Date` to `QString` / `QDate`.
+
+Rules inside `vlms_ui`:
+
+- Dialogs never hold a repository. They read through `CatalogLookups` /
+  `MemberLookups` / `CirculationLookups`. Facet widgets read through
+  `BookFacetSource` / `MemberFacetSource`, and `MetricsPage` through
+  `MetricsSource`.
+- Workflows never build a widget or a message box. They depend on the
+  `DialogFactory` and `ErrorPresenter` interfaces; `QtDialogFactory` and
+  `QtErrorPresenter` are the widget implementations.
+- Only workflows write. Specs and views only read.
 
 ---
 
@@ -477,11 +610,13 @@ classDiagram
     MemberRepository --> MemberRemovalBlock
 ```
 
-Member delete is not a single SQL `DELETE`:
+Member delete is not a single SQL `DELETE` (`MemberWorkflow::archive`):
 
-- `OpenLoans` — refuse; UI offers to jump to circulation
-- `LoanHistory` — `archiveMember` (set `archived_at`, keep FKs)
-- `None` — `purgeMember`
+- `OpenLoans` — refuse; the UI offers to jump to circulation
+  (`Navigator::showMemberLoans`)
+- otherwise — `archiveMember` (set `archived_at`, keep FKs)
+
+`purgeMember` runs only from the Archive page (`ArchiveWorkflow::purge`).
 
 Member **status is not a stored column**. A member is active while
 `active_until` (last active day) is today or later. `statusOn` /
@@ -602,108 +737,123 @@ classDiagram
         +members() MemberRepository
         +circulation() CirculationRepository
         +metrics() MetricsRepository
+        +catalogLookups() / memberLookups() / circulationLookups()
+        +bookFacets() / memberFacets() / metricsSource()
+        +ocr() OcrService
+        +dataEvents() DataEvents
+        +errors() ErrorPresenter
+        +dialogs() DialogFactory
         +setUiLocale(code)
         +toggleTheme()
-        +languageChanged()
         +themeChanged()
+    }
+    class Navigator {
+        <<interface>>
+        +show(PageId)
+        +showMemberLoans(membershipNumber)
+        +showBook(bookId)
+        +showArchive(ArchiveType)
     }
     class MainWindow {
         -Page active
-        +showPage(Page)
-        +retranslateUi()
+        -showPage(Page)
+        -onDataChanged(EntitySet, ids)
     }
-    class Page {
+    class PageId {
         Catalog
         Members
         Circulation
         Archive
         Metrics
     }
+    class ArchiveType {
+        Members
+        Books
+        Copies
+        Loans
+    }
     Application <-- MainWindow
-    MainWindow --> Page
+    MainWindow ..|> Navigator
+    Navigator --> PageId
+    Navigator --> ArchiveType
     Application --|> QApplication
     MainWindow --|> QMainWindow
 ```
 
-`MainWindow` listens to `languageChanged` / `themeChanged` and retranslates
-the pages. Navigation is a `QStackedWidget`. Header also holds language
-selector, theme toggle, and the user-manual button.
+`MainWindow` listens to language and `themeChanged` and retranslates the
+pages. Navigation is a `QStackedWidget`. The header also holds the
+`LanguageSelector`, the theme toggle, and the user-manual button.
+Workflows hold a `Navigator&`, not a `MainWindow&`. A member blocked by
+open loans jumps to Circulation through `showMemberLoans`.
 
-### 8.2 Pages and dialogs
+### 8.2 Workflows and dialogs
 
-Each list page is a `ListPageFrame` bound to repositories (section 3.1).
-Dialogs are what the ButtonPad opens — they are not a second layout.
+Every window a workflow opens comes from `DialogFactory`. A form method
+returns an empty `optional` when the librarian cancels.
 
 ```mermaid
 flowchart TD
-    MW[MainWindow]
-    CP[CatalogPage]
-    MP[MembersPage]
-    LP[CirculationPage]
-    AP[ArchivePage]
-    XP[MetricsPage]
+    DF[QtDialogFactory]
     BED[BookEditorDialog]
     BCT[BookCopiesTable]
-    BOC[BookOcrController]
+    OCR[OcrService]
     CMD[CategoryManagerDialog]
-    BLD[BookLoansDialog]
     MED[MemberEditorDialog]
-    MLD[MemberLoansDialog]
     LCD[LoanCheckoutDialog]
     LED[LoanExtendDialog]
     LRD[LoanReturnDialog]
-    LHA[LoanHistoryActions]
-    ALD[ArchiveLoansDialog]
-    RNF[ReuseNumberFlow]
-    TP[TablePager]
+    RBC[ReuseBookChooser]
+    LHD[LoanHistoryDialog]
+    BP[BulkProgress<br/>QProgressDialog]
+    MB[QMessageBox<br/>inform / askYesNo / warnWithAction]
 
-    MW --> CP
-    MW --> MP
-    MW --> LP
-    MW --> AP
-    MW --> XP
-    CP --> BED
-    CP --> BLD
-    CP --> TP
+    DF --> BED
+    DF --> CMD
+    DF --> MED
+    DF --> LCD
+    DF --> LED
+    DF --> LRD
+    DF --> RBC
+    DF --> LHD
+    DF --> BP
+    DF --> MB
     BED --> BCT
-    BED --> BOC
-    BED --> CMD
-    BLD --> LHA
-    MP --> MED
-    MP --> MLD
-    MLD --> LHA
-    MP --> TP
-    MP -->|memberLoansRequested| LP
-    LP --> LCD
-    LP --> LED
-    LP --> LRD
-    LP --> TP
-    AP --> ALD
-    AP --> RNF
-    AP --> TP
-    AP -->|recordRestored| MW
+    BED --> OCR
+    BED -->|Categories button| CMD
+    LHD --> LHS[LoanListSpec<br/>history instance]
+    LHD --> AB[ActionBar]
 ```
 
-`TablePager` (page size 50; Show All is available) is the model pager inside
-the frame. Metrics has no pager: its viewer is the whole dashboard.
+| `DialogFactory` call | Window | Returns | Used by |
+| --- | --- | --- | --- |
+| `editBook` | `BookEditorDialog` (`CatalogLookups`, `OcrService`) | `BookForm` | `BookWorkflow`, `ArchiveWorkflow::reuseNumber` |
+| `manageCategories` | `CategoryManagerDialog` over `CategoryEditor` | — | `BookWorkflow` |
+| `editMember` | `MemberEditorDialog` (`MemberLookups`) | `MemberForm` | `MemberWorkflow` |
+| `checkout` | `LoanCheckoutDialog` (`CirculationLookups`) | `LoanForm` | `LoanWorkflow` |
+| `returnLoan` | `LoanReturnDialog` | `ReturnForm` | `LoanWorkflow` |
+| `extendLoan` | `LoanExtendDialog` | `ExtendForm` | `LoanWorkflow` |
+| `chooseReuseTarget` | `ReuseBookChooser` | book id (0 = new) | `ArchiveWorkflow` |
+| `showLoanHistory` | `LoanHistoryDialog` | — | book, member, archive workflows |
+| `confirmBulk` / `startProgress` | message box / progress | bool / `BulkProgress` | `BulkRunner` |
+| `inform` / `askYesNo` / `warnWithAction` | message box | bool | all workflows |
 
-| Dialog / helper | Writes through | Notes |
-| --- | --- | --- |
-| `BookEditorDialog` | `saveNewBook` / `saveExistingBook` | composes copies table + OCR |
-| `CategoryManagerDialog` | `create` / `update` / `deleteCategory` | |
-| `BookLoansDialog` | read-only `listLoans` | history for one book |
-| `MemberEditorDialog` | `saveNewMember` / `saveExistingMember` | photo + ID card; `active_until` |
-| `MemberLoansDialog` | read-only `listLoans` | history for one member |
-| `LoanCheckoutDialog` | `createLoan` | uses `LoanPolicy` dates |
-| `LoanExtendDialog` | `extendLoan` | |
-| `LoanReturnDialog` | `returnLoan` | |
-| `LoanHistoryActions` | return / extend / archive paths | shared loan actions |
-| `ArchiveLoansDialog` | read-only | archived loan detail |
-| `ReuseNumberFlow` | copy reuse into editor | archived local number → new copy |
-| `LicenceDialog` / `ImageViewerDialog` | none | shell helpers |
+| Workflow | Writes through |
+| --- | --- |
+| `BookWorkflow` | `saveNewBook` / `saveExistingBook`, `archiveBook`, categories via `CategoryEditor` |
+| `MemberWorkflow` | `saveNewMember` / `saveExistingMember`, `archiveMember` |
+| `LoanWorkflow` | `createLoan`, `returnLoan`, `extendLoan`, `archiveLoan` |
+| `ArchiveWorkflow` | `restore*` / `purge*` per `ArchiveType`, reuse of an archived copy number |
 
-`BookOcrController` owns `Ocr::Job`, polls it on a `QTimer`, and emits
-`textReady` on the UI thread. The dialog stays a composer.
+`LoanHistoryDialog` is one window for five kinds (`Book`, `Member`,
+`ArchivedMember`, `ArchivedBook`, `ArchivedCopy`). It pins
+`QueryState.pinned` on the history spec. Live kinds get return / extend
+actions through `LoanWorkflow`; archived kinds are read-only.
+
+`OcrService` owns `Ocr::Job`, polls it on a `QTimer`, and emits `textReady`
+on the UI thread. The dialog stays a composer. `BookCopiesTable` uses
+`runBulkAction` / `QtBulkUi` for rows it holds in memory.
+`LicenceDialog` and `ImageViewerDialog` are shell helpers that write
+nothing.
 
 ---
 
@@ -786,10 +936,12 @@ publication date original, and stricter date CHECKs.
 ```mermaid
 flowchart TD
     A[main] --> B[Application ctor]
-    B --> C{Connection::open}
+    B --> L{InstanceLock}
+    L -->|held by another copy| X[say so, exit]
+    L -->|ok| C{Connection::open}
     C -->|fail| D[showCritical<br/>app.databaseUnavailable]
-    C -->|ok| E[new four repositories]
-    E --> F[MainWindow]
+    C -->|ok| E[four repositories<br/>+ adapters]
+    E --> F[MainWindow<br/>workflows, specs, pages]
     F --> G[showMaximized]
     G --> H[app.exec]
 ```
@@ -798,38 +950,44 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    P[CatalogPage.addBook] --> D[BookEditorDialog]
-    D --> I[collect BookWrite]
-    I --> S[saveNewBook]
+    P[Catalogue action add] --> W[BookWorkflow.add]
+    W --> F[DialogFactory.editBook]
+    F --> D[BookEditorDialog]
+    D -->|cancel| Z[return ok]
+    D -->|BookForm| WR[writeFor]
+    WR --> S[saveNewBook]
     S --> T[session.transaction]
     T --> N[NamedEntityStore.findOrCreate]
     T --> B[insert book row]
     T --> C[BookCopyStore.applyCopies]
     T --> Cov[copy cover into resources/books]
-    T --> OK[Result int64 id]
-    OK --> P2[refreshBooks]
+    S -->|error| EP[ErrorPresenter.show]
+    S -->|id| EV[DataEvents.changed<br/>Books + Copies]
+    EV --> R[models reload<br/>facets refresh]
 ```
 
 ### 11.3 Checkout
 
 ```mermaid
 flowchart TD
-    C[CirculationPage.checkoutLoan] --> D[LoanCheckoutDialog]
-    D --> M[listBorrowableMembers]
-    D --> A[listAvailableCopies]
+    C[Circulation action checkout] --> W[LoanWorkflow.checkout]
+    W --> F[DialogFactory.checkout]
+    F --> D[LoanCheckoutDialog]
+    D --> M[CirculationLookups<br/>borrowable members, available copies]
     D --> P[LoanPolicy.validateLoanDates]
-    P --> R[createLoan]
+    D -->|LoanForm| R[createLoan]
     R --> MC[memberCanBorrow]
     R --> CA[copyIsAvailable]
     R --> INS[INSERT loans]
     INS --> IDX[idx_loans_one_open_per_copy]
+    R -->|id| EV[DataEvents.changed<br/>Loans + Copies]
 ```
 
 ### 11.4 OCR a description
 
 ```mermaid
 flowchart TD
-    B[BookEditorDialog] --> C[BookOcrController.start]
+    B[BookEditorDialog] --> C[OcrService.start]
     C --> J[Ocr::Job::start]
     J --> W[std::thread recognize]
     C --> T[QTimer poll]
@@ -844,10 +1002,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[ArchivePage.restore] --> R[restoreMember / restoreBook / restoreCopy / restoreLoan]
+    A[Archive action restore] --> W[ArchiveWorkflow.restore]
+    W --> N{one row}
+    N -->|yes| Q[askYesNo]
+    Q --> R[restoreMember / restoreBook / restoreCopy / restoreLoan]
+    N -->|no| BR[BulkRunner.run]
+    BR --> R
     R --> S[clear archived_at]
-    S --> E[recordRestored]
-    E --> MW[MainWindow refreshes live pages]
+    S --> EV[DataEvents.changed<br/>entity for the type]
+    EV --> L[live and archive models reload]
 ```
 
 ---
@@ -864,12 +1027,14 @@ flowchart TD
     Env[Test::TestEnv]
     TDb[Test::TestDatabase]
     Seed[Test::TestSeed]
+    Fakes[WorkflowTestSupport<br/>Fakes ModalTest]
 
     Env --> CoreT
     TDb --> DbT
     TDb --> RepoT
     Seed --> RepoT
     Seed --> UiT
+    Fakes --> UiT
     CoreT --> CoreLib[vlms_core]
     DbT --> DbLib[vlms_database]
     RepoT --> RepoLib[vlms_repositories]
@@ -882,6 +1047,15 @@ UI tests use Qt Widgets plus GTest. Test helpers live in `Test::`
 (outside `VLMS`). `TestDatabase::scalar` treats SQL NULL as a null
 `SqlValue`.
 
+Workflow tests (`test_*_workflow.cpp`) run the real workflows over real
+repositories on a seeded `TestDatabase` (`WorkflowTestSupport.h`).
+`ModalTest.h` answers any real modal they raise. `FakeDialogFactory`,
+`FakeErrorPresenter`, and `FakeNavigator` (`Fakes.h`) stand in for windows
+in the bulk-runner, dialog-factory, and loan-history tests. Spec tests
+(`test_*_spec.cpp`) check columns, actions, and loads without a page.
+`test_paged_query_model.cpp` checks the reload-on-`dependsOn` rule.
+`test_list_page*.cpp` and the page tests drive real widgets.
+
 ---
 
 ## 13. What this snapshot deliberately is not
@@ -893,5 +1067,5 @@ UI tests use Qt Widgets plus GTest. Test helpers live in `Test::`
 - No second error channel on repositories
 - No UTC clock in loan predicates
 - No stored member-status column (status is derived from `active_until`)
-- No frontend redesign (`ListSpec` / workflows / `DataEvents`) — that is
-  approved separately and not present in this tree yet
+- No writes from specs, views, or dialogs (only workflows write)
+- No widget built inside a workflow (only through `DialogFactory`)
